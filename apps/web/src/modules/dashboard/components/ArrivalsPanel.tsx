@@ -1,13 +1,13 @@
 import React from 'react'
 import { Card } from '../../../components/Card'
 import { Badge } from '../../../components/Badge'
+import { useGlobalState } from '../../../store/GlobalState'
 
 export function ArrivalsPanel() {
-  // Dati statici simulati per gli arrivi previsti (come nel prototipo)
-  const arriviPrevisti = [
-    { nome: 'S/V Vento', info: 'Posto assegnato: G 12', ora: 'Previsto: 14:30' },
-    { nome: 'M/Y Horizon', info: 'Da assegnare (Cat. V)', ora: 'Previsto: 16:00' }
-  ]
+  const { arrivi } = useGlobalState()
+  
+  // Filtriamo solo quelli 'oggi' o 'atteso'
+  const arriviPrevisti = arrivi.filter(a => a.stato === 'oggi' || a.stato === 'atteso' || a.stato === 'in_ritardo')
 
   return (
     <Card title="Arrivi Previsti Oggi">
@@ -20,12 +20,14 @@ export function ArrivalsPanel() {
             background: 'var(--bg3)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-              <strong>{arrivo.nome}</strong>
-              <Badge color="amber">In arrivo</Badge>
+              <strong>{arrivo.nomeBarca}</strong>
+              <Badge color={arrivo.stato === 'in_ritardo' ? 'red' : 'amber'}>
+                {arrivo.stato === 'in_ritardo' ? 'In ritardo' : 'In arrivo'}
+              </Badge>
             </div>
             <div style={{ fontSize: '0.85rem', color: 'var(--text2)' }}>
-              {arrivo.info}<br/>
-              {arrivo.ora}
+              Posto: {arrivo.postoIndicato || 'Da assegnare'}<br/>
+              Previsto: {arrivo.oraPrevista || 'N/D'}
             </div>
           </div>
         ))}

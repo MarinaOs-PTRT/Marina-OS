@@ -2,12 +2,14 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { Card } from '../../../components/Card'
 import { Badge } from '../../../components/Badge'
-import { MOVIMENTI_DEMO } from '@shared/demo-data'
+import { useGlobalState } from '../../../store/GlobalState'
 import { MOVEMENT_TYPE_LABELS, MOVEMENT_TYPE_CLASS, SCENARIO_LABELS } from '@shared/constants'
 
 export function MovementTable() {
+  const { movimenti } = useGlobalState()
+
   // Mostriamo solo gli ultimi 5 movimenti per la dashboard
-  const ultimiMovimenti = [...MOVIMENTI_DEMO]
+  const ultimiMovimenti = [...movimenti]
     .sort((a, b) => b.id - a.id) // ordina per ID decrescente (simula data/ora più recente)
     .slice(0, 5)
 

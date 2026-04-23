@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { Omnibar } from '../../../components/Omnibar'
-import { POSTI_DEMO } from '@shared/demo-data'
+import { useGlobalState } from '../../../store/GlobalState'
 import { Berth } from '@shared/types'
 import './QuickMovementPanel.css'
 
 export function QuickMovementPanel() {
+  const { posti, addMovimento } = useGlobalState()
   const [nome, setNome] = useState('')
   const [targa, setTarga] = useState('')
   const [lunghezza, setLunghezza] = useState('')
@@ -14,9 +15,9 @@ export function QuickMovementPanel() {
   const [availableBerths, setAvailableBerths] = useState<Berth[]>([])
 
   useEffect(() => {
-    const free = POSTI_DEMO.filter(p => p.stato === 'libero')
+    const free = posti.filter(p => p.stato === 'libero')
     setAvailableBerths(free)
-  }, [])
+  }, [posti])
 
   // When user selects from Omnibar, pre-fill data
   const handleOmnibarAction = (action: string, data?: any) => {
@@ -50,7 +51,22 @@ export function QuickMovementPanel() {
       alert('Inserisci o seleziona un posto barca.')
       return
     }
-    alert(`${tipo === 'entrata' ? 'Entrata' : 'Uscita'} registrata!\n\nBarca: ${nome}\nPosto: ${posto || '—'}`)
+
+    addMovimento({
+      id: Date.now(),
+      ora: new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+      data: new Date().toISOString().split('T')[0],
+      nome,
+      matricola: targa || 'N/D',
+      tipo,
+      posto: posto || '—',
+      scenario: 'transito',
+      auth: true,
+      pagamento: 'Da saldare',
+      operatore: { nome: 'Operatore', ruolo: 'torre', iniziali: 'OP' }
+    })
+
+    alert(`Movimento di ${tipo} registrato per ${nome}`)
     handleClear()
   }
 

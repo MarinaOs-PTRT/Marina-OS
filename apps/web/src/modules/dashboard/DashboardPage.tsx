@@ -5,17 +5,18 @@ import { BoatList } from './components/BoatList'
 import { MovementTable } from './components/MovementTable'
 import { ArrivalsPanel } from './components/ArrivalsPanel'
 import { QuickMovementPanel } from './components/QuickMovementPanel'
-import { BARCHE_DEMO, POSTI_DEMO, MOVIMENTI_DEMO } from '@shared/demo-data'
+import { useGlobalState } from '../../store/GlobalState'
 
 export function DashboardPage() {
-  // Calcolo KPI reali dai dati demo
-  const barcheInPorto = BARCHE_DEMO.length
-  const postiLiberi = POSTI_DEMO.filter(p => p.stato === 'libero').length
-  const barcheTransito = BARCHE_DEMO.filter(b => b.stato === 'occupato_transito').length
-  const inCantiere = BARCHE_DEMO.filter(b => b.stato === 'in_cantiere').length
+  const { barche, posti, movimenti } = useGlobalState()
+
+  // Calcolo KPI reali dai dati globali
+  const barcheInPorto = barche.length
+  const postiLiberi = posti.filter(p => p.stato === 'libero').length
+  const barcheTransito = barche.filter(b => b.stato === 'occupato_transito').length
+  const inCantiere = barche.filter(b => b.stato === 'in_cantiere').length
   
-  // Movimenti di oggi (simuliamo che tutti i demo siano di oggi)
-  const movimentiOggi = MOVIMENTI_DEMO.length
+  const movimentiOggi = movimenti.length
 
   return (
     <>

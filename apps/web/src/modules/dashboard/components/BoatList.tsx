@@ -1,22 +1,31 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Card } from '../../../components/Card'
 import { Badge } from '../../../components/Badge'
-import { BARCHE_DEMO, POSTI_DEMO } from '@shared/demo-data'
+import { Omnibar } from '../../../components/Omnibar'
+import { useGlobalState } from '../../../store/GlobalState'
 import { BERTH_STATUS_COLOR, BERTH_STATUS_LABELS } from '@shared/constants'
 
 export function BoatList() {
-  // Uniamo barche e posti per avere i dettagli del posto se la barca è ormeggiata
-  const barcheConPosto = BARCHE_DEMO.map(b => {
-    const posto = POSTI_DEMO.find(p => p.id === b.posto)
+  const { barche, posti } = useGlobalState()
+  
+  const [filterStato, setFilterStato] = useState('tutti')
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const barcheFiltrate = barche
+    .filter(b => filterStato === 'tutti' || b.stato === filterStato)
+    .filter(b => b.nome.toLowerCase().includes(searchQuery.toLowerCase()) || b.matricola.toLowerCase().includes(searchQuery.toLowerCase()))
+
+  const barcheConPosto = barcheFiltrate.map(b => {
+    const posto = posti.find(p => p.id === b.posto)
     return { ...b, dettaglioPosto: posto }
   })
 
   const filtriBadge = [
-    { label: 'Tutte', color: 'gray' as const, count: BARCHE_DEMO.length },
-    { label: 'Soci', color: 'accent' as const, count: BARCHE_DEMO.filter(b => b.stato === 'occupato_socio').length },
-    { label: 'Transito', color: 'teal' as const, count: BARCHE_DEMO.filter(b => b.stato === 'occupato_transito').length },
-    { label: 'Cantiere', color: 'red' as const, count: BARCHE_DEMO.filter(b => b.stato === 'in_cantiere').length },
+    { label: 'Tutte', color: 'gray' as const, count: barche.length },
+    { label: 'Soci', color: 'accent' as const, count: barche.filter(b => b.stato === 'occupato_socio').length },
+    { label: 'Transito', color: 'teal' as const, count: barche.filter(b => b.stato === 'occupato_transito').length },
+    { label: 'Cantiere', color: 'red' as const, count: barche.filter(b => b.stato === 'in_cantiere').length },
   ]
 
   return (

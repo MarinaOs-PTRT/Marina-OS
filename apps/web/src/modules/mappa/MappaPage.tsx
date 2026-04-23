@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
 import { Berth } from '@shared/types'
-import { POSTI_DEMO } from '@shared/demo-data'
 import { MarinaMap } from './components/MarinaMap'
 import { BerthDetailDrawer } from './components/BerthDetailDrawer'
-import { BERTH_STATUS_LABELS } from '@shared/constants'
+import { useGlobalState } from '../../store/GlobalState'
 
 export function MappaPage() {
+  const { posti } = useGlobalState()
   const [selectedBerth, setSelectedBerth] = useState<Berth | null>(null)
 
   return (
@@ -42,7 +42,7 @@ export function MappaPage() {
       {/* Area Mappa */}
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
         <MarinaMap 
-          berths={POSTI_DEMO} 
+          berths={posti} 
           onBerthSelect={setSelectedBerth} 
         />
       </div>

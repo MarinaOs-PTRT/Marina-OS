@@ -4,10 +4,11 @@ import { KpiCard } from '../../components/KpiCard'
 import { FilterBar } from './components/FilterBar'
 import { RegistroTable } from './components/RegistroTable'
 import { MovementDetailDrawer } from './components/MovementDetailDrawer'
-import { MOVIMENTI_DEMO } from '@shared/demo-data'
+import { useGlobalState } from '../../store/GlobalState'
 import { Movement } from '@shared/types'
 
 export function RegistroPage() {
+  const { movimenti } = useGlobalState()
   const [filterType, setFilterType] = useState('tutti')
   const [filterScenario, setFilterScenario] = useState('tutti')
   const [searchQuery, setSearchQuery] = useState('')
@@ -15,7 +16,7 @@ export function RegistroPage() {
 
   // Filter Logic
   const filteredMovements = useMemo(() => {
-    return MOVIMENTI_DEMO.filter(m => {
+    return movimenti.filter(m => {
       // 1. Tipo
       if (filterType !== 'tutti' && m.tipo !== filterType) return false
       // 2. Scenario
