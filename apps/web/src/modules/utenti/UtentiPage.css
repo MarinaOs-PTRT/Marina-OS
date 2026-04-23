@@ -1,0 +1,158 @@
+.utenti-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.utenti-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.utenti-stats {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.stat-pill {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 8px 16px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--text2);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-val {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text);
+  font-family: var(--font-display);
+}
+
+.stat-val.accent {
+  color: var(--accent);
+}
+
+.utenti-content {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.utenti-form-wrapper {
+  padding: var(--space-xl);
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+  animation: slideDown 0.25s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Table ── */
+.utenti-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.utenti-table th {
+  padding: 12px var(--space-lg);
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text3);
+  border-bottom: 1px solid var(--border);
+}
+
+.utenti-table td {
+  padding: 14px var(--space-lg);
+  font-size: 0.9rem;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.utenti-table tr:hover td { background: var(--bg3); }
+.utenti-table tr:last-child td { border-bottom: none; }
+
+.u-nome { font-weight: 700; font-size: 0.95rem; }
+.u-email { font-size: 0.75rem; color: var(--text3); margin-top: 2px; }
+
+/* ── Role Pills ── */
+.pill-role-direzione { background: rgba(52,152,219,0.15); color: var(--accent); }
+.pill-role-torre { background: rgba(46,204,113,0.15); color: var(--green); }
+.pill-role-ormeggiatore { background: rgba(243,156,18,0.15); color: var(--amber); }
+
+.pill-stato-attivo { background: rgba(46,204,113,0.15); color: var(--green); }
+.pill-stato-disattivo { background: rgba(0,0,0,0.1); color: var(--text3); }
+
+/* ── Form ── */
+.u-form-title {
+  margin: 0 0 var(--space-lg) 0;
+  font-size: 1.1rem;
+  font-family: var(--font-display);
+  color: var(--text);
+}
+
+.u-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text2);
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+.u-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-md);
+  margin-top: var(--space-xl);
+}

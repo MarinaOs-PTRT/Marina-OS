@@ -1,0 +1,190 @@
+/* ── Tab Bar & Header ── */
+.soci-tabs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+
+.soci-tabs {
+  display: flex;
+  gap: 0;
+  background: var(--bg2);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  width: fit-content;
+}
+
+.soci-tab {
+  padding: 13px 28px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text2);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-ui);
+  white-space: nowrap;
+}
+
+.soci-tab:hover {
+  color: var(--text);
+  background: var(--bg3);
+}
+
+.soci-tab.active {
+  color: white;
+  background: var(--accent);
+}
+
+/* ── Content Card ── */
+.soci-content {
+  background: var(--bg2);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.soci-form-wrapper {
+  padding: var(--space-xl);
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+  animation: formSlideDown 0.25s ease-out;
+}
+
+/* ── Table General ── */
+.soci-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.soci-table th {
+  padding: 12px var(--space-lg);
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text3);
+  border-bottom: 1px solid var(--border);
+}
+
+.soci-table td {
+  padding: 14px var(--space-lg);
+  font-size: 0.88rem;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.soci-table tr:last-child td { border-bottom: none; }
+.soci-table tr:hover td { background: var(--bg3); }
+
+/* ── Specific Cells ── */
+.so-nome { font-weight: 700; font-size: 0.95rem; }
+.so-tel { font-size: 0.75rem; color: var(--text3); margin-top: 2px; }
+.so-posto { font-size: 1.1rem; font-weight: 800; color: var(--accent); font-family: var(--font-display); }
+
+/* ── Pills for Posto ── */
+.pill-occupato_socio { background: rgba(52,152,219,0.15); color: var(--accent); }
+.pill-occupato_affittuario { background: rgba(155,89,182,0.15); color: var(--purple); }
+.pill-socio_assente { background: rgba(0,0,0,0.08); color: var(--text3); }
+.pill-in_cantiere { background: rgba(231,76,60,0.12); color: var(--red); }
+
+/* ── Pills for Auth ── */
+.pill-auth-attiva { background: rgba(46,204,113,0.15); color: var(--green); }
+.pill-auth-scaduta { background: rgba(0,0,0,0.08); color: var(--text3); }
+.pill-auth-revocata { background: rgba(231,76,60,0.15); color: var(--red); }
+
+/* ── Form ── */
+.so-form-title {
+  margin: 0 0 var(--space-lg) 0;
+  font-size: 1.1rem;
+  font-family: var(--font-display);
+  color: var(--text);
+}
+
+.so-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--space-lg);
+}
+
+.so-form-grid .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.so-form-grid .form-group.full {
+  grid-column: 1 / -1;
+}
+
+.so-form-grid label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text2);
+}
+
+.so-form-grid input,
+.so-form-grid select,
+.so-form-grid textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.so-form-grid input:focus,
+.so-form-grid select:focus,
+.so-form-grid textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+.so-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border);
+}
+
+.btn-revoca {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--red);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font-ui);
+}
+
+.btn-revoca:hover {
+  background: var(--red);
+  color: white;
+  border-color: var(--red);
+}
+
+.empty-message {
+  padding: var(--space-2xl) var(--space-lg);
+  text-align: center;
+  color: var(--text3);
+  font-size: 0.95rem;
+}

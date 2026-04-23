@@ -1,0 +1,129 @@
+.notifiche-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.n-filters {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.btn-filter {
+  padding: 8px 16px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--text2);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-ui);
+}
+
+.btn-filter:hover {
+  background: var(--bg3);
+  color: var(--text);
+}
+
+.btn-filter.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.n-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.n-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  transition: opacity 0.2s, background 0.2s;
+}
+
+.n-card.n-stato-letta { opacity: 0.8; }
+.n-card.n-stato-risolta { opacity: 0.6; background: rgba(0,0,0,0.1); }
+
+.n-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.n-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.new-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--red);
+  border-radius: 50%;
+  box-shadow: 0 0 5px var(--red);
+}
+
+.n-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+.n-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  font-size: 0.8rem;
+  color: var(--text3);
+}
+
+.n-cat {
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.n-body p {
+  margin: 0;
+  color: var(--text2);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.n-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border);
+}
+
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 0.8rem;
+}
+
+.n-resolved-text {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--green);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+}
+
+/* Pills */
+.pill-urg-alta { background: rgba(231,76,60,0.15); color: var(--red); }
+.pill-urg-media { background: rgba(243,156,18,0.15); color: var(--amber); }
+.pill-urg-bassa { background: rgba(52,152,219,0.15); color: var(--accent); }

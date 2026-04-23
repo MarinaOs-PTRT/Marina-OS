@@ -1,0 +1,136 @@
+:root {
+  /* Colors */
+  --bg: #f2efe8;
+  --bg2: #ffffff;
+  --bg3: #f9f9f9;
+  --bg4: #e8e5dc;
+  --border: #e0ddd5;
+  --text: #2c3e50;
+  --text2: #5c6b7a;
+  --text3: #8c9ba8;
+  
+  --accent: #2c3e50;
+  --accent-light: rgba(44, 62, 80, 0.05);
+  --accent-lighter: #3d566e;
+  
+  --topbar-bg: #2c3e50;
+  --topbar-border: #1a252f;
+  
+  --green: #2ecc71;
+  --green-bg: #eafaf1;
+  --green-text: #27ae60;
+  
+  --amber: #f1c40f;
+  --amber-bg: #fef9e7;
+  --amber-text: #f39c12;
+  
+  --red: #e74c3c;
+  --red-bg: #fdedec;
+  --red-text: #c0392b;
+  
+  --purple: #9b59b6;
+  --purple-bg: #f5eef8;
+  --purple-text: #8e44ad;
+  
+  --teal: #1abc9c;
+  --teal-bg: #e8f8f5;
+  --teal-text: #16a085;
+
+  --blue: #3498db;
+  --blue-bg: #ebf5fb;
+  --blue-text: #2980b9;
+
+  /* Typography */
+  --font-display: "Montserrat", sans-serif;
+  --font-ui: "Montserrat", sans-serif;
+  --font-mono: "Courier New", monospace;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+
+  /* Layout */
+  --sidebar-width: 250px;
+  --header-height: 92px;
+  
+  /* Radii */
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+/* Dark Theme */
+[data-theme="dark"] {
+  --bg: #121212;
+  --bg2: #1e1e1e;
+  --bg3: #2c2c2c;
+  --bg4: #0a0a0a;
+  --border: #333333;
+  --text: #e4e4e4;
+  --text2: #aaaaaa;
+  --text3: #777777;
+
+  /* Accent changes for better contrast (Sidebar) */
+  --accent: #171717;
+  --accent-light: rgba(255, 255, 255, 0.1);
+  --accent-lighter: #2a2a2a;
+
+  /* Topbar */
+  --topbar-bg: #171717;
+  --topbar-border: #262626;
+
+  /* Transparent pill backgrounds for dark mode */
+  --green-bg: rgba(46, 204, 113, 0.15);
+  --amber-bg: rgba(241, 196, 15, 0.15);
+  --red-bg: rgba(231, 76, 60, 0.15);
+  --purple-bg: rgba(155, 89, 182, 0.15);
+  --teal-bg: rgba(26, 188, 156, 0.15);
+  --blue-bg: rgba(52, 152, 219, 0.15);
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.5);
+  --shadow: 0 4px 12px rgba(0,0,0,0.8);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.9);
+}
+
+/* Dark Theme - Deep Blue/Indigo */
+[data-theme="dark-blue"] {
+  --bg: #0b1120;
+  --bg2: #111827;
+  --bg3: #1f2937;
+  --bg4: #030712;
+  --border: #374151;
+  --text: #f8fafc;
+  --text2: #94a3b8;
+  --text3: #64748b;
+
+  /* Accent changes for deep blue theme */
+  --accent: #15202b;
+  --accent-light: rgba(255, 255, 255, 0.1);
+  --accent-lighter: #202e40;
+
+  /* Topbar */
+  --topbar-bg: #15202b;
+  --topbar-border: #0d141b;
+
+  /* Transparent pill backgrounds */
+  --green-bg: rgba(46, 204, 113, 0.15);
+  --amber-bg: rgba(241, 196, 15, 0.15);
+  --red-bg: rgba(231, 76, 60, 0.15);
+  --purple-bg: rgba(155, 89, 182, 0.15);
+  --teal-bg: rgba(26, 188, 156, 0.15);
+  --blue-bg: rgba(52, 152, 219, 0.15);
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.5);
+  --shadow: 0 4px 12px rgba(0,0,0,0.8);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.9);
+}

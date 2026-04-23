@@ -1,0 +1,432 @@
+/* ── Tab Bar ── */
+/* ── Autocomplete dropdown ── */
+.calc-autocomplete-wrap {
+  position: relative;
+}
+
+.calc-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: var(--bg2);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.calc-suggestions li {
+  padding: 10px 14px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: background 0.1s;
+}
+
+.calc-suggestions li:hover {
+  background: var(--bg3);
+}
+
+.calc-suggestions .sug-nome {
+  font-weight: 600;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.calc-suggestions .sug-meta {
+  font-size: 0.75rem;
+  color: var(--text3);
+}
+
+
+.tariffe-tabs {
+  display: flex;
+  gap: 0;
+  background: var(--bg2);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  width: fit-content;
+}
+
+.tariffe-tab {
+  padding: 13px 28px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text2);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-ui);
+  white-space: nowrap;
+}
+
+.tariffe-tab:hover {
+  color: var(--text);
+  background: var(--bg3);
+}
+
+.tariffe-tab.active {
+  color: white;
+  background: var(--accent);
+}
+
+/* ── Content Card ── */
+.tariffe-content {
+  background: var(--bg2);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+/* ── Listino Table ── */
+.listino-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-lg) var(--space-xl);
+  border-bottom: 1px solid var(--border);
+}
+
+.listino-header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-family: var(--font-display);
+  color: var(--text);
+}
+
+.listino-note {
+  font-size: 0.82rem;
+  color: var(--text3);
+  background: var(--bg3);
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+}
+
+.listino-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.listino-table th {
+  padding: 12px var(--space-xl);
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text3);
+  border-bottom: 1px solid var(--border);
+}
+
+.listino-table td {
+  padding: 14px var(--space-xl);
+  font-size: 0.9rem;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+
+.listino-table tr:last-child td {
+  border-bottom: none;
+}
+
+.listino-table tr:hover td {
+  background: var(--bg3);
+}
+
+.listino-table td.cat-name {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.listino-table td.price {
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-family: var(--font-display);
+  color: var(--text);
+}
+
+.check-yes  { color: var(--green); font-size: 1rem; }
+.check-no   { color: var(--text3); font-size: 1rem; }
+
+/* ── Calculator ── */
+.calc-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  min-height: 500px;
+}
+
+.calc-form-panel {
+  padding: var(--space-xl);
+  border-right: 1px solid var(--border);
+}
+
+.calc-form-panel h2 {
+  margin: 0 0 var(--space-xl) 0;
+  font-size: 1.15rem;
+  font-family: var(--font-display);
+  color: var(--text);
+}
+
+.calc-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+}
+
+.calc-grid .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.calc-grid .form-group.full {
+  grid-column: 1 / -1;
+}
+
+.calc-grid label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text2);
+}
+
+.calc-grid input,
+.calc-grid select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.calc-grid input:focus,
+.calc-grid select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+/* ── Preview Panel ── */
+.calc-preview-panel {
+  padding: var(--space-xl);
+  background: var(--bg3);
+  display: flex;
+  flex-direction: column;
+}
+
+.calc-preview-panel h2 {
+  margin: 0 0 var(--space-xl) 0;
+  font-size: 1.15rem;
+  font-family: var(--font-display);
+  color: var(--text);
+}
+
+.preview-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text3);
+  gap: var(--space-md);
+  font-size: 0.9rem;
+}
+
+.preview-empty span { font-size: 2.5rem; }
+
+/* Receipt preview */
+.receipt-preview {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.receipt-header {
+  text-align: center;
+  padding-bottom: var(--space-md);
+  border-bottom: 2px solid var(--border);
+}
+
+.receipt-company {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  font-family: var(--font-display);
+}
+
+.receipt-company-sub {
+  font-size: 0.72rem;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.receipt-num {
+  margin-top: var(--space-sm);
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--accent);
+  font-family: var(--font-display);
+}
+
+.receipt-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.88rem;
+}
+
+.receipt-row .label { color: var(--text2); }
+.receipt-row .value { font-weight: 600; color: var(--text); }
+
+.receipt-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 4px 0;
+}
+
+.receipt-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-top: var(--space-sm);
+  border-top: 2px solid var(--border);
+}
+
+.receipt-total-row .total-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text2);
+}
+
+.receipt-total-row .total-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  font-family: var(--font-display);
+  color: var(--accent);
+}
+
+.receipt-payment-row {
+  display: flex;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+
+.payment-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: var(--radius);
+  border: 2px solid var(--border);
+  background: var(--bg);
+  color: var(--text2);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+}
+
+.payment-btn:hover { border-color: var(--accent); color: var(--accent); }
+.payment-btn.selected {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+}
+
+.receipt-actions {
+  margin-top: var(--space-md);
+  display: flex;
+  gap: var(--space-md);
+}
+
+/* ── Ricevute Table ── */
+.ricevute-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-lg) var(--space-xl);
+  border-bottom: 1px solid var(--border);
+}
+
+.ricevute-header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-family: var(--font-display);
+  color: var(--text);
+}
+
+.ricevute-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ricevute-table th {
+  padding: 12px var(--space-lg);
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text3);
+  border-bottom: 1px solid var(--border);
+}
+
+.ricevute-table td {
+  padding: 14px var(--space-lg);
+  font-size: 0.88rem;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+
+.ricevute-table tr:last-child td { border-bottom: none; }
+.ricevute-table tr:hover td { background: var(--bg3); }
+
+.ricevute-table .num-ricevuta {
+  font-weight: 700;
+  color: var(--accent);
+  font-family: var(--font-display);
+}
+
+.ricevute-table .totale-cell {
+  font-weight: 700;
+  font-size: 1rem;
+  font-family: var(--font-display);
+}
+
+.metodo-chip {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.metodo-chip.pos      { background: rgba(52,152,219,0.12); color: var(--teal); }
+.metodo-chip.contante { background: rgba(46,204,113,0.12); color: var(--green); }

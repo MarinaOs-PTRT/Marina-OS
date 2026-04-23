@@ -1,0 +1,125 @@
+.omnibar-wrapper {
+  position: relative;
+  width: 400px;
+}
+
+.omnibar-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.omnibar-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text3);
+  pointer-events: none;
+}
+
+.omnibar-input {
+  width: 100%;
+  padding: 10px 10px 10px 36px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--bg3);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-family: var(--font-ui);
+  transition: all 0.2s;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.omnibar-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--bg2);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+.omnibar-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 150%;
+  background: var(--bg2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+  z-index: 1000;
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.omnibar-dropdown-title {
+  padding: 8px 12px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--text3);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg3);
+}
+
+.omnibar-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  gap: 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+
+.omnibar-item:last-child {
+  border-bottom: none;
+}
+
+.omnibar-item.selected, .omnibar-item:hover {
+  background: var(--bg3);
+}
+
+.omnibar-item-icon {
+  font-size: 1.5rem;
+  width: 40px;
+  height: 40px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.omnibar-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.omnibar-item-title {
+  font-weight: bold;
+  color: var(--text);
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.omnibar-item-subtitle {
+  font-size: 0.8rem;
+  color: var(--text2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.omnibar-item-action {
+  flex-shrink: 0;
+}
+
+.omnibar-action-pill {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}

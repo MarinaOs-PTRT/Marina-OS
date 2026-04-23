@@ -1,0 +1,33 @@
+.kpi {
+  background: var(--bg2);
+  border-radius: var(--radius);
+  padding: var(--space-md) var(--space-lg);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-left: 4px solid var(--border);
+}
+
+.kpi-green { border-left-color: var(--green); }
+.kpi-amber { border-left-color: var(--amber); }
+.kpi-accent { border-left-color: var(--accent); }
+.kpi-teal { border-left-color: var(--teal); }
+.kpi-red { border-left-color: var(--red); }
+.kpi-purple { border-left-color: var(--purple); }
+
+.kpi-val {
+  font-size: 1.8rem;
+  font-weight: bold;
+  font-family: var(--font-display);
+  color: var(--text);
+  line-height: 1.1;
+}
+
+.kpi-label {
+  font-size: 0.8rem;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}

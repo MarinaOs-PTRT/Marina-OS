@@ -1,0 +1,131 @@
+.sidebar {
+  width: var(--sidebar-width);
+  height: 100vh;
+  background: var(--accent);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 100;
+}
+
+.sidebar-header {
+  height: var(--header-height);
+  padding: 0 var(--space-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.logo-box {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.logo-text h1 {
+  font-size: 1.2rem;
+  margin: 0;
+  color: white;
+}
+
+.logo-text span {
+  font-size: 0.75rem;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.role-badge {
+  margin: var(--space-lg);
+  background: rgba(0,0,0,0.2);
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.role-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 0 var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: 10px 12px;
+  color: var(--text3);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  background: rgba(0,0,0,0.15);
+  transition: all 0.2s;
+}
+
+.nav-item:hover {
+  background: rgba(0,0,0,0.25);
+  color: white;
+}
+
+.nav-item.active {
+  background: rgba(0,0,0,0.4);
+  color: white;
+  font-weight: bold;
+  border-left: 3px solid white;
+  padding-left: 9px; /* 12px - 3px border */
+}
+
+.nav-icon {
+  font-size: 1.1rem;
+  width: 20px;
+  text-align: center;
+}
+
+.sidebar-footer {
+  padding: var(--space-lg);
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.btn-logout {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  transition: all 0.2s;
+}
+
+.btn-logout:hover {
+  background: rgba(231, 76, 60, 0.1);
+  color: var(--red);
+}
+
+

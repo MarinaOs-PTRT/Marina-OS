@@ -1,0 +1,217 @@
+.maint-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.maint-tabs {
+  display: flex;
+  gap: 0;
+  background: var(--bg2);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.maint-tab {
+  padding: 12px 24px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text2);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-ui);
+}
+
+.maint-tab:hover {
+  color: var(--text);
+  background: var(--bg3);
+}
+
+.maint-tab.active {
+  color: white;
+  background: var(--accent);
+}
+
+.maint-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text2);
+  transition: all 0.15s;
+  font-family: var(--font-ui);
+}
+
+.filter-chip:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.filter-chip.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.maint-content {
+  background: var(--bg2);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.maint-content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-lg) var(--space-xl);
+  border-bottom: 1px solid var(--border);
+}
+
+.maint-content-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--text);
+  font-family: var(--font-display);
+}
+
+.maint-form-wrapper {
+  padding: var(--space-xl);
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+  animation: formSlideDown 0.25s ease-out;
+}
+
+@keyframes formSlideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Table styles */
+.maint-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.maint-table th {
+  padding: 12px var(--space-lg);
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+}
+
+.maint-table td {
+  padding: 14px var(--space-lg);
+  font-size: 0.9rem;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.maint-table tr:last-child td {
+  border-bottom: none;
+}
+
+.maint-table tr:hover td {
+  background: var(--bg3);
+}
+
+.maint-table .td-desc {
+  color: var(--text2);
+  font-size: 0.8rem;
+  margin-top: 4px;
+}
+
+/* Pills */
+.pill {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.pill-urgente { background: rgba(231, 76, 60, 0.12); color: var(--red); }
+.pill-normale { background: rgba(52, 152, 219, 0.12); color: var(--teal); }
+.pill-programmato { background: rgba(155, 89, 182, 0.12); color: #9b59b6; }
+
+.pill-dafare { background: rgba(243, 156, 18, 0.12); color: var(--amber); }
+.pill-incorso { background: rgba(52, 152, 219, 0.12); color: var(--teal); }
+.pill-completato { background: rgba(46, 204, 113, 0.12); color: var(--green); }
+
+/* Form grid */
+.maint-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+}
+
+.maint-form-grid .form-group {
+  align-items: flex-start;
+}
+
+.maint-form-grid .form-group input,
+.maint-form-grid .form-group select,
+.maint-form-grid .form-group textarea {
+  width: 100%;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.maint-form-grid .form-group input:focus,
+.maint-form-grid .form-group select:focus,
+.maint-form-grid .form-group textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+.maint-form-grid .form-group label {
+  text-align: left;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.maint-form-grid .form-group-full {
+  grid-column: 1 / -1;
+}
+
+.maint-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border);
+}

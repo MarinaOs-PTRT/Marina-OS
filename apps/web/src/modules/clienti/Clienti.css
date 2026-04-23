@@ -1,0 +1,147 @@
+.clienti-layout {
+  display: flex;
+  height: calc(100vh - var(--topbar-height));
+  overflow: hidden;
+}
+
+.clienti-sidebar-area {
+  width: 320px;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.clienti-main-area {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg);
+  padding: var(--space-xl);
+}
+
+/* Sidebar styles */
+.cs-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.cs-search {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.cs-filters {
+  padding: 8px 12px;
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sf {
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text2);
+  transition: all 0.15s;
+}
+
+.sf:hover {
+  background: var(--bg);
+}
+
+.sf.on {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.cs-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.cs-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid transparent;
+  transition: background 0.1s;
+}
+
+.cs-item:hover {
+  background: var(--bg3);
+}
+
+.cs-item.active {
+  background: var(--accent-light);
+  border-left-color: var(--accent);
+}
+
+.cs-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.cs-av-pf { background: rgba(44, 62, 80, 0.1); color: var(--accent); }
+.cs-av-az { background: var(--purple-bg); color: var(--purple); }
+.cs-av-so { background: var(--green-bg); color: var(--green); }
+
+.cs-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.cs-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cs-meta {
+  font-size: 0.8rem;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.cs-badge {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.cb-pf { background: rgba(44, 62, 80, 0.1); color: var(--accent); }
+.cb-az { background: var(--purple-bg); color: var(--purple); }
+.cb-so { background: var(--green-bg); color: var(--green); }
+
+/* Empty state */
+.client-empty-state {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text3);
+}
+
+.ce-ico {
+  font-size: 4rem;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
