@@ -30,6 +30,8 @@ export const BERTH_STATUS_LABELS: Record<string, string> = {
   occupato_affittuario: 'Affittuario',
   affittuario_assente: 'Affittuario assente',
   in_cantiere: 'In cantiere',
+  bunker: 'Al distributore',
+  riservato: 'Riservato',
 }
 
 export const BERTH_STATUS_COLOR: Record<string, string> = {
@@ -42,20 +44,28 @@ export const BERTH_STATUS_COLOR: Record<string, string> = {
   occupato_affittuario: 'var(--purple)',
   affittuario_assente: 'var(--text3)',
   in_cantiere: 'var(--red)',
+  bunker: 'var(--amber)',
+  riservato: 'var(--purple)',
 }
 
 export const MOVEMENT_TYPE_LABELS: Record<string, string> = {
   entrata: '↑ Entrata',
   uscita: '↓ Uscita',
+  uscita_temporanea: '↓ Uscita (Gita)',
+  uscita_definitiva: '↓ Partenza Definitiva',
   spostamento: '⇄ Spostamento',
   cantiere: '⚙ Cantiere',
+  bunker: '⛽ Bunker',
 }
 
 export const MOVEMENT_TYPE_CLASS: Record<string, string> = {
   entrata: 'pill-green',
   uscita: 'pill-amber',
+  uscita_temporanea: 'pill-amber',
+  uscita_definitiva: 'pill-red',
   spostamento: 'pill-purple',
   cantiere: 'pill-red',
+  bunker: 'pill-amber',
 }
 
 export const SCENARIO_LABELS: Record<string, string> = {

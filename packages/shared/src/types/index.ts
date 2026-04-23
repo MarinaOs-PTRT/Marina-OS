@@ -17,12 +17,14 @@ export type BerthStatus =
   | 'occupato_affittuario'
   | 'affittuario_assente'
   | 'in_cantiere'
+  | 'bunker'
+  | 'riservato'
 
 // ── Tipo cliente ──
 export type ClientType = 'pf' | 'az' | 'so' // persona fisica, azienda, socio
 
 // ── Tipo movimento ──
-export type MovementType = 'entrata' | 'uscita' | 'spostamento' | 'cantiere'
+export type MovementType = 'entrata' | 'uscita' | 'uscita_temporanea' | 'uscita_definitiva' | 'spostamento' | 'cantiere' | 'bunker'
 
 // ── Scenario ──
 export type MovementScenario = 'socio' | 'transito' | 'affittuario'
@@ -87,6 +89,7 @@ export interface Boat {
   nome: string
   matricola: string
   tipo: 'Motore' | 'Vela' | 'Catamarano' | 'Gommone' | 'Altro'
+  tipologia?: 'socio' | 'transito' | 'affittuario'
   modello?: string
   cantiere?: string
   anno?: number
@@ -151,6 +154,7 @@ export interface Movement {
   matricola: string
   tipo: MovementType
   posto: string
+  postoOrigine?: string // per spostamento, cantiere, bunker
   scenario: MovementScenario
   auth: boolean
   origine?: string
