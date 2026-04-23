@@ -3,15 +3,15 @@ import { TopBar } from '../../components/TopBar'
 import { KpiCard } from '../../components/KpiCard'
 import { ArrivalTable } from './components/ArrivalTable'
 import { ArrivalForm } from './components/ArrivalForm'
-import { ARRIVI_DEMO } from '@shared/demo-data'
-import { Arrival, ArrivalStatus } from '@shared/types'
+import { useGlobalState } from '../../store/GlobalState'
+import { Arrival } from '@shared/types'
 import './ArriviPage.css'
 
 type FiltroData = 'oggi' | 'settimana' | 'tutti'
 type FiltroStato = 'tutti' | 'oggi' | 'atteso' | 'in_ritardo' | 'arrivato' | 'annullato'
 
 export function ArriviPage() {
-  const [arrivi, setArrivi] = useState<Arrival[]>(ARRIVI_DEMO)
+  const { arrivi, addArrivo, resolveArrivo } = useGlobalState()
   const [filtroData, setFiltroData] = useState<FiltroData>('tutti')
   const [filtroStato, setFiltroStato] = useState<FiltroStato>('tutti')
   const [showForm, setShowForm] = useState(false)
@@ -42,20 +42,23 @@ export function ArriviPage() {
   }, [arrivi, filtroData, filtroStato])
 
   const handleConferma = (id: number) => {
-    setArrivi(prev => prev.map(a => a.id === id ? { ...a, stato: 'arrivato' as ArrivalStatus } : a))
+    resolveArrivo(id)
   }
 
   const handleAnnulla = (id: number) => {
-    setArrivi(prev => prev.map(a => a.id === id ? { ...a, stato: 'annullato' as ArrivalStatus } : a))
+    // Usiamo un'azione diretta per 'annullato' (non presente nel GlobalState come azione nomerata, lo facciamo via addArrivo)
+    // Per ora gestiamo localmente solo l'annullamento, e lo integreremo nel GlobalState in futuro
+    const target = arrivi.find(a => a.id === id)
+    if (target) addArrivo({ ...target, stato: 'annullato' })
   }
 
   const handleNuovoArrivo = (arrivo: Omit<Arrival, 'id' | 'createdAt'>) => {
     const newArrivo: Arrival = {
       ...arrivo,
-      id: arrivi.length + 1,
-      createdAt: TODAY,
+      id: Date.now(),
+      createdAt: new Date().toISOString().split('T')[0],
     }
-    setArrivi(prev => [newArrivo, ...prev])
+    addArrivo(newArrivo)
     setShowForm(false)
   }
 

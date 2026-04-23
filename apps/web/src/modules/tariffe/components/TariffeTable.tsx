@@ -1,7 +1,8 @@
 import React from 'react'
-import { TARIFFE_DEMO } from '@shared/demo-data'
+import { useGlobalState } from '../../../store/GlobalState'
 
 export function TariffeTable() {
+  const { tariffe } = useGlobalState()
   return (
     <>
       <div className="listino-header">
@@ -19,7 +20,7 @@ export function TariffeTable() {
           </tr>
         </thead>
         <tbody>
-          {TARIFFE_DEMO.map(t => (
+          {tariffe.map(t => (
             <tr key={t.categoria}>
               <td className="cat-name">{t.categoria}</td>
               <td>{t.dimMax}</td>

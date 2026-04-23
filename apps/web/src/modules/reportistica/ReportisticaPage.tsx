@@ -4,29 +4,29 @@ import { KpiCard } from '../../components/KpiCard'
 import { CssDonutChart } from './components/CssDonutChart'
 import { CssBarChart } from './components/CssBarChart'
 import { RevenueTable } from './components/RevenueTable'
-import { POSTI_DEMO, MOVIMENTI_DEMO, RICEVUTE_DEMO } from '@shared/demo-data'
+import { useGlobalState } from '../../store/GlobalState'
 import './ReportisticaPage.css'
 
 export function ReportisticaPage() {
-  // 1. KPI Occupazione
-  const totPosti = POSTI_DEMO.length
-  const postiLiberi = POSTI_DEMO.filter(p => p.stato === 'libero').length
+  const { posti, movimenti, ricevute } = useGlobalState()
+
+  // 1. KPI Occupazione (LIVE — cambia se registri un ingresso/uscita)
+  const totPosti = posti.length
+  const postiLiberi = posti.filter(p => p.stato === 'libero').length
   const postiOccupati = totPosti - postiLiberi
-  const occPercent = Math.round((postiOccupati / totPosti) * 100)
+  const occPercent = totPosti > 0 ? Math.round((postiOccupati / totPosti) * 100) : 0
 
-  // 2. KPI Movimenti di oggi
-  const TODAY = '2026-04-22'
-  const movOggi = MOVIMENTI_DEMO.filter(m => m.data === TODAY || m.ora.startsWith(TODAY) || true) // Nel demo_data abbiamo solo l'ora purtroppo o la data su alcuni. Supponiamo che quelli in MOVIMENTI_DEMO siano recenti.
-  const entrateOggi = MOVIMENTI_DEMO.filter(m => m.tipo === 'entrata').length
-  const usciteOggi = MOVIMENTI_DEMO.filter(m => m.tipo === 'uscita').length
+  // 2. KPI Movimenti
+  const entrateOggi = movimenti.filter(m => m.tipo === 'entrata').length
+  const usciteOggi = movimenti.filter(m => m.tipo === 'uscita').length
 
-  // 3. KPI Fatturato (Ricevute totali)
-  const incassoTotale = RICEVUTE_DEMO.reduce((sum, r) => sum + r.totale, 0)
+  // 3. KPI Fatturato
+  const incassoTotale = ricevute.reduce((sum, r) => sum + r.totale, 0)
   
-  // Dati Donut Chart: Occupazione
-  const occupatiSocio = POSTI_DEMO.filter(p => p.stato === 'occupato_socio' || p.stato === 'socio_assente' || p.stato === 'socio_assente_lungo').length
-  const occupatiTransito = POSTI_DEMO.filter(p => p.stato === 'occupato_transito' || p.stato === 'occupato_affittuario').length
-  const inCantiere = POSTI_DEMO.filter(p => p.stato === 'in_cantiere').length
+  // Dati Donut Chart: Occupazione (LIVE)
+  const occupatiSocio = posti.filter(p => p.stato === 'occupato_socio' || p.stato === 'socio_assente' || p.stato === 'socio_assente_lungo').length
+  const occupatiTransito = posti.filter(p => p.stato === 'occupato_transito' || p.stato === 'occupato_affittuario').length
+  const inCantiere = posti.filter(p => p.stato === 'in_cantiere').length
 
   const occData = [
     { label: 'Soci', value: occupatiSocio, color: 'var(--accent)' },
@@ -35,7 +35,7 @@ export function ReportisticaPage() {
     { label: 'Liberi', value: postiLiberi, color: 'var(--green)' }
   ]
 
-  // Dati Bar Chart: Flussi settimanali (Simulati per la UI)
+  // Dati Bar Chart: Flussi settimanali (Simulati — in futuro da DB)
   const flowData = [
     { label: 'Lun', value: 4, secondaryValue: 2 },
     { label: 'Mar', value: 2, secondaryValue: 3 },
@@ -81,7 +81,7 @@ export function ReportisticaPage() {
         {/* Revenue Table Row */}
         <div className="report-card full-width">
           <h3>Dettaglio Fatturazione Transiti</h3>
-          <RevenueTable data={RICEVUTE_DEMO} />
+          <RevenueTable data={ricevute} />
         </div>
       </div>
     </>

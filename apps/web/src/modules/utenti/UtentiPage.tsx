@@ -2,12 +2,13 @@ import React, { useState } from 'react'
 import { TopBar } from '../../components/TopBar'
 import { UserTable } from './components/UserTable'
 import { UserForm } from './components/UserForm'
-import { UTENTI_SISTEMA_DEMO } from '@shared/demo-data'
+import { useGlobalState } from '../../store/GlobalState'
 import { SystemUser } from '@shared/types'
 import './UtentiPage.css'
 
 export function UtentiPage() {
-  const [utenti, setUtenti] = useState<SystemUser[]>(UTENTI_SISTEMA_DEMO)
+  const { utenti: utentiGlobali } = useGlobalState()
+  const [utenti, setUtenti] = useState<SystemUser[]>(utentiGlobali)
   const [showForm, setShowForm] = useState(false)
 
   const attivi = utenti.filter(u => u.stato === 'attivo').length

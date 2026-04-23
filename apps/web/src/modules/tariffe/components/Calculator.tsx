@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
-import { TARIFFE_DEMO, BARCHE_DEMO } from '@shared/demo-data'
+import { useGlobalState } from '../../../store/GlobalState'
 import { Tariff, Boat } from '@shared/types'
 
 interface CalcResult {
@@ -11,15 +11,15 @@ interface CalcResult {
   totale: number
 }
 
-function getTariffaDaLunghezza(lunghezza: number): Tariff {
-  const sorted = [...TARIFFE_DEMO].sort((a, b) => a.lunMax - b.lunMax)
+function getTariffaDaLunghezza(tariffe: any[], lunghezza: number) {
+  const sorted = [...tariffe].sort((a, b) => a.lunMax - b.lunMax)
   for (const t of sorted) {
     if (lunghezza <= t.lunMax) return t
   }
   return sorted[sorted.length - 1]
 }
 
-function calcola(lunghezza: number, dal: string, al: string, tariffaForzata: number, extra: number): CalcResult | null {
+function calcola(tariffe: any[], lunghezza: number, dal: string, al: string, tariffaForzata: number, extra: number): CalcResult | null {
   if (!dal || !al || lunghezza <= 0) return null
   const giorni = Math.max(0, Math.round((new Date(al).getTime() - new Date(dal).getTime()) / 86400000))
   if (giorni <= 0) return null
@@ -29,9 +29,9 @@ function calcola(lunghezza: number, dal: string, al: string, tariffaForzata: num
 
   if (tariffaForzata > 0) {
     tariffaGg = tariffaForzata
-    categoria = TARIFFE_DEMO.find(t => t.prezzoGiorno === tariffaForzata)?.categoria || 'Personalizzata'
+    categoria = tariffe.find(t => t.prezzoGiorno === tariffaForzata)?.categoria || 'Personalizzata'
   } else {
-    const t = getTariffaDaLunghezza(lunghezza)
+    const t = getTariffaDaLunghezza(tariffe, lunghezza)
     categoria = t.categoria
     tariffaGg = t.prezzoGiorno
   }
@@ -42,6 +42,7 @@ function calcola(lunghezza: number, dal: string, al: string, tariffaForzata: num
 }
 
 export function Calculator() {
+  const { tariffe, barche } = useGlobalState()
   const [nome, setNome] = useState('')
   const [matricola, setMatricola] = useState('')
   const [posto, setPosto] = useState('')
@@ -73,7 +74,7 @@ export function Calculator() {
   const handleNomeChange = (v: string) => {
     setNome(v)
     if (v.length >= 2) {
-      const found = BARCHE_DEMO.filter(b => b.nome.toLowerCase().includes(v.toLowerCase()))
+      const found = barche.filter(b => b.nome.toLowerCase().includes(v.toLowerCase()))
       setNomeSuggestions(found)
       setShowNomeSug(found.length > 0)
     } else {
@@ -84,7 +85,7 @@ export function Calculator() {
   const handleMatricolaChange = (v: string) => {
     setMatricola(v)
     if (v.length >= 2) {
-      const found = BARCHE_DEMO.filter(b => b.matricola.toLowerCase().includes(v.toLowerCase()))
+      const found = barche.filter(b => b.matricola.toLowerCase().includes(v.toLowerCase()))
       setMatricolaSuggestions(found)
       setShowMatricolaSug(found.length > 0)
     } else {
@@ -103,13 +104,14 @@ export function Calculator() {
 
   const result = useMemo(() =>
     calcola(
+      tariffe,
       parseFloat(lunghezza) || 0,
       dal,
       al,
       parseFloat(tariffaForzata) || 0,
       parseFloat(extra) || 0
     ),
-    [lunghezza, dal, al, tariffaForzata, extra]
+    [tariffe, lunghezza, dal, al, tariffaForzata, extra]
   )
 
   const nextNumero = '2026/0045'

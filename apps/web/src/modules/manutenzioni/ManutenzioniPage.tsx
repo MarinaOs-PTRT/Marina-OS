@@ -5,20 +5,20 @@ import { MaintenanceTable } from './components/MaintenanceTable'
 import { ReportTable } from './components/ReportTable'
 import { MaintenanceForm } from './components/MaintenanceForm'
 import { ReportForm } from './components/ReportForm'
-import { MANUTENZIONI_DEMO, SEGNALAZIONI_DEMO } from '@shared/demo-data'
-import { MaintenanceJob, Report } from '@shared/types'
+import { useGlobalState } from '../../store/GlobalState'
 import './ManutenzioniPage.css'
 
 type ActiveTab = 'subacquei' | 'segnalazioni'
 type StatoFilter = 'tutti' | 'dafare' | 'incorso' | 'completato' | 'urgente'
 
 export function ManutenzioniPage() {
+  const { manutenzioni, segnalazioni } = useGlobalState()
   const [activeTab, setActiveTab] = useState<ActiveTab>('subacquei')
   const [filtroStato, setFiltroStato] = useState<StatoFilter>('tutti')
   const [showForm, setShowForm] = useState(false)
 
   // Combine all items for KPI
-  const allItems = [...MANUTENZIONI_DEMO, ...SEGNALAZIONI_DEMO]
+  const allItems = [...manutenzioni, ...segnalazioni]
   const kpiUrgenti = allItems.filter(i => i.urgenza === 'urgente' && i.stato !== 'completato').length
   const kpiDaFare = allItems.filter(i => i.stato === 'dafare').length
   const kpiInCorso = allItems.filter(i => i.stato === 'incorso').length
@@ -26,20 +26,20 @@ export function ManutenzioniPage() {
 
   // Filtered data
   const filteredManutenzioni = useMemo(() => {
-    return MANUTENZIONI_DEMO.filter(m => {
+    return manutenzioni.filter(m => {
       if (filtroStato === 'tutti') return true
       if (filtroStato === 'urgente') return m.urgenza === 'urgente' && m.stato !== 'completato'
       return m.stato === filtroStato
     })
-  }, [filtroStato])
+  }, [manutenzioni, filtroStato])
 
   const filteredSegnalazioni = useMemo(() => {
-    return SEGNALAZIONI_DEMO.filter(s => {
+    return segnalazioni.filter(s => {
       if (filtroStato === 'tutti') return true
       if (filtroStato === 'urgente') return s.urgenza === 'urgente' && s.stato !== 'completato'
       return s.stato === filtroStato
     })
-  }, [filtroStato])
+  }, [segnalazioni, filtroStato])
 
   const handleNewItem = () => {
     setShowForm(!showForm)

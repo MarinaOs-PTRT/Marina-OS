@@ -1,6 +1,6 @@
 import React, { ReactNode, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { NOTIFICHE_DEMO } from '@shared/demo-data'
+import { useGlobalState } from '../store/GlobalState'
 import './TopBar.css'
 
 interface TopBarProps {
@@ -12,9 +12,10 @@ interface TopBarProps {
 export function TopBar({ title, subtitle, actions }: TopBarProps) {
   const [theme, setTheme] = useState<'light' | 'dark' | 'dark-blue'>('light')
   const navigate = useNavigate()
+  const { notifiche } = useGlobalState()
   
-  // Per la demo usiamo le notifiche non lette/nuove
-  const unreadCount = NOTIFICHE_DEMO.filter(n => n.stato === 'nuova').length
+  // Badge live: conta solo le notifiche in stato 'nuova'
+  const unreadCount = notifiche.filter(n => n.stato === 'nuova').length
 
   useEffect(() => {
     const savedTheme = (localStorage.getItem('marina-theme') as any) || 'light'

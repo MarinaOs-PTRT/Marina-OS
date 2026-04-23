@@ -1,15 +1,14 @@
 import React, { useState } from 'react'
 import { TopBar } from '../../components/TopBar'
-import { NOTIFICHE_DEMO } from '@shared/demo-data'
-import { SystemAlert } from '@shared/types'
+import { useGlobalState } from '../../store/GlobalState'
 import './NotifichePage.css'
 
 export function NotifichePage() {
-  const [notifiche, setNotifiche] = useState<SystemAlert[]>(NOTIFICHE_DEMO)
+  const { notifiche, markNotifica } = useGlobalState()
   const [filterCat, setFilterCat] = useState<string>('tutte')
 
   const handleMarkAs = (id: number, nuovoStato: 'letta' | 'risolta') => {
-    setNotifiche(prev => prev.map(n => n.id === id ? { ...n, stato: nuovoStato } : n))
+    markNotifica(id, nuovoStato)
   }
 
   const filtered = notifiche.filter(n => filterCat === 'tutte' || n.categoria === filterCat)

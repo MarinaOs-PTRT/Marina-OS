@@ -3,22 +3,23 @@ import { TopBar } from '../../components/TopBar'
 import { SociTable } from './components/SociTable'
 import { AuthTable } from './components/AuthTable'
 import { AuthForm } from './components/AuthForm'
-import { CLIENTI_DEMO, POSTI_DEMO, TITOLI_POSSESSO_DEMO, AUTORIZZAZIONI_DEMO } from '@shared/demo-data'
+import { useGlobalState } from '../../store/GlobalState'
 import { Authorization, AuthStatus } from '@shared/types'
 import './SociPage.css'
 
 type ActiveTab = 'soci' | 'attive' | 'storico'
 
 export function SociPage() {
+  const { clienti, posti, titoli, autorizzazioni: autorizzazioniGlobali } = useGlobalState()
   const [activeTab, setActiveTab] = useState<ActiveTab>('soci')
-  const [autorizzazioni, setAutorizzazioni] = useState<Authorization[]>(AUTORIZZAZIONI_DEMO)
+  const [autorizzazioni, setAutorizzazioni] = useState<Authorization[]>(autorizzazioniGlobali)
   const [showForm, setShowForm] = useState(false)
 
   // Calcola dati soci aggregati
   const sociAggregati = useMemo(() => {
-    return CLIENTI_DEMO.filter(c => c.tipo === 'so').map(socio => {
-      const titolo = TITOLI_POSSESSO_DEMO.find(t => t.clientId === socio.id)
-      const posto = POSTI_DEMO.find(b => b.id === titolo?.berthId)
+    return clienti.filter(c => c.tipo === 'so').map(socio => {
+      const titolo = titoli.find(t => t.clientId === socio.id)
+      const posto = posti.find(b => b.id === titolo?.berthId)
       const authAttiva = autorizzazioni.find(a => a.berthId === titolo?.berthId && a.stato === 'attiva')
 
       let statoPosto = 'Assente'

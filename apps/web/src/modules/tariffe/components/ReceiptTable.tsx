@@ -1,14 +1,15 @@
 import React from 'react'
-import { RICEVUTE_DEMO } from '@shared/demo-data'
+import { useGlobalState } from '../../../store/GlobalState'
 
 export function ReceiptTable() {
-  const totaleGiornata = RICEVUTE_DEMO.filter(r => r.data === '2026-04-22').reduce((acc, r) => acc + r.totale, 0)
+  const { ricevute } = useGlobalState()
+  const totaleGiornata = ricevute.filter(r => r.data === '2026-04-22').reduce((acc, r) => acc + r.totale, 0)
 
   return (
     <>
       <div className="ricevute-header">
         <h2>Ricevute Emesse — Oggi: € {totaleGiornata.toFixed(2)}</h2>
-        <span className="listino-note">{RICEVUTE_DEMO.length} ricevute totali</span>
+        <span className="listino-note">{ricevute.length} ricevute totali</span>
       </div>
       <table className="ricevute-table">
         <thead>
@@ -26,7 +27,7 @@ export function ReceiptTable() {
           </tr>
         </thead>
         <tbody>
-          {RICEVUTE_DEMO.map(r => (
+          {ricevute.map(r => (
             <tr key={r.numero}>
               <td className="num-ricevuta">{r.numero}</td>
               <td>{r.data}</td>
