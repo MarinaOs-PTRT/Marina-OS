@@ -55,16 +55,45 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
   const addMovimento = (m: Movement) => {
     setMovimenti(prev => [m, ...prev])
     
-    // Logica di Business: Aggiorna lo stato del posto barca in base al movimento
-    if (m.tipo === 'entrata') {
-      updatePosto(m.posto, { stato: m.scenario === 'socio' ? 'occupato_socio' : 'occupato_transito' })
-    } else if (m.tipo === 'uscita') {
-      updatePosto(m.posto, { stato: m.scenario === 'socio' ? 'socio_assente' : 'libero' })
+    // Logica di Business: Aggiorna lo stato del posto barca
+    if (m.posto && m.posto !== '—') {
+      if (m.tipo === 'entrata') {
+        const nuovoStato = m.scenario === 'socio' ? 'occupato_socio' as const : 'occupato_transito' as const
+        updateOrCreatePosto(m.posto, { stato: nuovoStato, barcaOra: m.nome })
+      } else if (m.tipo === 'uscita') {
+        const nuovoStato = m.scenario === 'socio' ? 'socio_assente' as const : 'libero' as const
+        updateOrCreatePosto(m.posto, { stato: nuovoStato, barcaOra: nuovoStato === 'libero' ? undefined : m.nome })
+      }
     }
   }
 
+  const updateOrCreatePosto = (id: string, updates: Partial<Berth>) => {
+    setPosti(prev => {
+      const exists = prev.find(p => p.id === id)
+      if (exists) {
+        // Aggiorna il posto esistente
+        return prev.map(p => p.id === id ? { ...p, ...updates } : p)
+      } else {
+        // Crea un nuovo posto al volo (transito in un posto non censito)
+        const pontile = id.split(' ')[0] || 'Transito'
+        const newBerth: Berth = {
+          id,
+          pontile: `Pontile ${pontile}`,
+          lato: 'Sinistro',
+          lunMax: 15,
+          larMax: 4.5,
+          profondita: 3.0,
+          categoria: 'Cat. III',
+          stato: 'libero',
+          ...updates
+        }
+        return [...prev, newBerth]
+      }
+    })
+  }
+
   const updatePosto = (id: string, updates: Partial<Berth>) => {
-    setPosti(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p))
+    updateOrCreatePosto(id, updates)
   }
 
   const addArrivo = (a: Arrival) => setArrivi(prev => [...prev, a])

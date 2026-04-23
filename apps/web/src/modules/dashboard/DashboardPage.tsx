@@ -8,13 +8,14 @@ import { QuickMovementPanel } from './components/QuickMovementPanel'
 import { useGlobalState } from '../../store/GlobalState'
 
 export function DashboardPage() {
-  const { barche, posti, movimenti } = useGlobalState()
+  const { posti, movimenti } = useGlobalState()
 
-  // Calcolo KPI reali dai dati globali
-  const barcheInPorto = barche.length
+  // Calcolo KPI LIVE dai posti barca (cambia in tempo reale!)
+  const postiOccupati = posti.filter(p => p.stato !== 'libero' && p.stato !== 'in_cantiere')
+  const barcheInPorto = postiOccupati.length
   const postiLiberi = posti.filter(p => p.stato === 'libero').length
-  const barcheTransito = barche.filter(b => b.stato === 'occupato_transito').length
-  const inCantiere = barche.filter(b => b.stato === 'in_cantiere').length
+  const barcheTransito = posti.filter(p => p.stato === 'occupato_transito').length
+  const inCantiere = posti.filter(p => p.stato === 'in_cantiere').length
   
   const movimentiOggi = movimenti.length
 
