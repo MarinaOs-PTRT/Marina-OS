@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BARCHE_DEMO, POSTI_DEMO } from '@shared/demo-data'
+import { useGlobalState } from '../store/GlobalState'
 import { BERTH_STATUS_COLOR, BERTH_STATUS_LABELS } from '@shared/constants'
 import { Boat, Berth } from '@shared/types'
 import './Omnibar.css'
@@ -21,6 +21,7 @@ interface OmnibarProps {
 }
 
 export function Omnibar({ onAction }: OmnibarProps) {
+  const { barche, posti } = useGlobalState()
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(0)
@@ -65,7 +66,7 @@ export function Omnibar({ onAction }: OmnibarProps) {
     const results: Suggestion[] = []
 
     // Search boats (by name or matricola)
-    BARCHE_DEMO.forEach(b => {
+    barche.forEach(b => {
       if (b.nome.toLowerCase().includes(q) || b.matricola.toLowerCase().includes(q)) {
         const isInside = b.stato === 'occupato_socio' || b.stato === 'occupato_transito' || b.stato === 'occupato_affittuario'
         results.push({
@@ -81,7 +82,7 @@ export function Omnibar({ onAction }: OmnibarProps) {
     })
 
     // Search berths (by id)
-    POSTI_DEMO.forEach(p => {
+    posti.forEach(p => {
       if (p.id.toLowerCase().includes(q)) {
         const isInside = p.stato === 'occupato_socio' || p.stato === 'occupato_transito' || p.stato === 'occupato_affittuario'
         results.push({

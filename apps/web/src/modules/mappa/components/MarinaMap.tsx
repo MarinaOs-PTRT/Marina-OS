@@ -44,35 +44,48 @@ export const MarinaMap = React.memo(function MarinaMap({ berths, onBerthSelect }
     const elementsWithId = mapContainerRef.current.querySelectorAll('[id]')
     const clickHandlers: { el: Element, handler: EventListener }[] = []
 
+    // Costruiamo una mappa veloce: svgId → Element SVG
+    const svgElementMap = new Map<string, Element>()
     elementsWithId.forEach(el => {
-      const idAttr = el.getAttribute('id')
-      if (!idAttr) return
+      const id = el.getAttribute('id')
+      if (id) svgElementMap.set(id, el)
+    })
 
-      // Mappiamo l'ID dell'SVG (es. "D_30") con l'ID del DB (es. "D 30")
-      const matchingBerth = berths.find(b => b.id.replace(' ', '_') === idAttr)
+    // Per ogni posto barca nel database, cerchiamo il corrispondente nell'SVG
+    berths.forEach(berth => {
+      // Generiamo tutti i possibili formati di ID per il match:
+      // "D 12" → "D_12"  |  "TW 3" → "TW3", "TW_3"  |  "FF 1" → "FF1", "FF_1"
+      const candidateIds = [
+        berth.id.replace(' ', '_'),                    // "D 12" → "D_12"
+        berth.id.replace(' ', ''),                     // "TW 3" → "TW3"  
+        berth.id,                                       // caso diretto
+      ]
 
-      if (matchingBerth) {
-        // È un posto barca censito! Applichiamo colore e interattività.
-        const color = STATUS_COLORS[matchingBerth.stato] || '#cbd5e1'
-        el.setAttribute('style', `fill: ${color}; cursor: pointer; transition: opacity 0.2s; pointer-events: all;`)
+      let matchedEl: Element | undefined
+      for (const cid of candidateIds) {
+        matchedEl = svgElementMap.get(cid)
+        if (matchedEl) break
+      }
 
-        // Aggiungo interattività base via DOM
-        el.addEventListener('mouseenter', () => el.setAttribute('opacity', '0.6'))
-        el.addEventListener('mouseleave', () => el.setAttribute('opacity', '1'))
+      if (matchedEl) {
+        // È un posto barca con elemento SVG! Applichiamo colore e interattività.
+        const color = STATUS_COLORS[berth.stato] || '#cbd5e1'
+        matchedEl.setAttribute('style', `fill: ${color}; cursor: pointer; transition: opacity 0.2s; pointer-events: all;`)
 
-        // Gestione del click
+        matchedEl.addEventListener('mouseenter', () => matchedEl!.setAttribute('opacity', '0.6'))
+        matchedEl.addEventListener('mouseleave', () => matchedEl!.setAttribute('opacity', '1'))
+
         const handler = (e: Event) => {
           e.stopPropagation()
           e.preventDefault()
-          onBerthSelect(matchingBerth)
+          onBerthSelect(berth)
         }
-        el.addEventListener('click', handler)
-        clickHandlers.push({ el, handler })
+        matchedEl.addEventListener('click', handler)
+        clickHandlers.push({ el: matchedEl, handler })
       }
     })
 
     return () => {
-      // Pulizia degli event listener al dismount
       clickHandlers.forEach(({ el, handler }) => {
         el.removeEventListener('click', handler)
       })

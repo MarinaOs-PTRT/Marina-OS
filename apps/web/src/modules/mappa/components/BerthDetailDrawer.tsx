@@ -1,6 +1,6 @@
 import React from 'react'
 import { Berth } from '@shared/types'
-import { CLIENTI_DEMO } from '@shared/demo-data'
+import { useGlobalState } from '../../../store/GlobalState'
 import { Badge } from '../../../components/Badge'
 import { BERTH_STATUS_LABELS } from '@shared/constants'
 
@@ -22,8 +22,9 @@ interface BerthDetailDrawerProps {
 }
 
 export function BerthDetailDrawer({ berth, onClose }: BerthDetailDrawerProps) {
+  const { clienti } = useGlobalState()
   // Trovo il socio proprietario se presente
-  const socio = berth.socioId ? CLIENTI_DEMO.find(c => c.id === berth.socioId) : null
+  const socio = berth.socioId ? clienti.find(c => c.id === berth.socioId) : null
 
   return (
     <div className="drawer-overlay" onClick={onClose}>

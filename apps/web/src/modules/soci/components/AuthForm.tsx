@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Authorization, Client, AuthType } from '@shared/types'
-import { TITOLI_POSSESSO_DEMO } from '@shared/demo-data'
+import { useGlobalState } from '../../../store/GlobalState'
 
 interface Props {
   onSubmit: (auth: Omit<Authorization, 'id'>) => void
@@ -9,6 +9,7 @@ interface Props {
 }
 
 export function AuthForm({ onSubmit, onClose, soci }: Props) {
+  const { titoli } = useGlobalState()
   const [socioId, setSocioId] = useState('')
   const [tipo, setTipo] = useState<AuthType>('affitto')
   const [beneficiario, setBeneficiario] = useState('')
@@ -24,7 +25,7 @@ export function AuthForm({ onSubmit, onClose, soci }: Props) {
     if (!socioId || !beneficiario || !barca || !dal || !al) return
 
     const sId = parseInt(socioId)
-    const titolo = TITOLI_POSSESSO_DEMO.find(t => t.clientId === sId)
+    const titolo = titoli.find(t => t.clientId === sId)
     if (!titolo) {
       alert("Il socio selezionato non ha un posto fisso assegnato.")
       return
