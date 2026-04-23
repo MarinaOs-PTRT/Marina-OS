@@ -6,7 +6,7 @@ export const CLIENTI_DEMO: Client[] = [
     id: 1, tipo: 'so', nome: 'Marco Ferretti', iniziali: 'MF', naz: 'Italiana', cf: 'FRRMRC75A01H501Z',
     tel: '+39 333 4521789', email: 'm.ferretti@email.it', indirizzo: 'Via Aurelia 45, Roma',
     docTipo: 'Carta d\'identità', docNum: 'AB1234567',
-    posto: 'D 1', pontile: 'Pontile Delta', catPosto: 'Cat. IV', dimMax: 'max 15,5m × 4,5m', azioni: '620'
+    posto: 'A 5', pontile: 'Pontile Delta', catPosto: 'Cat. IV', dimMax: 'max 15,5m × 4,5m', azioni: '620'
   },
   {
     id: 2, tipo: 'pf', nome: 'Luca Bianchi', iniziali: 'LB', naz: 'Italiana', cf: 'BNCLCU82B10F205X',
@@ -25,7 +25,7 @@ export const CLIENTI_DEMO: Client[] = [
     id: 4, tipo: 'so', nome: 'Giuseppe Ferri', iniziali: 'GF', naz: 'Italiana', cf: 'FRRGPP68C05H501K',
     tel: '+39 347 8821234', email: 'g.ferri@libero.it', indirizzo: 'Viale della Vittoria 8, Civitavecchia',
     docTipo: 'Carta d\'identità', docNum: 'CD9876543',
-    posto: 'D 14', pontile: 'Pontile Delta', catPosto: 'Cat. II', dimMax: 'max 9m × 3,25m', azioni: '310'
+    posto: 'C 8', pontile: 'Pontile Delta', catPosto: 'Cat. II', dimMax: 'max 9m × 3,25m', azioni: '310'
   },
   {
     id: 5, tipo: 'so', nome: 'Anna Conti', iniziali: 'AC', naz: 'Italiana', cf: 'CNTANN70D55H501P',
@@ -49,23 +49,23 @@ export const CLIENTI_DEMO: Client[] = [
 
 // ── BARCHE ──
 export const BARCHE_DEMO: Boat[] = [
-  { id: 1, clientId: 1, nome: 'Chaya', matricola: 'IT-RM-2847', tipo: 'Motore', lunghezza: 12.5, larghezza: 4.2, pescaggio: 1.8, posto: 'D 1', bandiera: 'Italia', stato: 'occupato_socio' },
-  { id: 2, clientId: 2, nome: 'S/V Tramontana', matricola: '247654321', tipo: 'Vela', lunghezza: 13.8, larghezza: 4.1, pescaggio: 1.9, posto: 'D 5', bandiera: 'Italia', stato: 'occupato_transito' },
+  { id: 1, clientId: 1, nome: 'Chaya', matricola: 'IT-RM-2847', tipo: 'Motore', lunghezza: 12.5, larghezza: 4.2, pescaggio: 1.8, posto: 'A 5', bandiera: 'Italia', stato: 'occupato_socio' },
+  { id: 2, clientId: 2, nome: 'S/V Tramontana', matricola: '247654321', tipo: 'Vela', lunghezza: 13.8, larghezza: 4.1, pescaggio: 1.9, posto: 'B 10', bandiera: 'Italia', stato: 'occupato_transito' },
   { id: 3, clientId: 3, nome: 'M/Y Neptune Dream', matricola: '123456789', tipo: 'Motore', lunghezza: 28, larghezza: 7.2, pescaggio: 2.1, posto: 'TW3', bandiera: 'Regno Unito', stato: 'occupato_affittuario' },
   { id: 4, clientId: 3, nome: 'Cat. Sole Mare', matricola: '247876543', tipo: 'Catamarano', lunghezza: 14.2, larghezza: 7.5, pescaggio: 1.1, bandiera: 'Francia', stato: 'libero' },
-  { id: 5, clientId: 4, nome: 'M/Y Albatros', matricola: '247123456', tipo: 'Motore', lunghezza: 10.5, larghezza: 3.4, pescaggio: 1.2, posto: 'D 14', bandiera: 'Italia', stato: 'occupato_socio' },
+  { id: 5, clientId: 4, nome: 'M/Y Albatros', matricola: '247123456', tipo: 'Motore', lunghezza: 10.5, larghezza: 3.4, pescaggio: 1.2, posto: 'C 8', bandiera: 'Italia', stato: 'occupato_socio' },
   { id: 6, clientId: 5, nome: 'M/Y Perseo', matricola: '247667788', tipo: 'Motore', lunghezza: 11.5, larghezza: 3.8, pescaggio: 1.5, posto: 'D 12', bandiera: 'Italia', stato: 'in_cantiere' }
 ]
 
 // ── POSTI BARCA (Berths) ──
 export const POSTI_DEMO: Berth[] = [
-  { id: 'D 1', pontile: 'Pontile Delta', lato: 'Sinistro', lunMax: 15.5, larMax: 4.5, profondita: 3.5, categoria: 'Cat. IV', stato: 'occupato_socio', barcaOra: 'Chaya', socioId: 1 },
-  { id: 'D 14', pontile: 'Pontile Delta', lato: 'Destro', lunMax: 9, larMax: 3.25, profondita: 2.5, categoria: 'Cat. II', stato: 'occupato_socio', barcaOra: 'M/Y Albatros', socioId: 4 },
+  { id: 'A 5', pontile: 'Pontile Alfa', lato: 'Sinistro', lunMax: 15.5, larMax: 4.5, profondita: 3.5, categoria: 'Cat. IV', stato: 'occupato_socio', barcaOra: 'Chaya', socioId: 1 },
+  { id: 'C 8', pontile: 'Pontile Delta', lato: 'Destro', lunMax: 9, larMax: 3.25, profondita: 2.5, categoria: 'Cat. II', stato: 'occupato_socio', barcaOra: 'M/Y Albatros', socioId: 4 },
   { id: 'D 12', pontile: 'Pontile Delta', lato: 'Sinistro', lunMax: 12, larMax: 4.0, profondita: 3.0, categoria: 'Cat. III', stato: 'in_cantiere', barcaOra: 'In cantiere (alaggio)', socioId: 5 },
   { id: 'D 7', pontile: 'Pontile Delta', lato: 'Destro', lunMax: 12, larMax: 4.0, profondita: 3.0, categoria: 'Cat. III', stato: 'occupato_affittuario', barcaOra: 'Affittuario: S/V Tramontana', socioId: 6 },
-  { id: 'D 20', pontile: 'Pontile Delta', lato: 'Sinistro', lunMax: 10, larMax: 3.5, profondita: 2.8, categoria: 'Cat. II', stato: 'socio_assente', barcaOra: 'Socio assente', socioId: 7 },
+  { id: 'A 12', pontile: 'Pontile Delta', lato: 'Sinistro', lunMax: 10, larMax: 3.5, profondita: 2.8, categoria: 'Cat. II', stato: 'socio_assente', barcaOra: 'Socio assente', socioId: 7 },
   { id: 'TW3', pontile: 'Transito West', lato: 'Destro', lunMax: 30, larMax: 8.0, profondita: 5.0, categoria: 'Cat. VII', stato: 'occupato_transito', barcaOra: 'M/Y Neptune Dream' },
-  { id: 'D 5', pontile: 'Pontile Delta', lato: 'Sinistro', lunMax: 15.5, larMax: 4.5, profondita: 3.5, categoria: 'Cat. IV', stato: 'occupato_transito', barcaOra: 'S/V Tramontana' },
+  { id: 'B 10', pontile: 'Pontile Alfa', lato: 'Sinistro', lunMax: 15.5, larMax: 4.5, profondita: 3.5, categoria: 'Cat. IV', stato: 'occupato_transito', barcaOra: 'S/V Tramontana' },
   { id: 'D 24', pontile: 'Pontile Delta', lato: 'Destro', lunMax: 15.5, larMax: 4.5, profondita: 3.5, categoria: 'Cat. IV', stato: 'libero' }
 ]
 
@@ -74,7 +74,7 @@ export const MOVIMENTI_DEMO: Movement[] = [
   { id: 1, ora: '07:30', nome: 'M/Y Neptune Dream', matricola: '123456789', tipo: 'entrata', posto: 'TW3', scenario: 'affittuario', auth: true, pagamento: 'Autorizzato', note: 'Arrivo da Napoli · autorizzazione verificata', operatore: { nome: 'Mario Rossi', ruolo: 'Operatore Torre', iniziali: 'MR' } },
   { id: 2, ora: '08:15', nome: 'M/Y Rex', matricola: '247881234', tipo: 'uscita', posto: 'D 22', scenario: 'socio', auth: false, pagamento: 'Titolo Attivo', note: 'Uscita temporanea', operatore: { nome: 'Mario Rossi', ruolo: 'Operatore Torre', iniziali: 'MR' } },
   { id: 3, ora: '09:30', nome: 'S/V Libeccio', matricola: '247999222', tipo: 'spostamento', posto: 'D 16', scenario: 'transito', auth: true, origine: 'D 4', destinazione: 'D 16', pagamento: 'Pagato', note: 'Spostamento richiesto', operatore: { nome: 'Lara Conti', ruolo: 'Operatore Torre', iniziali: 'LC' } },
-  { id: 4, ora: '09:51', nome: 'Chaya', matricola: 'IT-RM-2847', tipo: 'entrata', posto: 'D 1', scenario: 'transito', auth: false, pagamento: 'Da pagare', note: 'Primo arrivo', operatore: { nome: 'Mario Rossi', ruolo: 'Operatore Torre', iniziali: 'MR' } },
+  { id: 4, ora: '09:51', nome: 'Chaya', matricola: 'IT-RM-2847', tipo: 'entrata', posto: 'A 5', scenario: 'transito', auth: false, pagamento: 'Da pagare', note: 'Primo arrivo', operatore: { nome: 'Mario Rossi', ruolo: 'Operatore Torre', iniziali: 'MR' } },
   { id: 11, ora: '16:00', nome: 'M/Y Perseo', matricola: '247667788', tipo: 'cantiere', posto: 'D 3', scenario: 'socio', auth: false, origine: 'D 12', destinazione: 'D 3', pagamento: 'Titolo Attivo', note: 'Alaggio per manutenzione scafo', operatore: { nome: 'Giulia Marin', ruolo: 'Operatore Torre', iniziali: 'GM' } }
 ]
 
@@ -94,7 +94,7 @@ export const TARIFFE_DEMO: Tariff[] = [
 // ── RICEVUTE ──
 export const RICEVUTE_DEMO: Receipt[] = [
   { numero: '2026/0041', data: '2026-04-20', nomeBarca: 'M/Y Neptune Dream', matricola: '123456789', posto: 'TW3', periodo: '17/04/2026 – 20/04/2026', giorni: 3, categoria: 'Cat. VII', tariffa: 320, extra: 0,  totale: 960,  metodo: 'pos',      operatore: 'Mario Rossi' },
-  { numero: '2026/0042', data: '2026-04-21', nomeBarca: 'S/V Tramontana',    matricola: '247654321', posto: 'D 5', periodo: '18/04/2026 – 21/04/2026', giorni: 3, categoria: 'Cat. IV', tariffa: 90,  extra: 15, totale: 285,  metodo: 'contante', operatore: 'Lara Conti' },
+  { numero: '2026/0042', data: '2026-04-21', nomeBarca: 'S/V Tramontana',    matricola: '247654321', posto: 'B 10', periodo: '18/04/2026 – 21/04/2026', giorni: 3, categoria: 'Cat. IV', tariffa: 90,  extra: 15, totale: 285,  metodo: 'contante', operatore: 'Lara Conti' },
   { numero: '2026/0043', data: '2026-04-22', nomeBarca: 'S/V Libeccio',      matricola: '247999222', posto: 'D 16',periodo: '20/04/2026 – 22/04/2026', giorni: 2, categoria: 'Cat. IV', tariffa: 90,  extra: 0,  totale: 180,  metodo: 'pos',      operatore: 'Mario Rossi' },
   { numero: '2026/0044', data: '2026-04-22', nomeBarca: 'M/Y Rex',           matricola: '247881234', posto: 'D 22',periodo: '21/04/2026 – 22/04/2026', giorni: 1, categoria: 'Cat. II', tariffa: 50,  extra: 0,  totale: 50,   metodo: 'contante', operatore: 'Giulia Marin' },
 ]
@@ -160,6 +160,7 @@ export const NOTIFICHE_DEMO: SystemAlert[] = [
   { id: 4, titolo: 'Backup di Sistema', descrizione: 'Il backup settimanale � stato completato con successo.', urgenza: 'bassa', categoria: 'sistema', data: '2026-04-21 23:00', stato: 'letta' },
   { id: 5, titolo: 'Ospite in Arrivo', descrizione: 'Giacomo Neri � autorizzato sul posto D 12 da oggi.', urgenza: 'bassa', categoria: 'operativo', data: '2026-04-20 08:00', stato: 'risolta' }
 ]
+
 
 
 
