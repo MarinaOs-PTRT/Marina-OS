@@ -1,14 +1,22 @@
-import React, { useState, useEffect, useMemo } from 'react'
-import { Omnibar } from '../../../components/Omnibar'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { useGlobalState } from '../../../store/GlobalState'
-import { Berth, MovementScenario } from '@shared/types'
+import { Berth, Boat, MovementScenario } from '@shared/types'
+import { BERTH_STATUS_LABELS } from '@shared/constants'
 import './QuickMovementPanel.css'
 
 type PanelMode = 'movimento' | 'spostamento'
 
+// ── Tipo per suggerimenti ricerca ──
+type SearchSuggestion = {
+  label: string
+  sublabel: string
+  boat?: Boat
+  berth?: Berth
+}
+
 export function QuickMovementPanel() {
   const { 
-    posti, barche, clienti, ricevute, autorizzazioni,
+    posti, barche, clienti,
     registraEntrata, registraUscitaTemporanea, registraUscitaDefinitiva,
     registraSpostamento, registraCantiere, registraBunker,
     isPostoOccupato, checkPagamentoSaldato, checkAutorizzazione, getScenarioBarca
@@ -28,92 +36,152 @@ export function QuickMovementPanel() {
   const [postoOrigine, setPostoOrigine] = useState('')
   const [postoDestinazione, setPostoDestinazione] = useState('')
 
+  // ── Dropdown di ricerca ──
+  const [showNomeDropdown, setShowNomeDropdown] = useState(false)
+  const [showTargaDropdown, setShowTargaDropdown] = useState(false)
+  const [showPostoDropdown, setShowPostoDropdown] = useState(false)
+  const [selectedNomeIdx, setSelectedNomeIdx] = useState(0)
+  const [selectedTargaIdx, setSelectedTargaIdx] = useState(0)
+  const [selectedPostoIdx, setSelectedPostoIdx] = useState(0)
+  const nomeRef = useRef<HTMLDivElement>(null)
+  const targaRef = useRef<HTMLDivElement>(null)
+  const postoRef = useRef<HTMLDivElement>(null)
+
   // ── Modali ──
   const [showConfirmPopup, setShowConfirmPopup] = useState(false)
   const [confirmMessage, setConfirmMessage] = useState('')
   const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null)
   const [showWarning, setShowWarning] = useState(false)
   const [warningMessage, setWarningMessage] = useState('')
-
-  // ── Errori ──
   const [errorMessage, setErrorMessage] = useState('')
+
+  // ════════════════════════════════════════════
+  // RICERCA LIVE — 3 pilastri
+  // ════════════════════════════════════════════
+
+  const nomeSuggestions = useMemo<SearchSuggestion[]>(() => {
+    if (nome.trim().length < 1) return []
+    const q = nome.toLowerCase()
+    return barche
+      .filter(b => b.nome.toLowerCase().includes(q))
+      .slice(0, 5)
+      .map(b => ({ label: b.nome, sublabel: `${b.matricola} · Posto: ${b.posto || '—'}`, boat: b }))
+  }, [nome, barche])
+
+  const targaSuggestions = useMemo<SearchSuggestion[]>(() => {
+    if (targa.trim().length < 1) return []
+    const q = targa.toLowerCase()
+    return barche
+      .filter(b => b.matricola.toLowerCase().includes(q))
+      .slice(0, 5)
+      .map(b => ({ label: b.matricola, sublabel: `${b.nome} · Posto: ${b.posto || '—'}`, boat: b }))
+  }, [targa, barche])
+
+  const postoSuggestions = useMemo<SearchSuggestion[]>(() => {
+    if (posto.trim().length < 1) return []
+    const q = posto.toLowerCase()
+    return posti
+      .filter(p => p.id.toLowerCase().includes(q))
+      .slice(0, 5)
+      .map(p => {
+        const stato = BERTH_STATUS_LABELS[p.stato] || p.stato
+        return { label: p.id, sublabel: `${p.pontile} · ${stato}${p.barcaOra ? ` · ${p.barcaOra}` : ''}`, berth: p }
+      })
+  }, [posto, posti])
+
+  // Reset indici quando cambiano i suggerimenti
+  useEffect(() => { setSelectedNomeIdx(0) }, [nomeSuggestions])
+  useEffect(() => { setSelectedTargaIdx(0) }, [targaSuggestions])
+  useEffect(() => { setSelectedPostoIdx(0) }, [postoSuggestions])
+
+  // Chiudi dropdown cliccando fuori
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (nomeRef.current && !nomeRef.current.contains(e.target as Node)) setShowNomeDropdown(false)
+      if (targaRef.current && !targaRef.current.contains(e.target as Node)) setShowTargaDropdown(false)
+      if (postoRef.current && !postoRef.current.contains(e.target as Node)) setShowPostoDropdown(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  // ── Auto-compilazione da barca ──
+  const fillFromBoat = (b: Boat) => {
+    setNome(b.nome)
+    setTarga(b.matricola)
+    if (b.posto) setPosto(b.posto)
+    if (b.lunghezza) setLunghezza(String(b.lunghezza))
+    if (b.pescaggio) setPescaggio(String(b.pescaggio))
+    // Auto-detect socio
+    const scenario = getScenarioBarca(b.nome, b.matricola)
+    if (scenario === 'socio') {
+      setTipologia('socio')
+      setTipologiaLocked(true)
+    } else {
+      setTipologiaLocked(false)
+    }
+    setShowNomeDropdown(false)
+    setShowTargaDropdown(false)
+    setShowPostoDropdown(false)
+    setErrorMessage('')
+  }
+
+  // ── Auto-compilazione da posto ──
+  const fillFromBerth = (p: Berth) => {
+    setPosto(p.id)
+    // Se il posto è occupato, compila i dati barca
+    if (p.barcaOra && p.stato !== 'libero') {
+      const barca = barche.find(b => b.nome === p.barcaOra || b.posto === p.id)
+      if (barca) fillFromBoat(barca)
+    }
+    setShowPostoDropdown(false)
+    setErrorMessage('')
+  }
+
+  // ── Keyboard handler per dropdown ──
+  const makeKeyHandler = (
+    suggestions: SearchSuggestion[],
+    selectedIdx: number,
+    setSelectedIdx: (n: number) => void,
+    onSelect: (s: SearchSuggestion) => void,
+    setShowDropdown: (b: boolean) => void
+  ) => (e: React.KeyboardEvent) => {
+    if (suggestions.length === 0) return
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setSelectedIdx(Math.min(selectedIdx + 1, suggestions.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setSelectedIdx(Math.max(selectedIdx - 1, 0))
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      if (suggestions[selectedIdx]) onSelect(suggestions[selectedIdx])
+    } else if (e.key === 'Escape') {
+      setShowDropdown(false)
+    }
+  }
 
   // ────────────────────────────────────────────
   // Suggerimenti posti: SOLO per transiti, filtrati per dimensioni
   // ────────────────────────────────────────────
   const suggestedBerths = useMemo(() => {
     if (tipologia !== 'transito') return []
-
     let free = posti.filter(p => p.stato === 'libero')
-
-    // Filtra per lunghezza (se inserita)
     const lunVal = parseFloat(lunghezza)
-    if (!isNaN(lunVal) && lunVal > 0) {
-      free = free.filter(p => p.lunMax >= lunVal)
-    }
-
-    // Filtra per pescaggio (se inserito)
+    if (!isNaN(lunVal) && lunVal > 0) free = free.filter(p => p.lunMax >= lunVal)
     const pesVal = parseFloat(pescaggio)
-    if (!isNaN(pesVal) && pesVal > 0) {
-      free = free.filter(p => p.profondita >= pesVal)
-    }
-
+    if (!isNaN(pesVal) && pesVal > 0) free = free.filter(p => p.profondita >= pesVal)
     return free
   }, [posti, tipologia, lunghezza, pescaggio])
-
-  // ────────────────────────────────────────────
-  // Quando Omnibar seleziona un risultato
-  // ────────────────────────────────────────────
-  const handleOmnibarAction = (action: string, data?: any) => {
-    setErrorMessage('')
-
-    if (data?.original) {
-      const orig = data.original
-      setNome(orig.nome || '')
-      setTarga(orig.matricola || '')
-      setPosto(orig.posto || '')
-
-      // Auto-detect tipologia Socio
-      if (orig.nome || orig.matricola) {
-        const scenario = getScenarioBarca(orig.nome || '', orig.matricola || '')
-        if (scenario === 'socio') {
-          setTipologia('socio')
-          setTipologiaLocked(true)
-        } else {
-          setTipologiaLocked(false)
-        }
-      }
-
-      // Pre-fill lunghezza/pescaggio se disponibili
-      if (orig.lunghezza) setLunghezza(String(orig.lunghezza))
-      if (orig.pescaggio) setPescaggio(String(orig.pescaggio))
-
-    } else if (action === 'nuovo_transito') {
-      setNome(data?.query || '')
-      setTarga('')
-      setLunghezza('')
-      setPescaggio('')
-      setPosto('')
-      setTipologia('')
-      setTipologiaLocked(false)
-    }
-  }
 
   // ────────────────────────────────────────────
   // Pulizia form
   // ────────────────────────────────────────────
   const handleClear = () => {
-    setNome('')
-    setTarga('')
-    setPosto('')
-    setLunghezza('')
-    setPescaggio('')
-    setTipologia('')
-    setTipologiaLocked(false)
-    setPostoOrigine('')
-    setPostoDestinazione('')
-    setErrorMessage('')
-    setPanelMode('movimento')
+    setNome(''); setTarga(''); setPosto(''); setLunghezza(''); setPescaggio('')
+    setTipologia(''); setTipologiaLocked(false)
+    setPostoOrigine(''); setPostoDestinazione('')
+    setErrorMessage(''); setPanelMode('movimento')
   }
 
   // ────────────────────────────────────────────
@@ -123,9 +191,7 @@ export function QuickMovementPanel() {
     id: Date.now(),
     ora: new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
     data: new Date().toISOString().split('T')[0],
-    nome,
-    matricola: targa || 'N/D',
-    tipo,
+    nome, matricola: targa || 'N/D', tipo,
     posto: postoVal || '—',
     scenario: (tipologia || 'transito') as MovementScenario,
     auth: true,
@@ -133,24 +199,16 @@ export function QuickMovementPanel() {
     operatore: { nome: 'Operatore', ruolo: 'torre', iniziali: 'OP' }
   })
 
-  // ────────────────────────────────────────────
-  // Validazione comune
-  // ────────────────────────────────────────────
   const validateBase = (): boolean => {
     setErrorMessage('')
-
-    // Almeno nome O matricola
     if (!nome.trim() && !targa.trim()) {
       setErrorMessage('Inserisci almeno il nome o la matricola dell\'imbarcazione.')
       return false
     }
-
-    // Tipologia obbligatoria per non-soci
     if (!tipologia) {
       setErrorMessage('Seleziona la tipologia (Socio, Transito o Affittuario) prima di registrare il movimento.')
       return false
     }
-
     return true
   }
 
@@ -158,117 +216,95 @@ export function QuickMovementPanel() {
   // AZIONI PRINCIPALI
   // ════════════════════════════════════════════
 
-  /** Entrata (M-01) */
   const handleEntrata = () => {
     if (!validateBase()) return
-    if (!posto.trim()) {
-      setErrorMessage('Inserisci o seleziona un posto barca.')
-      return
-    }
-
-    // Verifica esclusività posto (il GlobalState la fa già, ma diamo feedback diretto)
-    if (isPostoOccupato(posto)) {
-      setErrorMessage(`Il posto ${posto} è già occupato. Scegli un posto differente.`)
-      return
-    }
-
-    // Avviso autorizzazione mancante per soci/affittuari
+    if (!posto.trim()) { setErrorMessage('Inserisci o seleziona un posto barca.'); return }
+    if (isPostoOccupato(posto)) { setErrorMessage(`Il posto ${posto} è già occupato. Scegli un posto differente.`); return }
     if (tipologia === 'socio' || tipologia === 'affittuario') {
       const authCheck = checkAutorizzazione(posto, nome)
       if (!authCheck.autorizzato) {
-        // Mostra avviso ma non blocca
         setWarningMessage(`⚠️ Attenzione: ${authCheck.motivo}\nL'assegnazione verrà comunque registrata.`)
         setShowWarning(true)
       }
     }
-
     const m = buildMovement('entrata', posto)
     const result = registraEntrata(m)
-    if (!result.ok) {
-      setErrorMessage(result.errore || 'Errore durante la registrazione.')
-      return
-    }
+    if (!result.ok) { setErrorMessage(result.errore || 'Errore durante la registrazione.'); return }
     handleClear()
   }
 
-  /** Uscita temporanea — Gita (M-02a) */
   const handleUscitaTemporanea = () => {
     if (!validateBase()) return
-    const m = buildMovement('uscita_temporanea', posto)
-    registraUscitaTemporanea(m)
+    registraUscitaTemporanea(buildMovement('uscita_temporanea', posto))
     handleClear()
   }
 
-  /** Uscita definitiva — Partenza (M-02b) */
   const handleUscitaDefinitiva = () => {
     if (!validateBase()) return
-
-    // Se Socio → popup conferma "Vuoi rimuovere titolo al proprietario?"
     if (tipologia === 'socio') {
       setConfirmMessage('Vuoi rimuovere titolo al proprietario?')
       setConfirmAction(() => () => {
-        const m = buildMovement('uscita_definitiva', posto)
-        registraUscitaDefinitiva(m)
-        handleClear()
-        setShowConfirmPopup(false)
+        registraUscitaDefinitiva(buildMovement('uscita_definitiva', posto))
+        handleClear(); setShowConfirmPopup(false)
       })
       setShowConfirmPopup(true)
       return
     }
-
-    // Se Transito → verifica pagamento
-    if (tipologia === 'transito') {
-      const pagato = checkPagamentoSaldato(nome)
-      if (!pagato) {
-        setWarningMessage('⚠️ Attenzione: non risulta emessa una ricevuta saldata per questa imbarcazione. L\'operatore può comunque confermare l\'uscita.')
-        setShowWarning(true)
-      }
+    if (tipologia === 'transito' && !checkPagamentoSaldato(nome)) {
+      setWarningMessage('⚠️ Attenzione: non risulta emessa una ricevuta saldata per questa imbarcazione. L\'operatore può comunque confermare l\'uscita.')
+      setShowWarning(true)
     }
-
-    const m = buildMovement('uscita_definitiva', posto)
-    registraUscitaDefinitiva(m)
+    registraUscitaDefinitiva(buildMovement('uscita_definitiva', posto))
     handleClear()
   }
 
-  /** Spostamento (M-03) */
   const handleSpostamento = () => {
     if (!validateBase()) return
-    if (!postoOrigine.trim() || !postoDestinazione.trim()) {
-      setErrorMessage('Inserisci sia il posto di origine che quello di destinazione.')
-      return
-    }
-
-    const m = buildMovement('spostamento', postoDestinazione)
-    const result = registraSpostamento(m, postoOrigine, postoDestinazione)
-    if (!result.ok) {
-      setErrorMessage(result.errore || 'Errore durante lo spostamento.')
-      return
-    }
+    if (!postoOrigine.trim() || !postoDestinazione.trim()) { setErrorMessage('Inserisci sia il posto di origine che quello di destinazione.'); return }
+    const result = registraSpostamento(buildMovement('spostamento', postoDestinazione), postoOrigine, postoDestinazione)
+    if (!result.ok) { setErrorMessage(result.errore || 'Errore durante lo spostamento.'); return }
     handleClear()
   }
 
-  /** Cantiere (M-05a) */
   const handleCantiere = () => {
     if (!validateBase()) return
-    if (!posto.trim()) {
-      setErrorMessage('Inserisci il posto da cui parte la barca (verso il cantiere).')
-      return
-    }
-    const m = buildMovement('cantiere', 'Cantiere')
-    registraCantiere(m, posto)
+    if (!posto.trim()) { setErrorMessage('Inserisci il posto da cui parte la barca (verso il cantiere).'); return }
+    registraCantiere(buildMovement('cantiere', 'Cantiere'), posto)
     handleClear()
   }
 
-  /** Bunker (M-05b) */
   const handleBunker = () => {
     if (!validateBase()) return
-    if (!posto.trim()) {
-      setErrorMessage('Inserisci il posto da cui parte la barca (verso il bunker).')
-      return
-    }
-    const m = buildMovement('bunker', 'Bunker')
-    registraBunker(m, posto)
+    if (!posto.trim()) { setErrorMessage('Inserisci il posto da cui parte la barca (verso il bunker).'); return }
+    registraBunker(buildMovement('bunker', 'Bunker'), posto)
     handleClear()
+  }
+
+  // ════════════════════════════════════════════
+  // RENDER HELPER: dropdown di ricerca
+  // ════════════════════════════════════════════
+  const renderDropdown = (
+    suggestions: SearchSuggestion[],
+    selectedIdx: number,
+    onSelect: (s: SearchSuggestion) => void,
+    setSelectedIdx: (n: number) => void
+  ) => {
+    if (suggestions.length === 0) return null
+    return (
+      <div className="search-dropdown">
+        {suggestions.map((s, i) => (
+          <div
+            key={i}
+            className={`search-dropdown-item ${i === selectedIdx ? 'selected' : ''}`}
+            onClick={() => onSelect(s)}
+            onMouseEnter={() => setSelectedIdx(i)}
+          >
+            <span className="search-item-label">{s.label}</span>
+            <span className="search-item-sublabel">{s.sublabel}</span>
+          </div>
+        ))}
+      </div>
+    )
   }
 
   // ════════════════════════════════════════════
@@ -276,10 +312,47 @@ export function QuickMovementPanel() {
   // ════════════════════════════════════════════
   return (
     <div className="quick-panel-container expanded">
-      {/* Search Bar */}
+      {/* ── 3 Campi di Ricerca ── */}
       <div className="quick-panel-header">
-        <div style={{ flex: 1 }}>
-          <Omnibar onAction={handleOmnibarAction} />
+        <div className="search-fields-grid">
+          {/* NOME */}
+          <div className="search-field-wrapper" ref={nomeRef}>
+            <label>🔍 Nome</label>
+            <input
+              type="text" value={nome}
+              onChange={e => { setNome(e.target.value); setShowNomeDropdown(true) }}
+              onFocus={() => { if (nome.length > 0) setShowNomeDropdown(true) }}
+              onKeyDown={makeKeyHandler(nomeSuggestions, selectedNomeIdx, setSelectedNomeIdx, s => { if (s.boat) fillFromBoat(s.boat) }, setShowNomeDropdown)}
+              placeholder="Es. Chaya"
+            />
+            {showNomeDropdown && renderDropdown(nomeSuggestions, selectedNomeIdx, s => { if (s.boat) fillFromBoat(s.boat) }, setSelectedNomeIdx)}
+          </div>
+
+          {/* MATRICOLA */}
+          <div className="search-field-wrapper" ref={targaRef}>
+            <label>🔍 Matricola</label>
+            <input
+              type="text" value={targa}
+              onChange={e => { setTarga(e.target.value); setShowTargaDropdown(true) }}
+              onFocus={() => { if (targa.length > 0) setShowTargaDropdown(true) }}
+              onKeyDown={makeKeyHandler(targaSuggestions, selectedTargaIdx, setSelectedTargaIdx, s => { if (s.boat) fillFromBoat(s.boat) }, setShowTargaDropdown)}
+              placeholder="Es. IT-RM-2847"
+            />
+            {showTargaDropdown && renderDropdown(targaSuggestions, selectedTargaIdx, s => { if (s.boat) fillFromBoat(s.boat) }, setSelectedTargaIdx)}
+          </div>
+
+          {/* POSTO */}
+          <div className="search-field-wrapper" ref={postoRef}>
+            <label>🔍 Posto</label>
+            <input
+              type="text" value={posto}
+              onChange={e => { setPosto(e.target.value); setShowPostoDropdown(true) }}
+              onFocus={() => { if (posto.length > 0) setShowPostoDropdown(true) }}
+              onKeyDown={makeKeyHandler(postoSuggestions, selectedPostoIdx, setSelectedPostoIdx, s => { if (s.berth) fillFromBerth(s.berth) }, setShowPostoDropdown)}
+              placeholder="Es. A 5"
+            />
+            {showPostoDropdown && renderDropdown(postoSuggestions, selectedPostoIdx, s => { if (s.berth) fillFromBerth(s.berth) }, setSelectedPostoIdx)}
+          </div>
         </div>
       </div>
 
@@ -290,139 +363,53 @@ export function QuickMovementPanel() {
           <p>Inserisci i dati e premi il comando desiderato per confermare.</p>
         </div>
 
-        {/* Error Banner */}
-        {errorMessage && (
-          <div className="panel-error-banner">
-            ❌ {errorMessage}
-          </div>
-        )}
+        {errorMessage && (<div className="panel-error-banner">❌ {errorMessage}</div>)}
 
         <div className="quick-panel-form">
-          {/* ── Dati Imbarcazione ── */}
-          <div className="form-grid">
-            <div className="form-group">
-              <label>Nome Imbarcazione</label>
-              <input 
-                type="text" 
-                value={nome} 
-                onChange={e => setNome(e.target.value)} 
-                placeholder="Es. Flying Dutchman"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Targa / Matricola</label>
-              <input 
-                type="text" 
-                value={targa} 
-                onChange={e => setTarga(e.target.value)} 
-                placeholder="Es. NL-12345"
-              />
-            </div>
-
+          {/* ── Dati Dimensionali ── */}
+          <div className="form-grid form-grid-2">
             <div className="form-group">
               <label>Lunghezza (m)</label>
-              <input 
-                type="number" 
-                step="0.1" 
-                value={lunghezza} 
-                onChange={e => setLunghezza(e.target.value)} 
-                placeholder="12.5"
-              />
+              <input type="number" step="0.1" value={lunghezza} onChange={e => setLunghezza(e.target.value)} placeholder="12.5" />
             </div>
-
             <div className="form-group">
               <label>Pescaggio (m)</label>
-              <input 
-                type="number" 
-                step="0.1" 
-                value={pescaggio} 
-                onChange={e => setPescaggio(e.target.value)} 
-                placeholder="2.1"
-              />
+              <input type="number" step="0.1" value={pescaggio} onChange={e => setPescaggio(e.target.value)} placeholder="2.1" />
             </div>
           </div>
 
-          {/* ── Tipologia (obbligatoria per non-soci) ── */}
+          {/* ── Tipologia ── */}
           <div className="tipologia-section">
             <label className="tipologia-label">Tipologia Imbarcazione</label>
             <div className="tipologia-buttons">
-              <button
-                type="button"
-                className={`tipologia-btn ${tipologia === 'socio' ? 'active socio' : ''}`}
+              <button type="button" className={`tipologia-btn ${tipologia === 'socio' ? 'active socio' : ''}`}
                 onClick={() => { if (!tipologiaLocked) setTipologia('socio') }}
-                disabled={tipologiaLocked && tipologia !== 'socio'}
-              >
-                🏅 Socio
-              </button>
-              <button
-                type="button"
-                className={`tipologia-btn ${tipologia === 'transito' ? 'active transito' : ''}`}
+                disabled={tipologiaLocked && tipologia !== 'socio'}>🏅 Socio</button>
+              <button type="button" className={`tipologia-btn ${tipologia === 'transito' ? 'active transito' : ''}`}
                 onClick={() => { if (!tipologiaLocked) setTipologia('transito') }}
-                disabled={tipologiaLocked && tipologia !== 'transito'}
-              >
-                ⛵ Transito
-              </button>
-              <button
-                type="button"
-                className={`tipologia-btn ${tipologia === 'affittuario' ? 'active affittuario' : ''}`}
+                disabled={tipologiaLocked && tipologia !== 'transito'}>⛵ Transito</button>
+              <button type="button" className={`tipologia-btn ${tipologia === 'affittuario' ? 'active affittuario' : ''}`}
                 onClick={() => { if (!tipologiaLocked) setTipologia('affittuario') }}
-                disabled={tipologiaLocked && tipologia !== 'affittuario'}
-              >
-                🏠 Affittuario
-              </button>
+                disabled={tipologiaLocked && tipologia !== 'affittuario'}>🏠 Affittuario</button>
             </div>
-            {tipologiaLocked && (
-              <span className="tipologia-locked-hint">🔒 Tipologia rilevata automaticamente</span>
-            )}
+            {tipologiaLocked && (<span className="tipologia-locked-hint">🔒 Tipologia rilevata automaticamente</span>)}
           </div>
 
           {/* ── Mode Tabs ── */}
           <div className="panel-mode-tabs">
-            <button
-              type="button"
-              className={`mode-tab ${panelMode === 'movimento' ? 'active' : ''}`}
-              onClick={() => setPanelMode('movimento')}
-            >
-              ⇅ Movimento
-            </button>
-            <button
-              type="button"
-              className={`mode-tab ${panelMode === 'spostamento' ? 'active' : ''}`}
-              onClick={() => setPanelMode('spostamento')}
-            >
-              ⇄ Spostamento
-            </button>
+            <button type="button" className={`mode-tab ${panelMode === 'movimento' ? 'active' : ''}`} onClick={() => setPanelMode('movimento')}>⇅ Movimento</button>
+            <button type="button" className={`mode-tab ${panelMode === 'spostamento' ? 'active' : ''}`} onClick={() => setPanelMode('spostamento')}>⇄ Spostamento</button>
           </div>
 
-          {/* ──────────────────────────────────── */}
-          {/* TAB: MOVIMENTO (Entrata / Uscita)   */}
-          {/* ──────────────────────────────────── */}
+          {/* ── TAB: MOVIMENTO ── */}
           {panelMode === 'movimento' && (
             <>
-              <div className="form-group" style={{ maxWidth: '320px', margin: '0 auto', width: '100%' }}>
-                <label>Posto Barca</label>
-                <input 
-                  type="text" 
-                  className="posto-input"
-                  value={posto} 
-                  onChange={e => setPosto(e.target.value)} 
-                  placeholder="Es. A 5"
-                />
-              </div>
-
-              {/* Suggerimenti posti — solo Transiti */}
               {tipologia === 'transito' && suggestedBerths.length > 0 && (
                 <div className="berths-suggestion-panel">
                   <h4>Posti Transito Disponibili ({suggestedBerths.length})</h4>
                   <div className="berths-grid">
                     {suggestedBerths.map(b => (
-                      <button 
-                        type="button"
-                        key={b.id} 
-                        className={`berth-chip ${posto === b.id ? 'selected' : ''}`}
-                        onClick={() => setPosto(b.id)}
-                      >
+                      <button type="button" key={b.id} className={`berth-chip ${posto === b.id ? 'selected' : ''}`} onClick={() => setPosto(b.id)}>
                         {b.id} <span className="berth-chip-dim">({b.lunMax}m)</span>
                       </button>
                     ))}
@@ -430,84 +417,50 @@ export function QuickMovementPanel() {
                 </div>
               )}
 
-              {/* Zone Speciali */}
               <div className="zone-speciali-section">
                 <h4 className="zone-speciali-title">Zone Speciali</h4>
                 <div className="zone-speciali-buttons">
-                  <button type="button" className="btn btn-cantiere" onClick={handleCantiere}>
-                    ⚙ Cantiere
-                  </button>
-                  <button type="button" className="btn btn-bunker" onClick={handleBunker}>
-                    ⛽ Bunker
-                  </button>
+                  <button type="button" className="btn btn-cantiere" onClick={handleCantiere}>⚙ Cantiere</button>
+                  <button type="button" className="btn btn-bunker" onClick={handleBunker}>⛽ Bunker</button>
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="quick-panel-actions">
                 <button type="button" className="btn btn-outline" onClick={handleClear}>Pulisci</button>
                 <div className="action-buttons-group">
-                  <button type="button" className="btn btn-mode-uscita" onClick={handleUscitaTemporanea}>
-                    ↓ Uscita
-                  </button>
-                  <button type="button" className="btn btn-mode-uscita-def" onClick={handleUscitaDefinitiva}>
-                    ⏏ Uscita Definitiva
-                  </button>
-                  <button type="button" className="btn btn-mode-entrata" onClick={handleEntrata}>
-                    ↑ Entrata
-                  </button>
+                  <button type="button" className="btn btn-mode-uscita" onClick={handleUscitaTemporanea}>↓ Uscita</button>
+                  <button type="button" className="btn btn-mode-uscita-def" onClick={handleUscitaDefinitiva}>⏏ Uscita Definitiva</button>
+                  <button type="button" className="btn btn-mode-entrata" onClick={handleEntrata}>↑ Entrata</button>
                 </div>
               </div>
             </>
           )}
 
-          {/* ──────────────────────────────────── */}
-          {/* TAB: SPOSTAMENTO                    */}
-          {/* ──────────────────────────────────── */}
+          {/* ── TAB: SPOSTAMENTO ── */}
           {panelMode === 'spostamento' && (
             <>
               <div className="spostamento-grid">
                 <div className="form-group">
                   <label>Posto di Origine</label>
-                  <input
-                    type="text"
-                    className="posto-input"
-                    value={postoOrigine}
-                    onChange={e => setPostoOrigine(e.target.value)}
-                    placeholder="Es. A 5"
-                  />
+                  <input type="text" className="posto-input" value={postoOrigine} onChange={e => setPostoOrigine(e.target.value)} placeholder="Es. A 5" />
                 </div>
                 <div className="spostamento-arrow">→</div>
                 <div className="form-group">
                   <label>Posto di Destinazione</label>
-                  <input
-                    type="text"
-                    className="posto-input"
-                    value={postoDestinazione}
-                    onChange={e => setPostoDestinazione(e.target.value)}
-                    placeholder="Es. B 10"
-                  />
+                  <input type="text" className="posto-input" value={postoDestinazione} onChange={e => setPostoDestinazione(e.target.value)} placeholder="Es. B 10" />
                 </div>
               </div>
-
-              <div className="spostamento-info">
-                ⚠️ Lo spostamento richiede sempre l'autorizzazione del proprietario del posto di destinazione.
-              </div>
-
+              <div className="spostamento-info">⚠️ Lo spostamento richiede sempre l'autorizzazione del proprietario del posto di destinazione.</div>
               <div className="quick-panel-actions">
                 <button type="button" className="btn btn-outline" onClick={handleClear}>Pulisci</button>
-                <button type="button" className="btn btn-mode-spostamento" onClick={handleSpostamento}>
-                  ⇄ Conferma Spostamento
-                </button>
+                <button type="button" className="btn btn-mode-spostamento" onClick={handleSpostamento}>⇄ Conferma Spostamento</button>
               </div>
             </>
           )}
         </div>
       </div>
 
-      {/* ──────────────────────────────────── */}
-      {/* POPUP CONFERMA (Rimozione titolo)   */}
-      {/* ──────────────────────────────────── */}
+      {/* POPUP CONFERMA */}
       {showConfirmPopup && (
         <div className="modal-overlay" onClick={() => setShowConfirmPopup(false)}>
           <div className="modal-box" onClick={e => e.stopPropagation()}>
@@ -522,9 +475,7 @@ export function QuickMovementPanel() {
         </div>
       )}
 
-      {/* ──────────────────────────────────── */}
-      {/* AVVISO WARNING (pagamento, auth)    */}
-      {/* ──────────────────────────────────── */}
+      {/* AVVISO WARNING */}
       {showWarning && (
         <div className="modal-overlay" onClick={() => setShowWarning(false)}>
           <div className="modal-box warning" onClick={e => e.stopPropagation()}>

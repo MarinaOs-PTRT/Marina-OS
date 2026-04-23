@@ -67,11 +67,102 @@
 }
 
 .quick-panel-header {
-  display: flex;
-  gap: var(--space-md);
-  align-items: center;
   padding: var(--space-lg);
   background: var(--bg2);
+}
+
+/* ── 3 Search Fields Grid ── */
+.search-fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--space-md);
+}
+
+.search-field-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.search-field-wrapper label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+.search-field-wrapper input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  text-align: center;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.search-field-wrapper input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+/* ── Search Dropdown ── */
+.search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: var(--bg2, #1e293b);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  z-index: 100;
+  overflow: hidden;
+  animation: dropIn 0.15s ease;
+}
+
+@keyframes dropIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.search-dropdown-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: background 0.1s;
+}
+
+.search-dropdown-item:hover,
+.search-dropdown-item.selected {
+  background: var(--accent-light, rgba(56, 189, 248, 0.12));
+}
+
+.search-item-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.search-item-sublabel {
+  font-size: 0.75rem;
+  color: var(--text3);
+}
+
+/* ── Form grid variant ── */
+.form-grid-2 {
+  grid-template-columns: 1fr 1fr;
 }
 
 .quick-panel-body {

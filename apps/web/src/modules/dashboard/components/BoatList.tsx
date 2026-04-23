@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Card } from '../../../components/Card'
 import { Badge } from '../../../components/Badge'
-import { Omnibar } from '../../../components/Omnibar'
 import { useGlobalState } from '../../../store/GlobalState'
 import { BERTH_STATUS_COLOR, BERTH_STATUS_LABELS } from '@shared/constants'
 
