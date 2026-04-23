@@ -102,6 +102,7 @@ export interface Boat {
   numRegistro?: string
   posto?: string
   stato?: BerthStatus
+  registrazioneCompleta?: boolean
 }
 
 export interface Berth {

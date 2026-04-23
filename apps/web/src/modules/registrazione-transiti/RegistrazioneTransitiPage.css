@@ -1,0 +1,268 @@
+.reg-transiti-page {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* ── Progress Bar ── */
+.reg-progress {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: var(--space-xl);
+  padding: var(--space-md);
+}
+
+.reg-progress-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 24px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text3);
+  background: var(--bg3);
+  transition: all 0.2s;
+}
+
+.reg-progress-step.active {
+  color: var(--text2);
+}
+
+.reg-progress-step.current {
+  background: var(--accent);
+  color: white;
+}
+
+.reg-step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* ── Search State (Step 0) ── */
+.reg-search-state {
+  text-align: center;
+  padding: var(--space-xl) 0;
+}
+
+.reg-search-icon {
+  font-size: 3.5rem;
+  margin-bottom: var(--space-md);
+}
+
+.reg-search-state h2 {
+  font-family: var(--font-display);
+  color: var(--text);
+  margin: 0 0 8px 0;
+}
+
+.reg-search-state p {
+  color: var(--text2);
+  margin: 0 0 var(--space-xl) 0;
+}
+
+.reg-omnibar-wrap {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* ── Card ── */
+.reg-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow);
+}
+
+.reg-card h2 {
+  font-family: var(--font-display);
+  color: var(--text);
+  margin: 0 0 var(--space-lg) 0;
+  font-size: 1.3rem;
+}
+
+/* ── Info / Error banners ── */
+.reg-info-banner {
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: var(--teal);
+  padding: 10px 16px;
+  border-radius: var(--radius-md, 8px);
+  font-size: 0.85rem;
+  margin-bottom: var(--space-lg);
+}
+
+.reg-error {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: var(--red, #ef4444);
+  padding: 10px 16px;
+  border-radius: var(--radius-md, 8px);
+  font-size: 0.88rem;
+  font-weight: 500;
+  margin-bottom: var(--space-md);
+  animation: shake 0.3s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+/* ── Tipo cliente row ── */
+.reg-tipo-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: var(--space-lg);
+}
+
+/* ── Form Grid ── */
+.reg-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.reg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.reg-field.full {
+  grid-column: 1 / -1;
+}
+
+.reg-field label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.reg-field input,
+.reg-field select {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 8px);
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 0.92rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.reg-field input:focus,
+.reg-field select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+.reg-input-disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background: var(--bg3) !important;
+}
+
+/* ── Tariffa Preview ── */
+.reg-tariffa-preview {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: var(--green, #10b981);
+  padding: 10px 16px;
+  border-radius: var(--radius-md, 8px);
+  font-size: 0.88rem;
+  text-align: center;
+  margin-bottom: var(--space-lg);
+}
+
+/* ── Payment Layout ── */
+.reg-payment-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-xl);
+  margin-bottom: var(--space-lg);
+}
+
+.reg-payment-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.reg-payment-right h3 {
+  margin: 0 0 var(--space-md) 0;
+  font-family: var(--font-display);
+  color: var(--text);
+  font-size: 1.1rem;
+}
+
+.reg-receipt-empty {
+  text-align: center;
+  padding: var(--space-xl);
+  color: var(--text3);
+  font-size: 0.88rem;
+}
+
+/* ── Actions ── */
+.reg-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border);
+}
+
+/* ── Success ── */
+.reg-success {
+  text-align: center;
+}
+
+.reg-success-icon {
+  font-size: 3rem;
+  margin-bottom: var(--space-md);
+}
+
+.reg-success h2 {
+  color: var(--green, #10b981);
+}
+
+.reg-success p {
+  color: var(--text2);
+  font-size: 0.95rem;
+}
+
+.reg-success-total {
+  font-size: 1.1rem;
+  margin-top: var(--space-md);
+}
+
+.reg-success .reg-actions {
+  justify-content: center;
+}
+
+/* ── Print ── */
+@media print {
+  body * { visibility: hidden; }
+  #print-receipt, #print-receipt * { visibility: visible; }
+  #print-receipt {
+    position: absolute;
+    left: 0; top: 0;
+    width: 100%;
+    background: white;
+    color: black;
+    padding: 20px;
+  }
+}

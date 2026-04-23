@@ -41,6 +41,12 @@ interface GlobalState {
   registraCantiere: (m: Movement, postoOrigine: string) => void
   registraBunker: (m: Movement, postoOrigine: string) => void
 
+  // CRUD
+  addCliente: (c: Client) => void
+  addBarca: (b: Boat) => void
+  updateBarca: (id: number, updates: Partial<Boat>) => void
+  addRicevuta: (r: Receipt) => void
+
   // Helper di verifica
   isPostoOccupato: (postoId: string) => boolean
   checkPagamentoSaldato: (nomeBarca: string) => boolean
@@ -330,6 +336,20 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     updateOrCreatePosto(id, updates)
   }
 
+  // ════════════════════════════════════════════
+  // CRUD — Registrazione Transiti
+  // ════════════════════════════════════════════
+
+  const addCliente = (c: Client) => setClienti(prev => [...prev, c])
+
+  const addBarca = (b: Boat) => setBarche(prev => [...prev, b])
+
+  const updateBarca = (id: number, updates: Partial<Boat>) => {
+    setBarche(prev => prev.map(b => b.id === id ? { ...b, ...updates } : b))
+  }
+
+  const addRicevuta = (r: Receipt) => setRicevute(prev => [...prev, r])
+
   const addArrivo = (a: Arrival) => setArrivi(prev => [...prev, a])
   
   const resolveArrivo = (id: number) => {
@@ -345,6 +365,7 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
       clienti, barche, posti, movimenti, tariffe, manutenzioni,
       segnalazioni, ricevute, arrivi, titoli, autorizzazioni, utenti, notifiche,
       addMovimento, updatePosto, addArrivo, resolveArrivo, markNotifica,
+      addCliente, addBarca, updateBarca, addRicevuta,
       registraEntrata, registraUscitaTemporanea, registraUscitaDefinitiva,
       registraSpostamento, registraCantiere, registraBunker,
       isPostoOccupato, checkPagamentoSaldato, checkAutorizzazione, getScenarioBarca

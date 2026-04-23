@@ -76,7 +76,7 @@ export const SCENARIO_LABELS: Record<string, string> = {
 
 export const MODULE_NAV = [
   { path: '/dashboard',    label: 'Dashboard Torre',           icon: '🏢', role: 'torre' },
-  { path: '/movimento',    label: 'Registra Movimento',        icon: '⇅',  role: 'torre' },
+  { path: '/registrazione-transiti', label: 'Registrazione Transiti', icon: '📋', role: 'torre' },
   { path: '/registro',     label: 'Registro Movimenti',        icon: '📋', role: 'torre' },
   { path: '/mappa',        label: 'Mappa Porto',               icon: '🗺️', role: 'torre' },
   { path: '/arrivi',       label: 'Arrivi Previsti',           icon: '⚓', role: 'torre' },

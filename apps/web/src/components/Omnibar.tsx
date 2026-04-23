@@ -12,6 +12,7 @@ type Suggestion = {
   subtitle: string
   status: string
   isInside: boolean
+  needsRegistration: boolean
   original?: Boat | Berth
   query?: string
 }
@@ -69,6 +70,7 @@ export function Omnibar({ onAction }: OmnibarProps) {
     barche.forEach(b => {
       if (b.nome.toLowerCase().includes(q) || b.matricola.toLowerCase().includes(q)) {
         const isInside = b.stato === 'occupato_socio' || b.stato === 'occupato_transito' || b.stato === 'occupato_affittuario'
+        const needsReg = b.stato === 'occupato_transito' && !b.registrazioneCompleta
         results.push({
           type: 'boat',
           id: b.id,
@@ -76,6 +78,7 @@ export function Omnibar({ onAction }: OmnibarProps) {
           subtitle: `${b.matricola} · Posto: ${b.posto || 'Nessuno'}`,
           status: b.stato || 'libero',
           isInside,
+          needsRegistration: needsReg,
           original: b
         })
       }
@@ -92,6 +95,7 @@ export function Omnibar({ onAction }: OmnibarProps) {
           subtitle: `${p.pontile} · ${p.categoria}`,
           status: p.stato,
           isInside,
+          needsRegistration: false,
           original: p
         })
       }
@@ -106,6 +110,7 @@ export function Omnibar({ onAction }: OmnibarProps) {
         subtitle: 'Registra una nuova imbarcazione non censita',
         status: 'libero',
         isInside: false,
+        needsRegistration: false,
         query: query
       })
     }
@@ -189,7 +194,9 @@ export function Omnibar({ onAction }: OmnibarProps) {
                 <div className="omnibar-item-subtitle">{item.subtitle}</div>
               </div>
               <div className="omnibar-item-action">
-                {item.type === 'new_transit' ? (
+                {item.needsRegistration ? (
+                  <span className="omnibar-action-pill pill-red">⚠ Da completare</span>
+                ) : item.type === 'new_transit' ? (
                   <span className="omnibar-action-pill pill-green">Registra Transito</span>
                 ) : item.isInside ? (
                   <span className="omnibar-action-pill pill-amber">Registra Uscita ↓</span>

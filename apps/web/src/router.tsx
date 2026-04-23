@@ -2,7 +2,7 @@ import React from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppLayout } from './layouts/AppLayout'
 import { DashboardPage } from './modules/dashboard/DashboardPage'
-import { MovimentoPage } from './modules/movimento/MovimentoPage'
+import { RegistrazioneTransitiPage } from './modules/registrazione-transiti/RegistrazioneTransitiPage'
 import { RegistroPage } from './modules/registro/RegistroPage'
 import { ClientiPage } from './modules/clienti/ClientiPage'
 import { MappaPage } from './modules/mappa/MappaPage'
@@ -29,8 +29,8 @@ export const router = createBrowserRouter([
         element: <DashboardPage />
       },
       {
-        path: 'movimento',
-        element: <MovimentoPage />
+        path: 'registrazione-transiti',
+        element: <RegistrazioneTransitiPage />
       },
       {
         path: 'registro',
