@@ -21,7 +21,7 @@ export function BoatList() {
   // Si considerano "in porto" solo le barche con un posto assegnato E occupato.
   // Barche senza posto o con posto 'libero' non compaiono in BoatList (sono fuori).
   const barcheInPorto = barcheConPosto.filter(b =>
-    b.statoDerivato && b.statoDerivato !== 'libero' && b.statoDerivato !== 'manutenzione'
+    b.statoDerivato && b.statoDerivato !== 'libero' && b.statoDerivato !== 'in_cantiere'
   )
 
   const barcheFiltrate = barcheInPorto
