@@ -43,7 +43,7 @@ export const CLIENTI_DEMO: Client[] = [
     id: 7, tipo: 'so', nome: 'Francesca Landi', iniziali: 'FL', naz: 'Italiana', cf: 'LNDFNC85P65H501Z',
     tel: '+39 338 9900112', email: 'flandi@email.com', indirizzo: 'Via Cassia 118, Roma',
     docTipo: 'Passaporto', docNum: 'ZC4490012',
-    posto: 'G 8', pontile: 'Pontile Delta', catPosto: 'Cat. II', dimMax: 'max 10m × 3,5m', azioni: '340'
+    posto: 'C 25', pontile: 'Pontile Charlie', catPosto: 'Cat. III', dimMax: 'max 12m × 4,0m', azioni: '340'
   }
 ]
 
@@ -58,25 +58,147 @@ export const BARCHE_DEMO: Boat[] = [
   { id: 5, clientId: 4, nome: 'M/Y Albatros', matricola: '247123456', tipo: 'Motore', lunghezza: 10.5, larghezza: 3.4, pescaggio: 1.2, posto: 'C 8', bandiera: 'Italia' },
   { id: 6, clientId: 5, nome: 'M/Y Perseo', matricola: '247667788', tipo: 'Motore', lunghezza: 11.5, larghezza: 3.8, pescaggio: 1.5, posto: 'D 12', bandiera: 'Italia' },
   { id: 7, clientId: 6, nome: 'S/V Mistral', matricola: 'IT-NA-1122', tipo: 'Vela', lunghezza: 11.0, larghezza: 3.6, pescaggio: 1.7, posto: 'D 7', bandiera: 'Italia' },
-  { id: 8, clientId: 7, nome: 'M/Y Rex', matricola: '247881234', tipo: 'Motore', lunghezza: 9.5, larghezza: 3.2, pescaggio: 1.3, posto: 'G 8', bandiera: 'Italia' }
+  { id: 8, clientId: 7, nome: 'M/Y Rex', matricola: '247881234', tipo: 'Motore', lunghezza: 9.5, larghezza: 3.2, pescaggio: 1.3, posto: 'C 25', bandiera: 'Italia' }
 ]
 
 // ── POSTI BARCA (Berths) ──
+// Fonte: ispezione SVG `apps/web/src/assets/mappaPtrt.svg` → 149 posti reali.
+// Pontili disegnati come interattivi: A (26), B (36), C (28), D (32),
+// Frangiflutti FF100-FF113 (14), FF1-FF3 (3), Torre TW1-TW10 (10).
+// Lunghezze assegnate in modo plausibile e COERENTE con TARIFFE_DEMO (Cat. I-IX).
+// I pontili NATO (eco, foxtrot, golf, hotel, ...) esistono come rettangoli
+// strutturali nel SVG ma non hanno posti interattivi → NON popolati qui.
+
+// Helper: genera un array di posti con pattern ricorrente.
+// Gli ID nell'SVG sono "B_1","D_12","TW3","FF100". Il componente MarinaMap
+// ha già fallback che riconosce anche "B 1" / "B_1" / "B1". Per coerenza
+// interna usiamo il formato "X N" con spazio (come Berth.id nelle autorizzazioni).
+function genBerths(
+  prefix: string,
+  pontileNome: string,
+  count: number,
+  template: (i: number) => Omit<Berth, 'id' | 'pontile'>,
+  options?: { idStyle?: 'space' | 'compact'; startIndex?: number }
+): Berth[] {
+  const idStyle = options?.idStyle ?? 'space'
+  const start = options?.startIndex ?? 1
+  const out: Berth[] = []
+  for (let n = 0; n < count; n++) {
+    const i = start + n
+    const id = idStyle === 'space' ? `${prefix} ${i}` : `${prefix}${i}`
+    out.push({ id, pontile: pontileNome, ...template(n) })
+  }
+  return out
+}
+
+// Pattern base pontili A/B/C/D: lato alternato sinistro/destro per coppie.
+const latoByIndex = (i: number): 'Sinistro' | 'Destro' => (i % 2 === 0 ? 'Sinistro' : 'Destro')
+
+// Posti manualmente "occupati" per conservare i link con barche/clienti demo.
+// Gli altri saranno tutti 'libero' (stato di partenza realistico).
+const POSTI_OCCUPATI_OVERRIDE: Record<string, Partial<Berth>> = {
+  'A 5':  { stato: 'occupato_socio',        barcaOra: 'Chaya',             socioId: 1 },
+  'B 10': { stato: 'occupato_transito',     barcaOra: 'S/V Tramontana' },
+  'C 8':  { stato: 'occupato_socio',        barcaOra: 'M/Y Albatros',      socioId: 4 },
+  'D 7':  { stato: 'occupato_affittuario',  barcaOra: 'S/V Mistral',       socioId: 6 },
+  'D 12': { stato: 'in_cantiere',           barcaOra: 'In cantiere (alaggio)', socioId: 5 },
+  'TW3':  { stato: 'occupato_transito',     barcaOra: 'M/Y Neptune Dream' },
+  'C 25': { stato: 'socio_assente',         barcaOra: undefined,           socioId: 7 },
+}
+
+function applyOverride(b: Berth): Berth {
+  const ov = POSTI_OCCUPATI_OVERRIDE[b.id]
+  return ov ? { ...b, ...ov } : b
+}
+
+// Pontile B (36 posti) — lunghezze 11-16m miste, Cat. III/IV
+const POSTI_B: Berth[] = genBerths('B', 'Pontile Bravo', 36, (n) => {
+  // Cicla Cat.III (12m) / Cat.IV (15.5m) per varietà
+  const cat4 = n % 3 === 0
+  return {
+    lato: latoByIndex(n),
+    lunMax: cat4 ? 15.5 : 12.0,
+    larMax: cat4 ? 4.5 : 4.0,
+    profondita: cat4 ? 3.5 : 3.0,
+    categoria: cat4 ? 'Cat. IV' : 'Cat. III',
+    stato: 'libero',
+  }
+})
+
+// Pontile A (26 posti) — lunghezze miste 10-15.5m, Cat. II/III/IV
+const POSTI_A: Berth[] = genBerths('A', 'Pontile Alfa', 26, (n) => {
+  const mod = n % 3
+  const cat = mod === 0 ? 'Cat. IV' : mod === 1 ? 'Cat. III' : 'Cat. II'
+  const lun = mod === 0 ? 15.5 : mod === 1 ? 12.0 : 10.0
+  const lar = mod === 0 ? 4.5  : mod === 1 ? 4.0  : 3.5
+  const pro = mod === 0 ? 3.5  : mod === 1 ? 3.0  : 2.8
+  return { lato: latoByIndex(n), lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero' }
+})
+
+// Pontile C (28 posti) — pontile più piccolo, 8-12m, Cat. I/II/III
+const POSTI_C: Berth[] = genBerths('C', 'Pontile Charlie', 28, (n) => {
+  const mod = n % 3
+  const cat = mod === 0 ? 'Cat. III' : mod === 1 ? 'Cat. II' : 'Cat. I'
+  const lun = mod === 0 ? 12.0 : mod === 1 ? 10.0 : 9.0
+  const lar = mod === 0 ? 4.0  : mod === 1 ? 3.5  : 3.25
+  const pro = mod === 0 ? 3.0  : mod === 1 ? 2.8  : 2.5
+  return { lato: latoByIndex(n), lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero' }
+})
+
+// Pontile D (32 posti) — pontile grande, 12-18m, Cat. III/IV/V
+const POSTI_D: Berth[] = genBerths('D', 'Pontile Delta', 32, (n) => {
+  const mod = n % 3
+  const cat = mod === 0 ? 'Cat. V' : mod === 1 ? 'Cat. IV' : 'Cat. III'
+  const lun = mod === 0 ? 18.0 : mod === 1 ? 15.5 : 12.0
+  const lar = mod === 0 ? 5.0  : mod === 1 ? 4.5  : 4.0
+  const pro = mod === 0 ? 4.0  : mod === 1 ? 3.5  : 3.0
+  return { lato: latoByIndex(n), lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero' }
+})
+
+// Frangiflutti nord FF100-FF113 (14 posti) — transiti grandi 18-30m, Cat. V/VI/VII
+const POSTI_FF_NORD: Berth[] = genBerths('FF', 'Frangiflutti Nord', 14, (n) => {
+  const mod = n % 3
+  const cat = mod === 0 ? 'Cat. VII' : mod === 1 ? 'Cat. VI' : 'Cat. V'
+  const lun = mod === 0 ? 30.0 : mod === 1 ? 22.0 : 18.0
+  const lar = mod === 0 ? 8.0  : mod === 1 ? 6.5  : 5.0
+  const pro = mod === 0 ? 5.0  : mod === 1 ? 4.5  : 4.0
+  return { lato: latoByIndex(n), lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero' }
+}, { idStyle: 'compact', startIndex: 100 })
+
+// Frangiflutti sud FF1-FF3 (3 posti) — piccoli, Cat. I (tender, gommoni)
+const POSTI_FF_SUD: Berth[] = genBerths('FF', 'Frangiflutti Sud', 3, (_) => ({
+  lato: 'Destro',
+  lunMax: 7.0,
+  larMax: 2.8,
+  profondita: 1.8,
+  categoria: 'Cat. I',
+  stato: 'libero',
+}), { idStyle: 'compact', startIndex: 1 })
+
+// Torre (TW1-TW10) — posti frontali per transiti grandi/yacht 20-40m
+const POSTI_TW: Berth[] = genBerths('TW', 'Torre / Transito', 10, (n) => {
+  const mod = n % 3
+  const cat = mod === 0 ? 'Cat. VIII' : mod === 1 ? 'Cat. VII' : 'Cat. VI'
+  const lun = mod === 0 ? 40.0 : mod === 1 ? 30.0 : 22.0
+  const lar = mod === 0 ? 9.0  : mod === 1 ? 8.0  : 6.5
+  const pro = mod === 0 ? 6.0  : mod === 1 ? 5.0  : 4.5
+  return { lato: latoByIndex(n), lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero' }
+}, { idStyle: 'compact', startIndex: 1 })
+
 export const POSTI_DEMO: Berth[] = [
-  { id: 'A 5', pontile: 'Pontile Alfa', lato: 'Sinistro', lunMax: 15.5, larMax: 4.5, profondita: 3.5, categoria: 'Cat. IV', stato: 'occupato_socio', barcaOra: 'Chaya', socioId: 1 },
-  { id: 'C 8', pontile: 'Pontile Delta', lato: 'Destro', lunMax: 9, larMax: 3.25, profondita: 2.5, categoria: 'Cat. II', stato: 'occupato_socio', barcaOra: 'M/Y Albatros', socioId: 4 },
-  { id: 'D 12', pontile: 'Pontile Delta', lato: 'Sinistro', lunMax: 12, larMax: 4.0, profondita: 3.0, categoria: 'Cat. III', stato: 'in_cantiere', barcaOra: 'In cantiere (alaggio)', socioId: 5 },
-  { id: 'D 7', pontile: 'Pontile Delta', lato: 'Destro', lunMax: 12, larMax: 4.0, profondita: 3.0, categoria: 'Cat. III', stato: 'occupato_affittuario', barcaOra: 'S/V Mistral', socioId: 6 },
-  { id: 'G 8', pontile: 'Pontile Golf', lato: 'Sinistro', lunMax: 10, larMax: 3.5, profondita: 2.8, categoria: 'Cat. II', stato: 'socio_assente', barcaOra: undefined, socioId: 7 },
-  { id: 'TW3', pontile: 'Transito West', lato: 'Destro', lunMax: 30, larMax: 8.0, profondita: 5.0, categoria: 'Cat. VII', stato: 'occupato_transito', barcaOra: 'M/Y Neptune Dream' },
-  { id: 'B 10', pontile: 'Pontile Alfa', lato: 'Sinistro', lunMax: 15.5, larMax: 4.5, profondita: 3.5, categoria: 'Cat. IV', stato: 'occupato_transito', barcaOra: 'S/V Tramontana' },
-  { id: 'D 24', pontile: 'Pontile Delta', lato: 'Destro', lunMax: 15.5, larMax: 4.5, profondita: 3.5, categoria: 'Cat. IV', stato: 'libero' }
-]
+  ...POSTI_A,
+  ...POSTI_B,
+  ...POSTI_C,
+  ...POSTI_D,
+  ...POSTI_FF_NORD,
+  ...POSTI_FF_SUD,
+  ...POSTI_TW,
+].map(applyOverride)
 
 // ── MOVIMENTI ──
 export const MOVIMENTI_DEMO: Movement[] = [
   { id: 1, ora: '07:30', nome: 'M/Y Neptune Dream', matricola: '123456789', tipo: 'entrata', posto: 'TW3', scenario: 'transito', auth: true, pagamento: 'Pagato', note: 'Arrivo da Napoli', operatore: { nome: 'Mario Rossi', ruolo: 'Operatore Torre', iniziali: 'MR' } },
-  { id: 2, ora: '08:15', nome: 'M/Y Rex', matricola: '247881234', tipo: 'uscita_temporanea', posto: 'G 8', scenario: 'socio', auth: true, pagamento: 'Titolo Attivo', note: 'Uscita temporanea per gita', operatore: { nome: 'Mario Rossi', ruolo: 'Operatore Torre', iniziali: 'MR' } },
+  { id: 2, ora: '08:15', nome: 'M/Y Rex', matricola: '247881234', tipo: 'uscita_temporanea', posto: 'C 25', scenario: 'socio', auth: true, pagamento: 'Titolo Attivo', note: 'Uscita temporanea per gita', operatore: { nome: 'Mario Rossi', ruolo: 'Operatore Torre', iniziali: 'MR' } },
   { id: 3, ora: '09:30', nome: 'S/V Libeccio', matricola: '247999222', tipo: 'spostamento', posto: 'D 16', scenario: 'transito', auth: true, origine: 'D 4', destinazione: 'D 16', pagamento: 'Pagato', note: 'Spostamento richiesto', operatore: { nome: 'Lara Conti', ruolo: 'Operatore Torre', iniziali: 'LC' } },
   { id: 4, ora: '09:51', nome: 'Chaya', matricola: 'IT-RM-2847', tipo: 'entrata', posto: 'A 5', scenario: 'socio', auth: true, pagamento: 'Titolo Attivo', note: 'Rientro al porto', operatore: { nome: 'Mario Rossi', ruolo: 'Operatore Torre', iniziali: 'MR' } },
   { id: 11, ora: '16:00', nome: 'M/Y Perseo', matricola: '247667788', tipo: 'cantiere', posto: 'D 12', scenario: 'socio', auth: true, origine: 'D 12', destinazione: 'Cantiere', pagamento: 'Titolo Attivo', note: 'Alaggio per manutenzione scafo', operatore: { nome: 'Giulia Marin', ruolo: 'Operatore Torre', iniziali: 'GM' } }
@@ -100,7 +222,7 @@ export const RICEVUTE_DEMO: Receipt[] = [
   { numero: '2026/0041', data: '2026-04-20', nomeBarca: 'M/Y Neptune Dream', matricola: '123456789', posto: 'TW3', periodo: '17/04/2026 – 20/04/2026', giorni: 3, categoria: 'Cat. VII', tariffa: 320, extra: 0,  totale: 960,  metodo: 'pos',      operatore: 'Mario Rossi' },
   { numero: '2026/0042', data: '2026-04-21', nomeBarca: 'S/V Tramontana',    matricola: '247654321', posto: 'B 10', periodo: '18/04/2026 – 21/04/2026', giorni: 3, categoria: 'Cat. IV', tariffa: 90,  extra: 15, totale: 285,  metodo: 'contante', operatore: 'Lara Conti' },
   { numero: '2026/0043', data: '2026-04-22', nomeBarca: 'S/V Libeccio',      matricola: '247999222', posto: 'D 16',periodo: '20/04/2026 – 22/04/2026', giorni: 2, categoria: 'Cat. IV', tariffa: 90,  extra: 0,  totale: 180,  metodo: 'pos',      operatore: 'Mario Rossi' },
-  { numero: '2026/0044', data: '2026-04-22', nomeBarca: 'M/Y Rex',           matricola: '247881234', posto: 'G 8', periodo: '21/04/2026 – 22/04/2026', giorni: 1, categoria: 'Cat. II', tariffa: 50,  extra: 0,  totale: 50,   metodo: 'contante', operatore: 'Giulia Marin' },
+  { numero: '2026/0044', data: '2026-04-22', nomeBarca: 'M/Y Rex',           matricola: '247881234', posto: 'C 25', periodo: '21/04/2026 – 22/04/2026', giorni: 1, categoria: 'Cat. II', tariffa: 50,  extra: 0,  totale: 50,   metodo: 'contante', operatore: 'Giulia Marin' },
 ]
 
 // ── MANUTENZIONI SUBACQUEE ──
@@ -109,8 +231,8 @@ export const MANUTENZIONI_DEMO: MaintenanceJob[] = [
   { id: 2, berthCodice: 'B 14', tipoLavoro: 'Controllo visivo corpo morto', descrizione: 'Ispezione periodica programmata corpo morto lato destro', urgenza: 'normale', stato: 'incorso', origine: 'torre', assegnatoA: 'Reparto subacquei', dataPrevista: '2026-04-22' },
   { id: 3, berthCodice: 'D 8', tipoLavoro: 'Rimozione cima attorcigliata elica', descrizione: 'Cima intrappolata nell\'elica del posto E 8, barca impossibilitata a uscire', urgenza: 'urgente', stato: 'incorso', origine: 'socio', clientId: 5, assegnatoA: 'Reparto subacquei', dataPrevista: '2026-04-22' },
   { id: 4, berthCodice: 'D 12', tipoLavoro: 'Ispezione fondale post-tempesta', descrizione: 'Dopo la mareggiata del 18/04, verificare integrità ancoraggi Pontile Delta', urgenza: 'programmato', stato: 'dafare', origine: 'direzione', assegnatoA: 'Reparto subacquei', dataPrevista: '2026-04-25' },
-  { id: 5, berthCodice: 'G 8', tipoLavoro: 'Sostituzione bitta di ormeggio', descrizione: 'Bitta lato sinistro danneggiata da urto, necessaria sostituzione completa', urgenza: 'normale', stato: 'completato', origine: 'torre', assegnatoA: 'Reparto subacquei', completatoDa: 'Marco Redi', completatoOre: '14:30', dataPrevista: '2026-04-20' },
-  { id: 6, berthCodice: 'TW 3', tipoLavoro: 'Pulizia fondale da detriti', descrizione: 'Accumulo detriti sul fondale zona transito west', urgenza: 'programmato', stato: 'dafare', origine: 'torre', assegnatoA: 'Reparto subacquei', dataPrevista: '2026-04-28' }
+  { id: 5, berthCodice: 'C 25', tipoLavoro: 'Sostituzione bitta di ormeggio', descrizione: 'Bitta lato sinistro danneggiata da urto, necessaria sostituzione completa', urgenza: 'normale', stato: 'completato', origine: 'torre', assegnatoA: 'Reparto subacquei', completatoDa: 'Marco Redi', completatoOre: '14:30', dataPrevista: '2026-04-20' },
+  { id: 6, berthCodice: 'TW3', tipoLavoro: 'Pulizia fondale da detriti', descrizione: 'Accumulo detriti sul fondale zona transito west', urgenza: 'programmato', stato: 'dafare', origine: 'torre', assegnatoA: 'Reparto subacquei', dataPrevista: '2026-04-28' }
 ]
 
 // ── SEGNALAZIONI PORTO ──
@@ -125,10 +247,10 @@ export const SEGNALAZIONI_DEMO: Report[] = [
 
 // -- ARRIVI PREVISTI --
 export const ARRIVI_DEMO: Arrival[] = [
-  { id: 1, nomeBarca: 'S/V Vento', matricola: 'NL-4521-T', bandiera: 'Paesi Bassi', tipo: 'vela', lunghezza: 13.5, pescaggio: 2.0, postoIndicato: 'G 12', dataPrevista: '2026-04-22', oraPrevista: '14:30', stato: 'oggi', note: 'Arrivo da Barcellona, 2 persone a bordo', inseritoDa: 'Mario Rossi', createdAt: '2026-04-21' },
-  { id: 2, nomeBarca: 'M/Y Azzurra II', matricola: 'IT-GE-0892', bandiera: 'Italia', tipo: 'motore', lunghezza: 18.2, pescaggio: 1.8, postoIndicato: 'TW 2', dataPrevista: '2026-04-22', oraPrevista: '17:00', stato: 'oggi', note: 'Cliente abituale, chiede posto frontale', inseritoDa: 'Lara Conti', createdAt: '2026-04-20' },
+  { id: 1, nomeBarca: 'S/V Vento', matricola: 'NL-4521-T', bandiera: 'Paesi Bassi', tipo: 'vela', lunghezza: 13.5, pescaggio: 2.0, postoIndicato: 'D 14', dataPrevista: '2026-04-22', oraPrevista: '14:30', stato: 'oggi', note: 'Arrivo da Barcellona, 2 persone a bordo', inseritoDa: 'Mario Rossi', createdAt: '2026-04-21' },
+  { id: 2, nomeBarca: 'M/Y Azzurra II', matricola: 'IT-GE-0892', bandiera: 'Italia', tipo: 'motore', lunghezza: 18.2, pescaggio: 1.8, postoIndicato: 'TW2', dataPrevista: '2026-04-22', oraPrevista: '17:00', stato: 'oggi', note: 'Cliente abituale, chiede posto frontale', inseritoDa: 'Lara Conti', createdAt: '2026-04-20' },
   { id: 3, nomeBarca: 'Cat. Levante', matricola: 'FR-8812-C', bandiera: 'Francia', tipo: 'catamarano', lunghezza: 14.8, pescaggio: 1.2, postoIndicato: 'C 20', dataPrevista: '2026-04-23', oraPrevista: '10:00', stato: 'atteso', inseritoDa: 'Mario Rossi', createdAt: '2026-04-22' },
-  { id: 4, nomeBarca: 'M/Y Poseidon', matricola: 'GR-2201-M', bandiera: 'Grecia', tipo: 'motore', lunghezza: 22.0, pescaggio: 2.5, postoIndicato: 'TW 4', dataPrevista: '2026-04-24', oraPrevista: '09:00', stato: 'atteso', note: 'Richiede allaccio corrente 380V', inseritoDa: 'Giulia Marin', createdAt: '2026-04-22' },
+  { id: 4, nomeBarca: 'M/Y Poseidon', matricola: 'GR-2201-M', bandiera: 'Grecia', tipo: 'motore', lunghezza: 22.0, pescaggio: 2.5, postoIndicato: 'TW4', dataPrevista: '2026-04-24', oraPrevista: '09:00', stato: 'atteso', note: 'Richiede allaccio corrente 380V', inseritoDa: 'Giulia Marin', createdAt: '2026-04-22' },
   { id: 5, nomeBarca: 'S/V Nordic Star', matricola: 'SE-1100-V', bandiera: 'Svezia', tipo: 'vela', lunghezza: 11.5, pescaggio: 1.8, postoIndicato: 'B 22', dataPrevista: '2026-04-21', oraPrevista: '16:00', stato: 'in_ritardo', note: 'Non ancora arrivata, non risponde al VHF', inseritoDa: 'Mario Rossi', createdAt: '2026-04-20' },
   { id: 6, nomeBarca: 'M/Y Dolce Vita', matricola: 'IT-NA-3344', bandiera: 'Italia', tipo: 'motore', lunghezza: 9.8, pescaggio: 1.1, postoIndicato: 'B 16', dataPrevista: '2026-04-20', stato: 'arrivato', inseritoDa: 'Lara Conti', createdAt: '2026-04-19' },
 ]
