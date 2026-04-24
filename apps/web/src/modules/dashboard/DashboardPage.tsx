@@ -4,6 +4,7 @@ import { KpiCard } from '../../components/KpiCard'
 import { BoatList } from './components/BoatList'
 import { MovementTable } from './components/MovementTable'
 import { ArrivalsPanel } from './components/ArrivalsPanel'
+import { PendingRegistrationsPanel } from './components/PendingRegistrationsPanel'
 import { QuickMovementPanel } from './components/QuickMovementPanel'
 import { useGlobalState } from '../../store/GlobalState'
 
@@ -43,10 +44,11 @@ export function DashboardPage() {
           <MovementTable />
         </div>
 
-        {/* Bottom Split Section: Boat List & Arrivals */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--space-xl)', alignItems: 'start', marginTop: 'var(--space-xl)' }}>
+        {/* Bottom Split Section: Boat List + Arrivals + Transiti da completare */}
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 'var(--space-xl)', alignItems: 'start', marginTop: 'var(--space-xl)' }}>
           <BoatList />
           <ArrivalsPanel />
+          <PendingRegistrationsPanel />
         </div>
       </div>
     </>

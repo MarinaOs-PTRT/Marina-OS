@@ -105,7 +105,11 @@ export interface Boat {
   portoIscrizione?: string
   numRegistro?: string
   posto?: string
-  stato?: BerthStatus
+  // NOTA: lo stato della barca NON è un campo proprio.
+  // È derivato da berth.stato del posto in cui si trova:
+  //   const berth = posti.find(p => p.id === boat.posto)
+  //   const statoBarca = berth?.stato
+  // Single source of truth: berths.stato. Vedi MEDIO 5 / memoria.
   registrazioneCompleta?: boolean
 }
 

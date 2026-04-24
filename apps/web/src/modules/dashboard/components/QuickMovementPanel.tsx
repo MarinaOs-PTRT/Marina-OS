@@ -247,7 +247,8 @@ export function QuickMovementPanel() {
       pescaggio: pesVal,
       bandiera: 'N/D',
       posto: posto.trim() || undefined,
-      stato: 'occupato_transito',
+      // MEDIO 5: niente `stato` sulla barca — lo stato è derivato da berth.stato.
+      // Il successivo registraEntrata imposterà berth.stato='occupato_transito'.
       registrazioneCompleta: false
     }
     addBarca(nuovaBoat)

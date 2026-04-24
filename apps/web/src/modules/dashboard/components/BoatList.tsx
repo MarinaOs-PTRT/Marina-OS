@@ -7,24 +7,32 @@ import { BERTH_STATUS_COLOR, BERTH_STATUS_LABELS } from '@shared/constants'
 
 export function BoatList() {
   const { barche, posti } = useGlobalState()
-  
+
   const [filterStato, setFilterStato] = useState('tutti')
   const [searchQuery, setSearchQuery] = useState('')
 
-  const barcheFiltrate = barche
-    .filter(b => filterStato === 'tutti' || b.stato === filterStato)
-    .filter(b => b.nome.toLowerCase().includes(searchQuery.toLowerCase()) || b.matricola.toLowerCase().includes(searchQuery.toLowerCase()))
-
-  const barcheConPosto = barcheFiltrate.map(b => {
-    const posto = posti.find(p => p.id === b.posto)
-    return { ...b, dettaglioPosto: posto }
+  // MEDIO 5: lo stato della barca è DERIVATO dal posto. Arricchiamo una volta
+  // sola e poi lavoriamo sulla lista arricchita (filtri, badge, tabella).
+  const barcheConPosto = barche.map(b => {
+    const dettaglioPosto = posti.find(p => p.id === b.posto)
+    return { ...b, dettaglioPosto, statoDerivato: dettaglioPosto?.stato }
   })
 
+  // Si considerano "in porto" solo le barche con un posto assegnato E occupato.
+  // Barche senza posto o con posto 'libero' non compaiono in BoatList (sono fuori).
+  const barcheInPorto = barcheConPosto.filter(b =>
+    b.statoDerivato && b.statoDerivato !== 'libero' && b.statoDerivato !== 'manutenzione'
+  )
+
+  const barcheFiltrate = barcheInPorto
+    .filter(b => filterStato === 'tutti' || b.statoDerivato === filterStato)
+    .filter(b => b.nome.toLowerCase().includes(searchQuery.toLowerCase()) || b.matricola.toLowerCase().includes(searchQuery.toLowerCase()))
+
   const filtriBadge = [
-    { label: 'Tutte', color: 'gray' as const, count: barche.length },
-    { label: 'Soci', color: 'accent' as const, count: barche.filter(b => b.stato === 'occupato_socio').length },
-    { label: 'Transito', color: 'teal' as const, count: barche.filter(b => b.stato === 'occupato_transito').length },
-    { label: 'Cantiere', color: 'red' as const, count: barche.filter(b => b.stato === 'in_cantiere').length },
+    { label: 'Tutte', color: 'gray' as const, count: barcheInPorto.length },
+    { label: 'Soci', color: 'accent' as const, count: barcheInPorto.filter(b => b.statoDerivato === 'occupato_socio').length },
+    { label: 'Transito', color: 'teal' as const, count: barcheInPorto.filter(b => b.statoDerivato === 'occupato_transito').length },
+    { label: 'Cantiere', color: 'red' as const, count: barcheInPorto.filter(b => b.statoDerivato === 'in_cantiere').length },
   ]
 
   return (
@@ -53,7 +61,7 @@ export function BoatList() {
             </tr>
           </thead>
           <tbody>
-            {barcheConPosto.map(b => (
+            {barcheFiltrate.map(b => (
               <tr key={b.id}>
                 <td><strong>{b.nome}</strong></td>
                 <td>{b.matricola}<br/><small style={{color:'var(--text3)'}}>{b.tipo} · {b.lunghezza}m</small></td>
@@ -62,9 +70,9 @@ export function BoatList() {
                   {b.dettaglioPosto && <><br/><small style={{color:'var(--text3)'}}>{b.dettaglioPosto.pontile}</small></>}
                 </td>
                 <td>
-                  {b.stato && (
-                    <span style={{ 
-                      color: BERTH_STATUS_COLOR[b.stato],
+                  {b.statoDerivato && (
+                    <span style={{
+                      color: BERTH_STATUS_COLOR[b.statoDerivato],
                       fontSize: '0.85rem',
                       fontWeight: 'bold',
                       display: 'flex',
@@ -75,9 +83,9 @@ export function BoatList() {
                         display: 'inline-block',
                         width: '8px', height: '8px',
                         borderRadius: '50%',
-                        background: BERTH_STATUS_COLOR[b.stato]
+                        background: BERTH_STATUS_COLOR[b.statoDerivato]
                       }}></span>
-                      {BERTH_STATUS_LABELS[b.stato]}
+                      {BERTH_STATUS_LABELS[b.statoDerivato]}
                     </span>
                   )}
                 </td>

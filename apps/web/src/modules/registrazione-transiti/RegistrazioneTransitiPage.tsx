@@ -5,7 +5,17 @@ import { useGlobalState } from '../../store/GlobalState'
 import { Boat, Client } from '@shared/types'
 import './RegistrazioneTransitiPage.css'
 
+/**
+ * Ritorna la prima tariffa compatibile (lunghezza <= lunMax) dopo aver
+ * ordinato in modo crescente per lunMax. Vedi Master File §4 — Calcolo Tariffe.
+ *
+ * Ritorna `null` se la lunghezza non è valida (0, NaN, negativa) o se
+ * l'elenco tariffe è vuoto. Il chiamante DEVE gestire il caso null —
+ * non accedere mai a `.prezzoGiorno` senza aver prima verificato il valore.
+ */
 function getTariffaDaLunghezza(tariffe: any[], lunghezza: number) {
+  if (!Number.isFinite(lunghezza) || lunghezza <= 0) return null
+  if (!tariffe || tariffe.length === 0) return null
   const sorted = [...tariffe].sort((a, b) => a.lunMax - b.lunMax)
   for (const t of sorted) { if (lunghezza <= t.lunMax) return t }
   return sorted[sorted.length - 1]
@@ -14,7 +24,10 @@ function getTariffaDaLunghezza(tariffe: any[], lunghezza: number) {
 export function RegistrazioneTransitiPage() {
   const {
     barche, clienti, tariffe, posti, movimenti, ricevute,
-    addCliente, addBarca, updateBarca, addRicevuta, registraEntrata
+    addCliente, addBarca, updateBarca, addRicevuta
+    // NOTA: NON importiamo registraEntrata. Il movimento d'entrata è già
+    // stato registrato al Tempo 1 dal QuickMovementPanel in Torre.
+    // Questa pagina completa solo anagrafica + ricevuta (Tempo 2).
   } = useGlobalState()
 
   // ── Barca selezionata ──
@@ -124,6 +137,7 @@ export function RegistrazioneTransitiPage() {
     const giorni = Math.max(0, Math.round((new Date(al).getTime() - new Date(dal).getTime()) / 86400000))
     if (giorni <= 0) return null
     const t = getTariffaDaLunghezza(tariffe, lun)
+    if (!t) return null // lunghezza non valida o elenco tariffe vuoto
     const subtotale = t.prezzoGiorno * giorni
     const extraVal = parseFloat(extra) || 0
     return { categoria: t.categoria, tariffaGg: t.prezzoGiorno, giorni, subtotale, extra: extraVal, totale: subtotale + extraVal }
@@ -242,6 +256,7 @@ export function RegistrazioneTransitiPage() {
     const lun = parseFloat(bLunghezza) || 0
     if (lun <= 0) return null
     const t = getTariffaDaLunghezza(tariffe, lun)
+    if (!t) return null
     return `${t.categoria} — €${t.prezzoGiorno}/giorno`
   }, [tariffe, bLunghezza])
 
@@ -370,7 +385,14 @@ export function RegistrazioneTransitiPage() {
               <div className="reg-payment-right" id="print-receipt">
                 <h3>Anteprima Ricevuta</h3>
                 {!calcResult ? (
-                  <div className="reg-receipt-empty">🧮 Inserisci la data di partenza per vedere il calcolo</div>
+                  <div className="reg-receipt-empty">
+                    🧮 {(() => {
+                      const lun = parseFloat(bLunghezza) || 0
+                      if (lun <= 0) return 'La lunghezza della barca non è valida. Torna allo Step 2 per inserirla.'
+                      if (!dal || !al) return 'Inserisci la data di partenza per vedere il calcolo.'
+                      return 'Controlla le date (partenza deve essere successiva all\'arrivo).'
+                    })()}
+                  </div>
                 ) : (
                   <div className="receipt-preview">
                     <div className="receipt-header">

@@ -65,16 +65,19 @@ export function Omnibar({ onAction }: OmnibarProps) {
     const results: Suggestion[] = []
 
     // Search boats (by name or matricola)
+    // MEDIO 5: lo stato della barca è DERIVATO dal posto che occupa.
     barche.forEach(b => {
       if (b.nome.toLowerCase().includes(q) || b.matricola.toLowerCase().includes(q)) {
-        const isInside = b.stato === 'occupato_socio' || b.stato === 'occupato_transito' || b.stato === 'occupato_affittuario'
-        const needsReg = b.stato === 'occupato_transito' && !b.registrazioneCompleta
+        const berth = b.posto ? posti.find(p => p.id === b.posto) : undefined
+        const statoDerivato = berth?.stato
+        const isInside = statoDerivato === 'occupato_socio' || statoDerivato === 'occupato_transito' || statoDerivato === 'occupato_affittuario'
+        const needsReg = statoDerivato === 'occupato_transito' && !b.registrazioneCompleta
         results.push({
           type: 'boat',
           id: b.id,
           title: b.nome,
           subtitle: `${b.matricola} · Posto: ${b.posto || 'Nessuno'}`,
-          status: b.stato || 'libero',
+          status: statoDerivato || 'libero',
           isInside,
           needsRegistration: needsReg,
           original: b

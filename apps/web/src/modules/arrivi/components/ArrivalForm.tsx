@@ -22,7 +22,9 @@ export function ArrivalForm({ onSubmit, onClose }: Props) {
     e.preventDefault()
     if (!nomeBarca || !matricola || !lunghezza || !postoIndicato || !dataPrevista) return
 
-    const oggi = '2026-04-22'
+    // Data odierna in formato ISO (YYYY-MM-DD), coerente con il valore
+    // scritto dall'input type="date".
+    const oggi = new Date().toISOString().slice(0, 10)
     const stato = dataPrevista < oggi ? 'in_ritardo' : dataPrevista === oggi ? 'oggi' : 'atteso'
 
     onSubmit({
