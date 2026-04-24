@@ -61,7 +61,7 @@ export function QuickMovementPanel() {
     show: boolean
     motivo: string
     onProceed: () => void
-  }>({ show: false, motivo: '', onProceed: () => {} })
+  }>({ show: false, motivo: '', onProceed: () => { } })
 
   // ════════════════════════════════════════════
   // RICERCA LIVE — 3 pilastri
@@ -307,7 +307,7 @@ export function QuickMovementPanel() {
           onProceed: () => {
             const r = registraEntrata(m, { pendente: true })
             if (!r.ok) { setErrorMessage(r.errore || 'Errore durante la registrazione.'); return }
-            setAuthMissingModal({ show: false, motivo: '', onProceed: () => {} })
+            setAuthMissingModal({ show: false, motivo: '', onProceed: () => { } })
             handleClear()
           }
         })
@@ -431,39 +431,39 @@ export function QuickMovementPanel() {
         <div className="search-fields-grid">
           {/* NOME */}
           <div className="search-field-wrapper" ref={nomeRef}>
-            <label>🔍 Nome</label>
+            <label> Nome </label>
             <input
               type="text" value={nome}
               onChange={e => { setNome(e.target.value); setShowNomeDropdown(true) }}
               onFocus={() => { if (nome.length > 0) setShowNomeDropdown(true) }}
               onKeyDown={makeKeyHandler(nomeSuggestions, selectedNomeIdx, setSelectedNomeIdx, s => { if (s.boat) fillFromBoat(s.boat) }, setShowNomeDropdown)}
-              placeholder="Es. Chaya"
+              placeholder=""
             />
             {showNomeDropdown && renderDropdown(nomeSuggestions, selectedNomeIdx, s => { if (s.boat) fillFromBoat(s.boat) }, setSelectedNomeIdx)}
           </div>
 
           {/* MATRICOLA */}
           <div className="search-field-wrapper" ref={targaRef}>
-            <label>🔍 Matricola</label>
+            <label> Matricola</label>
             <input
               type="text" value={targa}
               onChange={e => { setTarga(e.target.value); setShowTargaDropdown(true) }}
               onFocus={() => { if (targa.length > 0) setShowTargaDropdown(true) }}
               onKeyDown={makeKeyHandler(targaSuggestions, selectedTargaIdx, setSelectedTargaIdx, s => { if (s.boat) fillFromBoat(s.boat) }, setShowTargaDropdown)}
-              placeholder="Es. IT-RM-2847"
+              placeholder=""
             />
             {showTargaDropdown && renderDropdown(targaSuggestions, selectedTargaIdx, s => { if (s.boat) fillFromBoat(s.boat) }, setSelectedTargaIdx)}
           </div>
 
           {/* POSTO */}
           <div className="search-field-wrapper" ref={postoRef}>
-            <label>🔍 Posto</label>
+            <label> Posto</label>
             <input
               type="text" value={posto}
               onChange={e => { setPosto(e.target.value); setShowPostoDropdown(true) }}
               onFocus={() => { if (posto.length > 0) setShowPostoDropdown(true) }}
               onKeyDown={makeKeyHandler(postoSuggestions, selectedPostoIdx, setSelectedPostoIdx, s => { if (s.berth) fillFromBerth(s.berth) }, setShowPostoDropdown)}
-              placeholder="Es. A 5"
+              placeholder=""
             />
             {showPostoDropdown && renderDropdown(postoSuggestions, selectedPostoIdx, s => { if (s.berth) fillFromBerth(s.berth) }, setSelectedPostoIdx)}
           </div>
@@ -474,7 +474,7 @@ export function QuickMovementPanel() {
       <div className="quick-panel-body">
         <div className="quick-panel-title">
           <h3>Registra Movimento</h3>
-          <p>Inserisci i dati e premi il comando desiderato per confermare.</p>
+
         </div>
 
         {errorMessage && (<div className="panel-error-banner">❌ {errorMessage}</div>)}
@@ -498,13 +498,13 @@ export function QuickMovementPanel() {
             <div className="tipologia-buttons">
               <button type="button" className={`tipologia-btn ${tipologia === 'socio' ? 'active socio' : ''}`}
                 onClick={() => { if (!tipologiaLocked) setTipologia('socio') }}
-                disabled={tipologiaLocked && tipologia !== 'socio'}>🏅 Socio</button>
+                disabled={tipologiaLocked && tipologia !== 'socio'}> Socio</button>
               <button type="button" className={`tipologia-btn ${tipologia === 'transito' ? 'active transito' : ''}`}
                 onClick={() => { if (!tipologiaLocked) setTipologia('transito') }}
-                disabled={tipologiaLocked && tipologia !== 'transito'}>⛵ Transito</button>
+                disabled={tipologiaLocked && tipologia !== 'transito'}> Transito</button>
               <button type="button" className={`tipologia-btn ${tipologia === 'affittuario' ? 'active affittuario' : ''}`}
                 onClick={() => { if (!tipologiaLocked) setTipologia('affittuario') }}
-                disabled={tipologiaLocked && tipologia !== 'affittuario'}>🏠 Affittuario</button>
+                disabled={tipologiaLocked && tipologia !== 'affittuario'}> Affittuario</button>
             </div>
             {tipologiaLocked && (<span className="tipologia-locked-hint">🔒 Tipologia rilevata automaticamente</span>)}
           </div>
@@ -534,8 +534,8 @@ export function QuickMovementPanel() {
               <div className="zone-speciali-section">
                 <h4 className="zone-speciali-title">Zone Speciali</h4>
                 <div className="zone-speciali-buttons">
-                  <button type="button" className="btn btn-cantiere" onClick={handleCantiere}>⚙ Cantiere</button>
-                  <button type="button" className="btn btn-bunker" onClick={handleBunker}>⛽ Bunker</button>
+                  <button type="button" className="btn btn-cantiere" onClick={handleCantiere}> Cantiere</button>
+                  <button type="button" className="btn btn-bunker" onClick={handleBunker}> Bunker</button>
                   <button type="button" className="btn btn-green" onClick={handleRientro}>↩ Rientro</button>
                 </div>
               </div>
@@ -544,7 +544,7 @@ export function QuickMovementPanel() {
                 <button type="button" className="btn btn-outline" onClick={handleClear}>Pulisci</button>
                 <div className="action-buttons-group">
                   <button type="button" className="btn btn-mode-uscita" onClick={handleUscitaTemporanea}>↓ Uscita</button>
-                  <button type="button" className="btn btn-mode-uscita-def" onClick={handleUscitaDefinitiva}>⏏ Uscita Definitiva</button>
+                  <button type="button" className="btn btn-mode-uscita-def" onClick={handleUscitaDefinitiva}> Uscita Definitiva</button>
                   <button type="button" className="btn btn-mode-entrata" onClick={handleEntrata}>↑ Entrata</button>
                 </div>
               </div>
@@ -606,20 +606,20 @@ export function QuickMovementPanel() {
 
       {/* MODALE BLOCCANTE — autorizzazione affittuario mancante (MEDIO 4) */}
       {authMissingModal.show && (
-        <div className="modal-overlay" onClick={() => setAuthMissingModal({ show: false, motivo: '', onProceed: () => {} })}>
+        <div className="modal-overlay" onClick={() => setAuthMissingModal({ show: false, motivo: '', onProceed: () => { } })}>
           <div className="modal-box warning" onClick={e => e.stopPropagation()}>
             <div className="modal-icon">⚠️</div>
             <h3 className="modal-title">Autorizzazione non trovata</h3>
             <p className="modal-message">{authMissingModal.motivo}</p>
             <p className="modal-message" style={{ marginTop: '12px', fontSize: '0.9rem', color: 'var(--text2)' }}>
-              L'autorizzazione è un documento formale gestito dalla Direzione.<br/>
+              L'autorizzazione è un documento formale gestito dalla Direzione.<br />
               Puoi registrare comunque l'ingresso come <strong>"In attesa di Autorizzazione"</strong>:
               la Direzione riceverà una notifica per compilare il documento.
             </p>
             <div className="modal-actions">
               <button
                 className="btn btn-outline"
-                onClick={() => setAuthMissingModal({ show: false, motivo: '', onProceed: () => {} })}
+                onClick={() => setAuthMissingModal({ show: false, motivo: '', onProceed: () => { } })}
               >
                 Annulla
               </button>
