@@ -93,9 +93,8 @@ export function BerthDetailDrawer({ berth, onClose }: BerthDetailDrawerProps) {
         )}
         </div>
 
-        <div className="drawer-actions">
-          <button className="btn btn-primary" style={{ width: '100%' }}>Registra Movimento</button>
-        </div>
+        {/* Piantina = sola lettura. I movimenti si registrano nel
+            QuickMovementPanel della Dashboard. Deciso con Ale il 24 Apr 2026. */}
       </div>
     </div>
   )

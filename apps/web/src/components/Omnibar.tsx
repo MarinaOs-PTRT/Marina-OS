@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useGlobalState } from '../store/GlobalState'
 import { BERTH_STATUS_COLOR, BERTH_STATUS_LABELS } from '@shared/constants'
 import { Boat, Berth } from '@shared/types'
@@ -30,7 +29,6 @@ export function Omnibar({ onAction }: OmnibarProps) {
   
   const wrapperRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const navigate = useNavigate()
 
   // Handle Ctrl+K
   useEffect(() => {
@@ -123,22 +121,19 @@ export function Omnibar({ onAction }: OmnibarProps) {
   const handleSelect = (suggestion: Suggestion) => {
     setIsOpen(false)
     setQuery('')
-    
-    if (onAction) {
-      if (suggestion.type === 'new_transit') {
-        onAction('nuovo_transito', suggestion)
-      } else {
-        const action = suggestion.isInside ? 'uscita' : 'entrata'
-        onAction(action, suggestion)
-      }
-      return
-    }
 
-    // Determine default action based on state (Fallback)
-    const action = suggestion.isInside ? 'uscita' : 'entrata'
-    
-    // Navigate to unified movement page
-    navigate(`/movimento?type=${suggestion.type}&id=${suggestion.id}&action=${action}`)
+    // L'Omnibar è uno strumento di RICERCA a 3 canali (nome/matricola/posto).
+    // Non produce azioni di sua iniziativa: notifica il parent via onAction
+    // e si ferma lì. Se nessun parent gestisce il risultato, la selezione
+    // chiude semplicemente il dropdown senza navigare da nessuna parte.
+    if (!onAction) return
+
+    if (suggestion.type === 'new_transit') {
+      onAction('nuovo_transito', suggestion)
+    } else {
+      const action = suggestion.isInside ? 'uscita' : 'entrata'
+      onAction(action, suggestion)
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

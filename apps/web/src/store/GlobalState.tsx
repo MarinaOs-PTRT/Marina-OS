@@ -27,7 +27,6 @@ interface GlobalState {
   notifiche: SystemAlert[]
 
   // Azioni di Base
-  addMovimento: (m: Movement) => void
   updatePosto: (id: string, updates: Partial<Berth>) => void
   addArrivo: (a: Arrival) => void
   resolveArrivo: (id: number) => void
@@ -165,25 +164,17 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
   }
 
   // ════════════════════════════════════════════
-  // AZIONI LEGACY (mantenute per compatibilità)
+  // AZIONI LEGACY — @deprecated (24 Apr 2026)
   // ════════════════════════════════════════════
+  // `addMovimento` non è più esposto nell'API pubblica del context.
+  // Non validava lo stato corrente del posto, gestiva solo entrata/uscita
+  // (non spostamento/cantiere/bunker/rientro) e poteva corrompere la
+  // proprietà dei soci. È stato sostituito dalle funzioni `registra*`.
+  // La definizione resta qui solo come riferimento storico finché non
+  // siamo sicuri che nessun consumatore esterno la richiami.
+  // Da cancellare definitivamente al prossimo giro di pulizia.
 
-  const addMovimento = (m: Movement) => {
-    setMovimenti(prev => [m, ...prev])
-    
-    // Logica di Business: Aggiorna lo stato del posto barca
-    if (m.posto && m.posto !== '—') {
-      if (m.tipo === 'entrata') {
-        const nuovoStato = m.scenario === 'socio' ? 'occupato_socio' as const 
-          : m.scenario === 'affittuario' ? 'occupato_affittuario' as const
-          : 'occupato_transito' as const
-        updateOrCreatePosto(m.posto, { stato: nuovoStato, barcaOra: m.nome })
-      } else if (m.tipo === 'uscita') {
-        const nuovoStato = m.scenario === 'socio' ? 'socio_assente' as const : 'libero' as const
-        updateOrCreatePosto(m.posto, { stato: nuovoStato, barcaOra: nuovoStato === 'libero' ? undefined : m.nome })
-      }
-    }
-  }
+  // const addMovimento = (m: Movement) => { ... } — rimosso
 
   // ════════════════════════════════════════════
   // HELPER: Validazione stato corrente del posto
@@ -496,7 +487,7 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     <GlobalContext.Provider value={{
       clienti, barche, posti, movimenti, tariffe, manutenzioni,
       segnalazioni, ricevute, arrivi, titoli, autorizzazioni, utenti, notifiche,
-      addMovimento, updatePosto, addArrivo, resolveArrivo, markNotifica,
+      updatePosto, addArrivo, resolveArrivo, markNotifica,
       addCliente, addBarca, updateBarca, addRicevuta,
       registraEntrata, registraUscitaTemporanea, registraUscitaDefinitiva,
       registraSpostamento, registraCantiere, registraBunker, registraRientro,
