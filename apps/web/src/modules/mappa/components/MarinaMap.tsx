@@ -10,17 +10,19 @@ interface MarinaMapProps {
   onBerthSelect: (berth: Berth) => void
 }
 
-// Colori di stato (ripresi in parte da CSS ma passati direttamente all'SVG)
+// Colori di stato — valori hex diretti per compatibilità SVG inline
+// Allineati ai colori semantici del Design System Marina OS
 const STATUS_COLORS: Record<string, string> = {
-  'libero': 'var(--green, #22c55e)',
-  'occupato_socio': 'var(--red, #ef4444)',
-  'socio_assente': 'var(--amber, #eab308)',
-  'socio_assente_lungo': 'var(--text3, #a8a29e)',
-  'occupato_transito': 'var(--orange, #f97316)',
-  'transito_assente': 'var(--amber, #eab308)',
-  'occupato_affittuario': 'var(--purple, #8b5cf6)',
-  'affittuario_assente': 'var(--amber, #eab308)',
-  'in_cantiere': 'var(--blue, #3b82f6)',
+  'libero': '#1D9E75',             // Verde (transito/disponibile)
+  'occupato_socio': '#2E6CBC',     // Blu (socio)
+  'socio_assente': '#BA7517',      // Ambra (assente)
+  'socio_assente_lungo': '#a8a29e',// Grigio (assente lungo)
+  'occupato_transito': '#1D9E75',  // Verde (transito)
+  'transito_assente': '#BA7517',   // Ambra (assente)
+  'occupato_affittuario': '#7c3aed', // Viola (affittuario)
+  'affittuario_assente': '#BA7517',  // Ambra (assente)
+  'in_cantiere': '#A32D2D',       // Rosso (blocco/cantiere)
+  'riservato': '#A32D2D',         // Rosso (blocco)
 }
 
 const SvgContainer = React.memo(React.forwardRef<HTMLDivElement, {}>((props, ref) => (

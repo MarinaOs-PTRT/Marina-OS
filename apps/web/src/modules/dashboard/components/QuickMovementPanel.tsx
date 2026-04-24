@@ -18,7 +18,7 @@ export function QuickMovementPanel() {
   const { 
     posti, barche, clienti,
     registraEntrata, registraUscitaTemporanea, registraUscitaDefinitiva,
-    registraSpostamento, registraCantiere, registraBunker,
+    registraSpostamento, registraCantiere, registraBunker, registraRientro,
     isPostoOccupato, checkPagamentoSaldato, checkAutorizzazione, getScenarioBarca
   } = useGlobalState()
 
@@ -235,7 +235,9 @@ export function QuickMovementPanel() {
 
   const handleUscitaTemporanea = () => {
     if (!validateBase()) return
-    registraUscitaTemporanea(buildMovement('uscita_temporanea', posto))
+    if (!posto.trim()) { setErrorMessage('Inserisci il posto barca per l\'uscita temporanea.'); return }
+    const result = registraUscitaTemporanea(buildMovement('uscita_temporanea', posto))
+    if (!result.ok) { setErrorMessage(result.errore || 'Errore durante l\'uscita temporanea.'); return }
     handleClear()
   }
 
@@ -244,8 +246,10 @@ export function QuickMovementPanel() {
     if (tipologia === 'socio') {
       setConfirmMessage('Vuoi rimuovere titolo al proprietario?')
       setConfirmAction(() => () => {
-        registraUscitaDefinitiva(buildMovement('uscita_definitiva', posto))
-        handleClear(); setShowConfirmPopup(false)
+        const r = registraUscitaDefinitiva(buildMovement('uscita_definitiva', posto))
+        if (!r.ok) { setErrorMessage(r.errore || 'Errore durante l\'uscita definitiva.') }
+        else { handleClear() }
+        setShowConfirmPopup(false)
       })
       setShowConfirmPopup(true)
       return
@@ -254,7 +258,8 @@ export function QuickMovementPanel() {
       setWarningMessage('⚠️ Attenzione: non risulta emessa una ricevuta saldata per questa imbarcazione. L\'operatore può comunque confermare l\'uscita.')
       setShowWarning(true)
     }
-    registraUscitaDefinitiva(buildMovement('uscita_definitiva', posto))
+    const result = registraUscitaDefinitiva(buildMovement('uscita_definitiva', posto))
+    if (!result.ok) { setErrorMessage(result.errore || 'Errore durante l\'uscita definitiva.'); return }
     handleClear()
   }
 
@@ -269,14 +274,24 @@ export function QuickMovementPanel() {
   const handleCantiere = () => {
     if (!validateBase()) return
     if (!posto.trim()) { setErrorMessage('Inserisci il posto da cui parte la barca (verso il cantiere).'); return }
-    registraCantiere(buildMovement('cantiere', 'Cantiere'), posto)
+    const result = registraCantiere(buildMovement('cantiere', 'Cantiere'), posto)
+    if (!result.ok) { setErrorMessage(result.errore || 'Errore durante la registrazione cantiere.'); return }
     handleClear()
   }
 
   const handleBunker = () => {
     if (!validateBase()) return
     if (!posto.trim()) { setErrorMessage('Inserisci il posto da cui parte la barca (verso il bunker).'); return }
-    registraBunker(buildMovement('bunker', 'Bunker'), posto)
+    const result = registraBunker(buildMovement('bunker', 'Bunker'), posto)
+    if (!result.ok) { setErrorMessage(result.errore || 'Errore durante la registrazione bunker.'); return }
+    handleClear()
+  }
+
+  const handleRientro = () => {
+    if (!validateBase()) return
+    if (!posto.trim()) { setErrorMessage('Inserisci il posto in cui rientra la barca.'); return }
+    const result = registraRientro(buildMovement('entrata', posto))
+    if (!result.ok) { setErrorMessage(result.errore || 'Errore durante la registrazione del rientro.'); return }
     handleClear()
   }
 
@@ -422,6 +437,7 @@ export function QuickMovementPanel() {
                 <div className="zone-speciali-buttons">
                   <button type="button" className="btn btn-cantiere" onClick={handleCantiere}>⚙ Cantiere</button>
                   <button type="button" className="btn btn-bunker" onClick={handleBunker}>⛽ Bunker</button>
+                  <button type="button" className="btn btn-green" onClick={handleRientro}>↩ Rientro</button>
                 </div>
               </div>
 

@@ -13,7 +13,7 @@ function getTariffaDaLunghezza(tariffe: any[], lunghezza: number) {
 
 export function RegistrazioneTransitiPage() {
   const {
-    barche, clienti, tariffe, posti, movimenti,
+    barche, clienti, tariffe, posti, movimenti, ricevute,
     addCliente, addBarca, updateBarca, addRicevuta, registraEntrata
   } = useGlobalState()
 
@@ -192,7 +192,11 @@ export function RegistrazioneTransitiPage() {
     }
 
     // 3. Emetti ricevuta
-    const nextNum = `2026/${String(Date.now()).slice(-4)}`
+    const anno = new Date().getFullYear()
+    const ultimoNumero = ricevute.length > 0
+      ? Math.max(...ricevute.map(r => parseInt(r.numero.split('/')[1]) || 0))
+      : 0
+    const nextNum = `${anno}/${String(ultimoNumero + 1).padStart(4, '0')}`
     addRicevuta({
       numero: nextNum, data: new Date().toISOString().split('T')[0],
       nomeBarca: bNome, matricola: bMatricola, posto: selectedPostoId,

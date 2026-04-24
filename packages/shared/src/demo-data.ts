@@ -51,10 +51,12 @@ export const CLIENTI_DEMO: Client[] = [
 export const BARCHE_DEMO: Boat[] = [
   { id: 1, clientId: 1, nome: 'Chaya', matricola: 'IT-RM-2847', tipo: 'Motore', lunghezza: 12.5, larghezza: 4.2, pescaggio: 1.8, posto: 'A 5', bandiera: 'Italia', stato: 'occupato_socio' },
   { id: 2, clientId: 2, nome: 'S/V Tramontana', matricola: '247654321', tipo: 'Vela', lunghezza: 13.8, larghezza: 4.1, pescaggio: 1.9, posto: 'B 10', bandiera: 'Italia', stato: 'occupato_transito' },
-  { id: 3, clientId: 3, nome: 'M/Y Neptune Dream', matricola: '123456789', tipo: 'Motore', lunghezza: 28, larghezza: 7.2, pescaggio: 2.1, posto: 'TW3', bandiera: 'Regno Unito', stato: 'occupato_affittuario' },
+  { id: 3, clientId: 3, nome: 'M/Y Neptune Dream', matricola: '123456789', tipo: 'Motore', lunghezza: 28, larghezza: 7.2, pescaggio: 2.1, posto: 'TW3', bandiera: 'Regno Unito', stato: 'occupato_transito' },
   { id: 4, clientId: 3, nome: 'Cat. Sole Mare', matricola: '247876543', tipo: 'Catamarano', lunghezza: 14.2, larghezza: 7.5, pescaggio: 1.1, bandiera: 'Francia', stato: 'libero' },
   { id: 5, clientId: 4, nome: 'M/Y Albatros', matricola: '247123456', tipo: 'Motore', lunghezza: 10.5, larghezza: 3.4, pescaggio: 1.2, posto: 'C 8', bandiera: 'Italia', stato: 'occupato_socio' },
-  { id: 6, clientId: 5, nome: 'M/Y Perseo', matricola: '247667788', tipo: 'Motore', lunghezza: 11.5, larghezza: 3.8, pescaggio: 1.5, posto: 'D 12', bandiera: 'Italia', stato: 'in_cantiere' }
+  { id: 6, clientId: 5, nome: 'M/Y Perseo', matricola: '247667788', tipo: 'Motore', lunghezza: 11.5, larghezza: 3.8, pescaggio: 1.5, posto: 'D 12', bandiera: 'Italia', stato: 'in_cantiere' },
+  { id: 7, clientId: 6, nome: 'S/V Mistral', matricola: 'IT-NA-1122', tipo: 'Vela', lunghezza: 11.0, larghezza: 3.6, pescaggio: 1.7, posto: 'D 7', bandiera: 'Italia', stato: 'occupato_affittuario' },
+  { id: 8, clientId: 7, nome: 'M/Y Rex', matricola: '247881234', tipo: 'Motore', lunghezza: 9.5, larghezza: 3.2, pescaggio: 1.3, posto: 'G 8', bandiera: 'Italia', stato: 'socio_assente' }
 ]
 
 // ── POSTI BARCA (Berths) ──
@@ -62,8 +64,8 @@ export const POSTI_DEMO: Berth[] = [
   { id: 'A 5', pontile: 'Pontile Alfa', lato: 'Sinistro', lunMax: 15.5, larMax: 4.5, profondita: 3.5, categoria: 'Cat. IV', stato: 'occupato_socio', barcaOra: 'Chaya', socioId: 1 },
   { id: 'C 8', pontile: 'Pontile Delta', lato: 'Destro', lunMax: 9, larMax: 3.25, profondita: 2.5, categoria: 'Cat. II', stato: 'occupato_socio', barcaOra: 'M/Y Albatros', socioId: 4 },
   { id: 'D 12', pontile: 'Pontile Delta', lato: 'Sinistro', lunMax: 12, larMax: 4.0, profondita: 3.0, categoria: 'Cat. III', stato: 'in_cantiere', barcaOra: 'In cantiere (alaggio)', socioId: 5 },
-  { id: 'D 7', pontile: 'Pontile Delta', lato: 'Destro', lunMax: 12, larMax: 4.0, profondita: 3.0, categoria: 'Cat. III', stato: 'occupato_affittuario', barcaOra: 'Affittuario: S/V Tramontana', socioId: 6 },
-  { id: 'A 12', pontile: 'Pontile Delta', lato: 'Sinistro', lunMax: 10, larMax: 3.5, profondita: 2.8, categoria: 'Cat. II', stato: 'socio_assente', barcaOra: 'Socio assente', socioId: 7 },
+  { id: 'D 7', pontile: 'Pontile Delta', lato: 'Destro', lunMax: 12, larMax: 4.0, profondita: 3.0, categoria: 'Cat. III', stato: 'occupato_affittuario', barcaOra: 'S/V Mistral', socioId: 6 },
+  { id: 'G 8', pontile: 'Pontile Golf', lato: 'Sinistro', lunMax: 10, larMax: 3.5, profondita: 2.8, categoria: 'Cat. II', stato: 'socio_assente', barcaOra: undefined, socioId: 7 },
   { id: 'TW3', pontile: 'Transito West', lato: 'Destro', lunMax: 30, larMax: 8.0, profondita: 5.0, categoria: 'Cat. VII', stato: 'occupato_transito', barcaOra: 'M/Y Neptune Dream' },
   { id: 'B 10', pontile: 'Pontile Alfa', lato: 'Sinistro', lunMax: 15.5, larMax: 4.5, profondita: 3.5, categoria: 'Cat. IV', stato: 'occupato_transito', barcaOra: 'S/V Tramontana' },
   { id: 'D 24', pontile: 'Pontile Delta', lato: 'Destro', lunMax: 15.5, larMax: 4.5, profondita: 3.5, categoria: 'Cat. IV', stato: 'libero' }
@@ -71,11 +73,11 @@ export const POSTI_DEMO: Berth[] = [
 
 // ── MOVIMENTI ──
 export const MOVIMENTI_DEMO: Movement[] = [
-  { id: 1, ora: '07:30', nome: 'M/Y Neptune Dream', matricola: '123456789', tipo: 'entrata', posto: 'TW3', scenario: 'affittuario', auth: true, pagamento: 'Autorizzato', note: 'Arrivo da Napoli · autorizzazione verificata', operatore: { nome: 'Mario Rossi', ruolo: 'Operatore Torre', iniziali: 'MR' } },
-  { id: 2, ora: '08:15', nome: 'M/Y Rex', matricola: '247881234', tipo: 'uscita', posto: 'D 22', scenario: 'socio', auth: false, pagamento: 'Titolo Attivo', note: 'Uscita temporanea', operatore: { nome: 'Mario Rossi', ruolo: 'Operatore Torre', iniziali: 'MR' } },
+  { id: 1, ora: '07:30', nome: 'M/Y Neptune Dream', matricola: '123456789', tipo: 'entrata', posto: 'TW3', scenario: 'transito', auth: true, pagamento: 'Pagato', note: 'Arrivo da Napoli', operatore: { nome: 'Mario Rossi', ruolo: 'Operatore Torre', iniziali: 'MR' } },
+  { id: 2, ora: '08:15', nome: 'M/Y Rex', matricola: '247881234', tipo: 'uscita_temporanea', posto: 'G 8', scenario: 'socio', auth: true, pagamento: 'Titolo Attivo', note: 'Uscita temporanea per gita', operatore: { nome: 'Mario Rossi', ruolo: 'Operatore Torre', iniziali: 'MR' } },
   { id: 3, ora: '09:30', nome: 'S/V Libeccio', matricola: '247999222', tipo: 'spostamento', posto: 'D 16', scenario: 'transito', auth: true, origine: 'D 4', destinazione: 'D 16', pagamento: 'Pagato', note: 'Spostamento richiesto', operatore: { nome: 'Lara Conti', ruolo: 'Operatore Torre', iniziali: 'LC' } },
-  { id: 4, ora: '09:51', nome: 'Chaya', matricola: 'IT-RM-2847', tipo: 'entrata', posto: 'A 5', scenario: 'transito', auth: false, pagamento: 'Da pagare', note: 'Primo arrivo', operatore: { nome: 'Mario Rossi', ruolo: 'Operatore Torre', iniziali: 'MR' } },
-  { id: 11, ora: '16:00', nome: 'M/Y Perseo', matricola: '247667788', tipo: 'cantiere', posto: 'D 3', scenario: 'socio', auth: false, origine: 'D 12', destinazione: 'D 3', pagamento: 'Titolo Attivo', note: 'Alaggio per manutenzione scafo', operatore: { nome: 'Giulia Marin', ruolo: 'Operatore Torre', iniziali: 'GM' } }
+  { id: 4, ora: '09:51', nome: 'Chaya', matricola: 'IT-RM-2847', tipo: 'entrata', posto: 'A 5', scenario: 'socio', auth: true, pagamento: 'Titolo Attivo', note: 'Rientro al porto', operatore: { nome: 'Mario Rossi', ruolo: 'Operatore Torre', iniziali: 'MR' } },
+  { id: 11, ora: '16:00', nome: 'M/Y Perseo', matricola: '247667788', tipo: 'cantiere', posto: 'D 12', scenario: 'socio', auth: true, origine: 'D 12', destinazione: 'Cantiere', pagamento: 'Titolo Attivo', note: 'Alaggio per manutenzione scafo', operatore: { nome: 'Giulia Marin', ruolo: 'Operatore Torre', iniziali: 'GM' } }
 ]
 
 // ── TARIFFE ──
@@ -96,7 +98,7 @@ export const RICEVUTE_DEMO: Receipt[] = [
   { numero: '2026/0041', data: '2026-04-20', nomeBarca: 'M/Y Neptune Dream', matricola: '123456789', posto: 'TW3', periodo: '17/04/2026 – 20/04/2026', giorni: 3, categoria: 'Cat. VII', tariffa: 320, extra: 0,  totale: 960,  metodo: 'pos',      operatore: 'Mario Rossi' },
   { numero: '2026/0042', data: '2026-04-21', nomeBarca: 'S/V Tramontana',    matricola: '247654321', posto: 'B 10', periodo: '18/04/2026 – 21/04/2026', giorni: 3, categoria: 'Cat. IV', tariffa: 90,  extra: 15, totale: 285,  metodo: 'contante', operatore: 'Lara Conti' },
   { numero: '2026/0043', data: '2026-04-22', nomeBarca: 'S/V Libeccio',      matricola: '247999222', posto: 'D 16',periodo: '20/04/2026 – 22/04/2026', giorni: 2, categoria: 'Cat. IV', tariffa: 90,  extra: 0,  totale: 180,  metodo: 'pos',      operatore: 'Mario Rossi' },
-  { numero: '2026/0044', data: '2026-04-22', nomeBarca: 'M/Y Rex',           matricola: '247881234', posto: 'D 22',periodo: '21/04/2026 – 22/04/2026', giorni: 1, categoria: 'Cat. II', tariffa: 50,  extra: 0,  totale: 50,   metodo: 'contante', operatore: 'Giulia Marin' },
+  { numero: '2026/0044', data: '2026-04-22', nomeBarca: 'M/Y Rex',           matricola: '247881234', posto: 'G 8', periodo: '21/04/2026 – 22/04/2026', giorni: 1, categoria: 'Cat. II', tariffa: 50,  extra: 0,  totale: 50,   metodo: 'contante', operatore: 'Giulia Marin' },
 ]
 
 // ── MANUTENZIONI SUBACQUEE ──
@@ -131,16 +133,16 @@ export const ARRIVI_DEMO: Arrival[] = [
 
 // -- TITOLI DI POSSESSO (M-07) --
 export const TITOLI_POSSESSO_DEMO: OwnershipTitle[] = [
-  { id: 1, clientId: 1, berthId: 'D 1', numero: 'PTRT-2015-0102', dataAcquisizione: '2015-04-10', azioni: 620, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 2, clientId: 3, berthId: 'D 12', numero: 'PTRT-2018-0554', dataAcquisizione: '2018-09-22', azioni: 450, catAzioni: 'B', canone: 'Scaduto', scadenzaCanone: '2026-01-31' },
-  { id: 3, clientId: 4, berthId: 'TW3', numero: 'PTRT-2020-0891', dataAcquisizione: '2020-02-15', azioni: 1200, catAzioni: 'S', canone: 'Regolare', scadenzaCanone: '2027-01-31' }
+  { id: 1, clientId: 1, berthId: 'A 5', numero: 'PTRT-2015-0102', dataAcquisizione: '2015-04-10', azioni: 620, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 2, clientId: 5, berthId: 'D 12', numero: 'PTRT-2018-0554', dataAcquisizione: '2018-09-22', azioni: 480, catAzioni: 'B', canone: 'Scaduto', scadenzaCanone: '2026-01-31' },
+  { id: 3, clientId: 4, berthId: 'C 8', numero: 'PTRT-2020-0891', dataAcquisizione: '2020-02-15', azioni: 310, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' }
 ]
 
 // -- AUTORIZZAZIONI (M-07) --
 export const AUTORIZZAZIONI_DEMO: Authorization[] = [
-  { id: 1, socioId: 1, berthId: 'D 1', tipo: 'affitto', beneficiario: 'Luigi Verdi (PF)', barca: 'S/V Tramontana', matricola: 'IT-NA-1122', tel: '+39 340 1234567', dal: '2026-04-01', al: '2026-09-30', giorniResidui: 161, stato: 'attiva', authDa: 'Direzione' },
-  { id: 2, socioId: 3, berthId: 'D 12', tipo: 'ospite', beneficiario: 'Giacomo Neri', barca: 'M/Y Relax', matricola: 'FR-9988-C', tel: '+39 333 9876543', dal: '2026-04-20', al: '2026-04-25', giorniResidui: 3, stato: 'attiva', note: 'Ospite gratuito confermato', authDa: 'Torre' },
-  { id: 3, socioId: 4, berthId: 'TW3', tipo: 'amico', beneficiario: 'Elena Bianchi', barca: 'S/V Vento', matricola: 'NL-4521-T', tel: '+39 320 1122334', dal: '2026-03-01', al: '2026-03-15', giorniResidui: 0, stato: 'scaduta', authDa: 'Direzione' }
+  { id: 1, socioId: 6, berthId: 'D 7', tipo: 'affitto', beneficiario: 'Luigi Verdi (PF)', barca: 'S/V Mistral', matricola: 'IT-NA-1122', tel: '+39 340 1234567', dal: '2026-04-01', al: '2026-09-30', giorniResidui: 161, stato: 'attiva', authDa: 'Direzione' },
+  { id: 2, socioId: 5, berthId: 'D 12', tipo: 'ospite', beneficiario: 'Giacomo Neri', barca: 'M/Y Relax', matricola: 'FR-9988-C', tel: '+39 333 9876543', dal: '2026-04-20', al: '2026-04-25', giorniResidui: 3, stato: 'attiva', note: 'Ospite gratuito confermato', authDa: 'Torre' },
+  { id: 3, socioId: 4, berthId: 'C 8', tipo: 'amico', beneficiario: 'Elena Bianchi', barca: 'S/V Vento', matricola: 'NL-4521-T', tel: '+39 320 1122334', dal: '2026-03-01', al: '2026-03-15', giorniResidui: 0, stato: 'scaduta', authDa: 'Direzione' }
 ]
 
 // -- UTENTI DI SISTEMA (M-12) --
@@ -154,11 +156,11 @@ export const UTENTI_SISTEMA_DEMO: SystemUser[] = [
 
 // -- NOTIFICHE (M-05) --
 export const NOTIFICHE_DEMO: SystemAlert[] = [
-  { id: 1, titolo: 'Canone Socio Scaduto', descrizione: 'Il canone del socio Ferretti (Posto C 1) � scaduto il mese scorso.', urgenza: 'alta', categoria: 'amministrazione', data: '2026-04-22 09:15', stato: 'nuova' },
-  { id: 2, titolo: 'Ritardo Arrivo Previsto', descrizione: 'S/V Nordic Star (Prenotato per le 16:00 del 21/04) non � ancora arrivata.', urgenza: 'media', categoria: 'operativo', data: '2026-04-22 10:30', stato: 'nuova' },
+  { id: 1, titolo: 'Canone Socio Scaduto', descrizione: 'Il canone del socio Ferretti (Posto A 5) \u00e8 scaduto il mese scorso.', urgenza: 'alta', categoria: 'amministrazione', data: '2026-04-22 09:15', stato: 'nuova' },
+  { id: 2, titolo: 'Ritardo Arrivo Previsto', descrizione: 'S/V Nordic Star (Prenotato per le 16:00 del 21/04) non \u00e8 ancora arrivata.', urgenza: 'media', categoria: 'operativo', data: '2026-04-22 10:30', stato: 'nuova' },
   { id: 3, titolo: 'Guasto Elettrico C 4', descrizione: 'Segnalato calo di tensione alla colonnina del posto C 4.', urgenza: 'alta', categoria: 'operativo', data: '2026-04-22 11:45', stato: 'nuova' },
-  { id: 4, titolo: 'Backup di Sistema', descrizione: 'Il backup settimanale � stato completato con successo.', urgenza: 'bassa', categoria: 'sistema', data: '2026-04-21 23:00', stato: 'letta' },
-  { id: 5, titolo: 'Ospite in Arrivo', descrizione: 'Giacomo Neri � autorizzato sul posto D 12 da oggi.', urgenza: 'bassa', categoria: 'operativo', data: '2026-04-20 08:00', stato: 'risolta' }
+  { id: 4, titolo: 'Backup di Sistema', descrizione: 'Il backup settimanale \u00e8 stato completato con successo.', urgenza: 'bassa', categoria: 'sistema', data: '2026-04-21 23:00', stato: 'letta' },
+  { id: 5, titolo: 'Ospite in Arrivo', descrizione: 'Giacomo Neri \u00e8 autorizzato sul posto D 12 da oggi.', urgenza: 'bassa', categoria: 'operativo', data: '2026-04-20 08:00', stato: 'risolta' }
 ]
 
 

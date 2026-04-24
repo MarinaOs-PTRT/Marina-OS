@@ -23,7 +23,7 @@ export function FilterBar({
       {/* Date Filter Placeholder */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text3)', textTransform: 'uppercase' }}>Data</span>
-        <button className="btn btn-outline" style={{ padding: '6px 12px', fontSize: '0.85rem' }}>Oggi — 19 Apr 2026</button>
+        <button className="btn btn-outline" style={{ padding: '6px 12px', fontSize: '0.85rem' }}>Oggi — {new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}</button>
       </div>
 
       <div style={{ width: '1px', height: '24px', background: 'var(--border)' }}></div>

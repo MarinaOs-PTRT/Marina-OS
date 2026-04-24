@@ -29,10 +29,10 @@ export function NotifichePage() {
 
       <div className="page-container notifiche-page">
         <div className="n-filters">
-          <button className={`btn-filter \${filterCat === 'tutte' ? 'active' : ''}`} onClick={() => setFilterCat('tutte')}>Tutte</button>
-          <button className={`btn-filter \${filterCat === 'operativo' ? 'active' : ''}`} onClick={() => setFilterCat('operativo')}>Operative</button>
-          <button className={`btn-filter \${filterCat === 'amministrazione' ? 'active' : ''}`} onClick={() => setFilterCat('amministrazione')}>Amministrazione</button>
-          <button className={`btn-filter \${filterCat === 'sistema' ? 'active' : ''}`} onClick={() => setFilterCat('sistema')}>Sistema</button>
+          <button className={`btn-filter ${filterCat === 'tutte' ? 'active' : ''}`} onClick={() => setFilterCat('tutte')}>Tutte</button>
+          <button className={`btn-filter ${filterCat === 'operativo' ? 'active' : ''}`} onClick={() => setFilterCat('operativo')}>Operative</button>
+          <button className={`btn-filter ${filterCat === 'amministrazione' ? 'active' : ''}`} onClick={() => setFilterCat('amministrazione')}>Amministrazione</button>
+          <button className={`btn-filter ${filterCat === 'sistema' ? 'active' : ''}`} onClick={() => setFilterCat('sistema')}>Sistema</button>
         </div>
 
         <div className="n-list">
@@ -40,11 +40,11 @@ export function NotifichePage() {
             <div className="empty-message">Nessuna notifica trovata per questa categoria.</div>
           ) : (
             sorted.map(n => (
-              <div key={n.id} className={`n-card n-stato-\${n.stato}`}>
+              <div key={n.id} className={`n-card n-stato-${n.stato}`}>
                 <div className="n-header">
                   <div className="n-title-group">
                     {n.stato === 'nuova' && <span className="new-dot"></span>}
-                    <span className={`pill pill-urg-\${n.urgenza}`}>{n.urgenza.toUpperCase()}</span>
+                    <span className={`pill pill-urg-${n.urgenza}`}>{n.urgenza.toUpperCase()}</span>
                     <h3 className="n-title">{n.titolo}</h3>
                   </div>
                   <div className="n-meta">

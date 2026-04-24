@@ -16,7 +16,7 @@ export function ArriviPage() {
   const [filtroStato, setFiltroStato] = useState<FiltroStato>('tutti')
   const [showForm, setShowForm] = useState(false)
 
-  const TODAY = '2026-04-22'
+  const TODAY = new Date().toISOString().split('T')[0]
 
   // KPI
   const kpiOggi      = arrivi.filter(a => a.dataPrevista === TODAY && a.stato !== 'annullato' && a.stato !== 'arrivato').length

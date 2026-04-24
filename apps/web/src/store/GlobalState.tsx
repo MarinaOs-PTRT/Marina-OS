@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react'
 import {
-  Client, Boat, Berth, Movement, Tariff, MaintenanceJob, Report,
+  Client, Boat, Berth, BerthStatus, Movement, Tariff, MaintenanceJob, Report,
   Receipt, Arrival, OwnershipTitle, Authorization, SystemUser, SystemAlert,
   MovementScenario
 } from '@shared/types'
@@ -35,11 +35,12 @@ interface GlobalState {
 
   // Azioni Logica Operativa
   registraEntrata: (m: Movement) => { ok: boolean; errore?: string }
-  registraUscitaTemporanea: (m: Movement) => void
-  registraUscitaDefinitiva: (m: Movement) => void
+  registraUscitaTemporanea: (m: Movement) => { ok: boolean; errore?: string }
+  registraUscitaDefinitiva: (m: Movement) => { ok: boolean; errore?: string }
   registraSpostamento: (m: Movement, postoOrigine: string, postoDestinazione: string) => { ok: boolean; errore?: string }
-  registraCantiere: (m: Movement, postoOrigine: string) => void
-  registraBunker: (m: Movement, postoOrigine: string) => void
+  registraCantiere: (m: Movement, postoOrigine: string) => { ok: boolean; errore?: string }
+  registraBunker: (m: Movement, postoOrigine: string) => { ok: boolean; errore?: string }
+  registraRientro: (m: Movement) => { ok: boolean; errore?: string }
 
   // CRUD
   addCliente: (c: Client) => void
@@ -185,77 +186,160 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
   }
 
   // ════════════════════════════════════════════
+  // HELPER: Validazione stato corrente del posto
+  // ════════════════════════════════════════════
+
+  /** Verifica che il posto sia in uno degli stati ammessi per l'operazione */
+  const validaStatoPosto = (
+    postoId: string,
+    statiAmmessi: BerthStatus[],
+    operazione: string
+  ): { valido: boolean; errore?: string; posto?: Berth } => {
+    const posto = posti.find(p => p.id === postoId)
+    if (!posto) {
+      return { valido: false, errore: `Posto ${postoId} non trovato nel sistema.` }
+    }
+    if (!statiAmmessi.includes(posto.stato)) {
+      return {
+        valido: false,
+        errore: `Impossibile eseguire "${operazione}" sul posto ${postoId}: stato attuale "${posto.stato}" non compatibile.`
+      }
+    }
+    return { valido: true, posto }
+  }
+
+  /** Determina lo stato corretto del posto d'origine dopo che la barca lo lascia */
+  const calcolaStatoOrigineDopoUscita = (posto: Berth, scenario: MovementScenario): Partial<Berth> => {
+    // Se il posto ha un socioId proprietario, torna al socio (socio_assente)
+    // Questo vale per socio, affittuario e qualsiasi barca su posto di un socio
+    if (posto.socioId) {
+      return { stato: 'socio_assente' as const, barcaOra: undefined }
+    }
+    // Posto senza proprietario (transito generico): torna libero
+    return { stato: 'libero' as const, barcaOra: undefined }
+  }
+
+  // ════════════════════════════════════════════
   // AZIONI LOGICA OPERATIVA MOVIMENTI
   // ════════════════════════════════════════════
 
+  // Stati ammessi per ogni operazione
+  const STATI_ENTRATA: BerthStatus[] = ['libero', 'socio_assente', 'socio_assente_lungo', 'affittuario_assente', 'transito_assente']
+  const STATI_USCITA: BerthStatus[] = ['occupato_socio', 'occupato_transito', 'occupato_affittuario']
+
   /** M-01: Protocollo di Entrata */
   const registraEntrata = (m: Movement): { ok: boolean; errore?: string } => {
-    // Verifica posto occupato
-    if (m.posto && m.posto !== '—' && isPostoOccupato(m.posto)) {
-      return { ok: false, errore: `Il posto ${m.posto} è già occupato. Assegnare una destinazione differente.` }
+    if (!m.posto || m.posto === '—') {
+      // Entrata senza posto assegnato — registra solo il movimento
+      setMovimenti(prev => [m, ...prev])
+      return { ok: true }
     }
 
-    // Verifica autorizzazione per posti di soci
-    if (m.posto && m.posto !== '—' && m.scenario !== 'socio') {
+    // Validazione stato corrente del posto
+    const validazione = validaStatoPosto(m.posto, STATI_ENTRATA, 'entrata')
+    if (!validazione.valido) {
+      return { ok: false, errore: validazione.errore }
+    }
+
+    // Verifica autorizzazione per posti di soci (senza mutare l'input)
+    let authValida = m.auth
+    if (m.scenario !== 'socio') {
       const authCheck = checkAutorizzazione(m.posto, m.nome)
       if (!authCheck.autorizzato) {
-        // Non blocca — ma il campo auth nel movimento sarà false
-        m.auth = false
+        authValida = false
       }
     }
 
-    setMovimenti(prev => [m, ...prev])
+    // Registra il movimento (senza mutare il parametro originale)
+    const mov: Movement = { ...m, auth: authValida }
+    setMovimenti(prev => [mov, ...prev])
 
-    if (m.posto && m.posto !== '—') {
-      const nuovoStato = m.scenario === 'socio' ? 'occupato_socio' as const
-        : m.scenario === 'affittuario' ? 'occupato_affittuario' as const
-        : 'occupato_transito' as const
-      updateOrCreatePosto(m.posto, { stato: nuovoStato, barcaOra: m.nome })
-    }
+    const nuovoStato = mov.scenario === 'socio' ? 'occupato_socio' as const
+      : mov.scenario === 'affittuario' ? 'occupato_affittuario' as const
+      : 'occupato_transito' as const
+    updateOrCreatePosto(mov.posto, { stato: nuovoStato, barcaOra: mov.nome })
+
     return { ok: true }
   }
 
   /** M-02a: Uscita Temporanea (Gita) — mantiene diritti sul posto */
-  const registraUscitaTemporanea = (m: Movement) => {
+  const registraUscitaTemporanea = (m: Movement): { ok: boolean; errore?: string } => {
+    if (!m.posto || m.posto === '—') {
+      return { ok: false, errore: 'Posto non specificato per uscita temporanea.' }
+    }
+
+    // Validazione: il posto deve essere occupato
+    const validazione = validaStatoPosto(m.posto, STATI_USCITA, 'uscita temporanea')
+    if (!validazione.valido) {
+      return { ok: false, errore: validazione.errore }
+    }
+
     const mov: Movement = { ...m, tipo: 'uscita_temporanea' }
     setMovimenti(prev => [mov, ...prev])
 
-    if (mov.posto && mov.posto !== '—') {
-      // Lo stato cambia a "assente" ma il posto resta riservato
-      let nuovoStato: Berth['stato']
-      if (mov.scenario === 'socio') nuovoStato = 'socio_assente'
-      else if (mov.scenario === 'affittuario') nuovoStato = 'affittuario_assente'
-      else nuovoStato = 'transito_assente'
-      
-      updateOrCreatePosto(mov.posto, { stato: nuovoStato, barcaOra: mov.nome })
-    }
+    // Lo stato cambia a "assente" ma il posto resta riservato
+    let nuovoStato: Berth['stato']
+    if (mov.scenario === 'socio') nuovoStato = 'socio_assente'
+    else if (mov.scenario === 'affittuario') nuovoStato = 'affittuario_assente'
+    else nuovoStato = 'transito_assente'
+
+    updateOrCreatePosto(mov.posto, { stato: nuovoStato, barcaOra: mov.nome })
+    return { ok: true }
   }
 
-  /** M-02b: Uscita Definitiva — scioglie il legame con il posto */
-  const registraUscitaDefinitiva = (m: Movement) => {
+  /** M-02b: Uscita Definitiva — la barca lascia il porto */
+  const registraUscitaDefinitiva = (m: Movement): { ok: boolean; errore?: string } => {
+    if (!m.posto || m.posto === '—') {
+      // Uscita senza posto (barca al bunker, in transito, ecc.)
+      const mov: Movement = { ...m, tipo: 'uscita_definitiva' }
+      setMovimenti(prev => [mov, ...prev])
+      return { ok: true }
+    }
+
+    // Validazione: il posto deve essere occupato
+    const validazione = validaStatoPosto(m.posto, STATI_USCITA, 'uscita definitiva')
+    if (!validazione.valido) {
+      return { ok: false, errore: validazione.errore }
+    }
+    const posto = validazione.posto!
+
     const mov: Movement = { ...m, tipo: 'uscita_definitiva' }
     setMovimenti(prev => [mov, ...prev])
 
-    if (mov.posto && mov.posto !== '—') {
-      if (mov.scenario === 'socio') {
-        // Per i soci: il posto viene liberato (il popup di conferma
-        // "Vuoi rimuovere titolo al proprietario?" è gestito dall'UI prima di chiamare)
-        updateOrCreatePosto(mov.posto, { stato: 'libero', barcaOra: undefined, socioId: undefined })
+    if (mov.scenario === 'socio') {
+      // Socio esce: il posto resta suo, diventa socio_assente. socioId preservato.
+      updateOrCreatePosto(mov.posto, { stato: 'socio_assente', barcaOra: undefined })
+    } else if (mov.scenario === 'affittuario') {
+      // Affittuario esce: il posto torna al socio proprietario. socioId preservato.
+      updateOrCreatePosto(mov.posto, { stato: 'socio_assente', barcaOra: undefined })
+    } else {
+      // Transito esce: il posto torna libero
+      // Se il posto ha un socioId (es. transito ospite su posto socio), torna al socio
+      if (posto.socioId) {
+        updateOrCreatePosto(mov.posto, { stato: 'socio_assente', barcaOra: undefined })
       } else {
-        // Per transiti e affittuari: il posto torna libero
         updateOrCreatePosto(mov.posto, { stato: 'libero', barcaOra: undefined })
       }
     }
+    return { ok: true }
   }
 
-  /** M-03: Spostamento Interno — richiede sempre autorizzazione */
+  /** M-03: Spostamento Interno */
   const registraSpostamento = (m: Movement, postoOrigine: string, postoDestinazione: string): { ok: boolean; errore?: string } => {
-    // Verifica posto destinazione occupato
-    if (isPostoOccupato(postoDestinazione)) {
-      return { ok: false, errore: `Il posto ${postoDestinazione} è già occupato.` }
+    // Validazione stato destinazione: deve essere accessibile
+    const validDest = validaStatoPosto(postoDestinazione, STATI_ENTRATA, 'spostamento (destinazione)')
+    if (!validDest.valido) {
+      return { ok: false, errore: validDest.errore }
     }
 
-    // Verifica SEMPRE autorizzazione proprietario per il posto di destinazione
+    // Validazione stato origine: deve essere occupato
+    const validOrig = validaStatoPosto(postoOrigine, STATI_USCITA, 'spostamento (origine)')
+    if (!validOrig.valido) {
+      return { ok: false, errore: validOrig.errore }
+    }
+    const postoOrig = validOrig.posto!
+
+    // Verifica autorizzazione per il posto di destinazione
     const authCheck = checkAutorizzazione(postoDestinazione, m.nome)
     if (!authCheck.autorizzato) {
       return { ok: false, errore: authCheck.motivo || 'Autorizzazione mancante per il posto di destinazione.' }
@@ -271,8 +355,9 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     }
     setMovimenti(prev => [mov, ...prev])
 
-    // Libera il posto di origine
-    updateOrCreatePosto(postoOrigine, { stato: 'libero', barcaOra: undefined })
+    // Posto d'origine: se ha un socioId proprietario, torna a socio_assente; altrimenti libero
+    const updatesOrigine = calcolaStatoOrigineDopoUscita(postoOrig, m.scenario)
+    updateOrCreatePosto(postoOrigine, updatesOrigine)
 
     // Occupa il nuovo posto
     const nuovoStato = m.scenario === 'socio' ? 'occupato_socio' as const
@@ -283,8 +368,22 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     return { ok: true }
   }
 
-  /** M-05a: Cantiere (Alaggio) — posto d'origine riservato (non disponibile per transiti) */
-  const registraCantiere = (m: Movement, postoOrigine: string) => {
+  /** M-05a: Cantiere (Alaggio) — barca va in cantiere, posto d'origine riservato */
+  const registraCantiere = (m: Movement, postoOrigine: string): { ok: boolean; errore?: string } => {
+    if (!postoOrigine || postoOrigine === '—') {
+      // Barca senza posto che va in cantiere (es. nuova barca appena arrivata)
+      const mov: Movement = { ...m, tipo: 'cantiere', destinazione: 'Cantiere' }
+      setMovimenti(prev => [mov, ...prev])
+      return { ok: true }
+    }
+
+    // Validazione: il posto deve essere occupato
+    const validazione = validaStatoPosto(postoOrigine, STATI_USCITA, 'cantiere')
+    if (!validazione.valido) {
+      return { ok: false, errore: validazione.errore }
+    }
+    const posto = validazione.posto!
+
     const mov: Movement = {
       ...m,
       tipo: 'cantiere',
@@ -294,20 +393,29 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     }
     setMovimenti(prev => [mov, ...prev])
 
-    if (postoOrigine && postoOrigine !== '—') {
-      // Il posto del socio diventa "riservato" — non appare nei suggerimenti transiti
-      // Il posto di un transito torna libero
-      if (mov.scenario === 'socio' || mov.scenario === 'affittuario') {
-        updateOrCreatePosto(postoOrigine, { stato: 'riservato', barcaOra: `In cantiere: ${m.nome}` })
-      } else {
-        // Transiti: il posto torna libero
-        updateOrCreatePosto(postoOrigine, { stato: 'libero', barcaOra: undefined })
-      }
+    if (posto.socioId) {
+      // Posto di un socio (o affittuario su posto socio): in_cantiere, socioId preservato
+      updateOrCreatePosto(postoOrigine, { stato: 'in_cantiere', barcaOra: `In cantiere: ${m.nome}` })
+    } else {
+      // Transito senza socio proprietario: il posto torna libero
+      updateOrCreatePosto(postoOrigine, { stato: 'libero', barcaOra: undefined })
     }
+
+    return { ok: true }
   }
 
-  /** M-05b: Bunker (Distributore) — uscita temporanea automatica */
-  const registraBunker = (m: Movement, postoOrigine: string) => {
+  /** M-05b: Bunker (Distributore) — la barca va al bunker, il posto resta riservato */
+  const registraBunker = (m: Movement, postoOrigine: string): { ok: boolean; errore?: string } => {
+    if (!postoOrigine || postoOrigine === '—') {
+      return { ok: false, errore: 'Posto non specificato per il movimento bunker.' }
+    }
+
+    // Validazione: il posto deve essere occupato
+    const validazione = validaStatoPosto(postoOrigine, STATI_USCITA, 'bunker')
+    if (!validazione.valido) {
+      return { ok: false, errore: validazione.errore }
+    }
+
     const mov: Movement = {
       ...m,
       tipo: 'bunker',
@@ -317,15 +425,39 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     }
     setMovimenti(prev => [mov, ...prev])
 
-    if (postoOrigine && postoOrigine !== '—') {
-      // Registra uscita temporanea automatica dal posto
-      let nuovoStato: Berth['stato']
-      if (mov.scenario === 'socio') nuovoStato = 'socio_assente'
-      else if (mov.scenario === 'affittuario') nuovoStato = 'affittuario_assente'
-      else nuovoStato = 'transito_assente'
+    // Il posto diventa "assente" — riservato per la barca che è al bunker
+    // L'operatore poi deciderà dal bunker: rientro, uscita o spostamento
+    let nuovoStato: Berth['stato']
+    if (mov.scenario === 'socio') nuovoStato = 'socio_assente'
+    else if (mov.scenario === 'affittuario') nuovoStato = 'affittuario_assente'
+    else nuovoStato = 'transito_assente'
 
-      updateOrCreatePosto(postoOrigine, { stato: nuovoStato, barcaOra: `Al bunker: ${m.nome}` })
+    updateOrCreatePosto(postoOrigine, { stato: nuovoStato, barcaOra: `Al bunker: ${m.nome}` })
+    return { ok: true }
+  }
+
+  /** Rientro al posto — da stato *_assente a occupato_* */
+  const registraRientro = (m: Movement): { ok: boolean; errore?: string } => {
+    if (!m.posto || m.posto === '—') {
+      return { ok: false, errore: 'Posto non specificato per il rientro.' }
     }
+
+    // Validazione: il posto deve essere in stato "assente" (o in_cantiere per rientro da cantiere)
+    const statiRientro: BerthStatus[] = ['socio_assente', 'socio_assente_lungo', 'transito_assente', 'affittuario_assente', 'in_cantiere']
+    const validazione = validaStatoPosto(m.posto, statiRientro, 'rientro')
+    if (!validazione.valido) {
+      return { ok: false, errore: validazione.errore }
+    }
+
+    const mov: Movement = { ...m, tipo: 'entrata' }
+    setMovimenti(prev => [mov, ...prev])
+
+    const nuovoStato = mov.scenario === 'socio' ? 'occupato_socio' as const
+      : mov.scenario === 'affittuario' ? 'occupato_affittuario' as const
+      : 'occupato_transito' as const
+    updateOrCreatePosto(mov.posto, { stato: nuovoStato, barcaOra: mov.nome })
+
+    return { ok: true }
   }
 
   // ════════════════════════════════════════════
@@ -367,7 +499,7 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
       addMovimento, updatePosto, addArrivo, resolveArrivo, markNotifica,
       addCliente, addBarca, updateBarca, addRicevuta,
       registraEntrata, registraUscitaTemporanea, registraUscitaDefinitiva,
-      registraSpostamento, registraCantiere, registraBunker,
+      registraSpostamento, registraCantiere, registraBunker, registraRientro,
       isPostoOccupato, checkPagamentoSaldato, checkAutorizzazione, getScenarioBarca
     }}>
       {children}
