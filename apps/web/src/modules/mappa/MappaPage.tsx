@@ -1,8 +1,22 @@
 import React, { useState } from 'react'
-import { Berth } from '@shared/types'
+import { Berth, BerthStatus } from '@shared/types'
+import { BERTH_STATUS_HEX, BERTH_STATUS_LABELS } from '@shared/constants'
 import { MarinaMap } from './components/MarinaMap'
 import { BerthDetailDrawer } from './components/BerthDetailDrawer'
 import { useGlobalState } from '../../store/GlobalState'
+
+// Stati mostrati nella legenda rapida in cima alla mappa.
+// Ordine logico operativo per Torre: prima il libero, poi i presenti,
+// poi gli assenti/bloccati. Gli altri stati (riservato, bunker, ecc.)
+// appaiono comunque sulla mappa ma non ingombrano la legenda.
+const LEGENDA_STATI: BerthStatus[] = [
+  'libero',
+  'occupato_socio',
+  'occupato_transito',
+  'occupato_affittuario',
+  'socio_assente',
+  'in_cantiere',
+]
 
 export function MappaPage() {
   const { posti } = useGlobalState()
@@ -22,20 +36,19 @@ export function MappaPage() {
           </p>
         </div>
 
-        {/* Legenda rapida */}
-        <div style={{ display: 'flex', gap: '16px', fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'var(--green)' }}></span> Libero
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'var(--red)' }}></span> Occupato
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'var(--amber)' }}></span> Assente
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'var(--blue)' }}></span> Cantiere
-          </div>
+        {/* Legenda rapida — colori e label da @shared/constants */}
+        <div style={{ display: 'flex', gap: '14px', fontSize: '0.72rem', fontWeight: 'bold', textTransform: 'uppercase', flexWrap: 'wrap' }}>
+          {LEGENDA_STATI.map(stato => (
+            <div key={stato} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{
+                width: '12px',
+                height: '12px',
+                borderRadius: '50%',
+                background: BERTH_STATUS_HEX[stato]
+              }}></span>
+              {BERTH_STATUS_LABELS[stato]}
+            </div>
+          ))}
         </div>
       </div>
 

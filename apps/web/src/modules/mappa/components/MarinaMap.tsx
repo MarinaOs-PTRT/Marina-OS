@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 import { Berth } from '@shared/types'
+import { BERTH_STATUS_HEX } from '@shared/constants'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 // Vite syntax to import raw SVG string
 // @ts-ignore
@@ -10,20 +11,10 @@ interface MarinaMapProps {
   onBerthSelect: (berth: Berth) => void
 }
 
-// Colori di stato — valori hex diretti per compatibilità SVG inline
-// Allineati ai colori semantici del Design System Marina OS
-const STATUS_COLORS: Record<string, string> = {
-  'libero': '#1D9E75',             // Verde (transito/disponibile)
-  'occupato_socio': '#2E6CBC',     // Blu (socio)
-  'socio_assente': '#BA7517',      // Ambra (assente)
-  'socio_assente_lungo': '#a8a29e',// Grigio (assente lungo)
-  'occupato_transito': '#1D9E75',  // Verde (transito)
-  'transito_assente': '#BA7517',   // Ambra (assente)
-  'occupato_affittuario': '#7c3aed', // Viola (affittuario)
-  'affittuario_assente': '#BA7517',  // Ambra (assente)
-  'in_cantiere': '#A32D2D',       // Rosso (blocco/cantiere)
-  'riservato': '#A32D2D',         // Rosso (blocco)
-}
+// I colori di stato sono definiti in @shared/constants (BERTH_STATUS_HEX).
+// Single Source of Truth: la stessa mappa è usata da BoatList, Omnibar e
+// questo componente. Per cambiare un colore → modificare SOLO
+// packages/shared/src/constants.ts → BERTH_STATUS_HEX.
 
 const SvgContainer = React.memo(React.forwardRef<HTMLDivElement, {}>((props, ref) => (
   <div
@@ -71,7 +62,7 @@ export const MarinaMap = React.memo(function MarinaMap({ berths, onBerthSelect }
 
       if (matchedEl) {
         // È un posto barca con elemento SVG! Applichiamo colore e interattività.
-        const color = STATUS_COLORS[berth.stato] || '#cbd5e1'
+        const color = BERTH_STATUS_HEX[berth.stato] || '#cbd5e1'
         matchedEl.setAttribute('style', `fill: ${color}; cursor: pointer; transition: opacity 0.2s; pointer-events: all;`)
 
         matchedEl.addEventListener('mouseenter', () => matchedEl!.setAttribute('opacity', '0.6'))
