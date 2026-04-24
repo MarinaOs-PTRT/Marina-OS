@@ -83,7 +83,11 @@ export function MovementDetailDrawer({ movement, onClose }: DrawerProps) {
               <div className="drawer-field full">
                 <div className="drawer-field-label">Autorizzazione</div>
                 <div className="drawer-field-val">
-                  {movement.auth ? (
+                  {movement.flag_attesa_auth ? (
+                    <span style={{ color: 'var(--color-text-warning)' }}>
+                      ⏳ In attesa di Autorizzazione — la Direzione deve compilare il documento
+                    </span>
+                  ) : movement.auth ? (
                     <span style={{ color: 'var(--green)' }}>✓ Autorizzato (Sistema Automatico)</span>
                   ) : (
                     <span style={{ color: 'var(--amber)' }}>⚠ In attesa di verifica manuale</span>

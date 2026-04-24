@@ -64,7 +64,11 @@ export function SociTable({ data }: Props) {
               {authAttiva ? (
                 <div>
                   <span style={{ textTransform: 'capitalize', fontWeight: 600 }}>{authAttiva.tipo}</span>: {authAttiva.beneficiario}
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>{authAttiva.dal} → {authAttiva.al}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>
+                    {authAttiva.stato === 'pendente'
+                      ? <span style={{ color: 'var(--color-text-warning)' }}>In attesa di Autorizzazione</span>
+                      : <>{authAttiva.dal} → {authAttiva.al}</>}
+                  </div>
                 </div>
               ) : (
                 <span style={{ color: 'var(--text3)' }}>Nessuna</span>

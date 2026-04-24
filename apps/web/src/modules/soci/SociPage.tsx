@@ -7,7 +7,7 @@ import { useGlobalState } from '../../store/GlobalState'
 import { Authorization, AuthStatus } from '@shared/types'
 import './SociPage.css'
 
-type ActiveTab = 'soci' | 'attive' | 'storico'
+type ActiveTab = 'soci' | 'pendenti' | 'attive' | 'storico'
 
 export function SociPage() {
   const { clienti, posti, titoli, autorizzazioni: autorizzazioniGlobali } = useGlobalState()
@@ -46,8 +46,11 @@ export function SociPage() {
     })
   }, [autorizzazioni])
 
+  const authPendenti = autorizzazioni.filter(a => a.stato === 'pendente')
   const authAttive = autorizzazioni.filter(a => a.stato === 'attiva')
-  const authStorico = autorizzazioni.filter(a => a.stato !== 'attiva')
+  // Storico = ciò che è "chiuso" (scaduta o revocata). Le pendenti sono
+  // lavoro da fare e hanno la loro tab dedicata.
+  const authStorico = autorizzazioni.filter(a => a.stato === 'scaduta' || a.stato === 'revocata')
 
   const handleRevoca = (id: number) => {
     if (confirm('Sei sicuro di voler revocare questa autorizzazione?')) {
@@ -83,6 +86,13 @@ export function SociPage() {
               👤 Elenco Soci e Posti ({sociAggregati.length})
             </button>
             <button
+              className={`soci-tab ${activeTab === 'pendenti' ? 'active' : ''}`}
+              onClick={() => setActiveTab('pendenti')}
+              style={authPendenti.length > 0 ? { color: 'var(--color-text-warning)', fontWeight: 600 } : undefined}
+            >
+              ⏳ Da Compilare ({authPendenti.length})
+            </button>
+            <button
               className={`soci-tab ${activeTab === 'attive' ? 'active' : ''}`}
               onClick={() => setActiveTab('attive')}
             >
@@ -112,6 +122,7 @@ export function SociPage() {
           )}
 
           {activeTab === 'soci' && <SociTable data={sociAggregati} />}
+          {activeTab === 'pendenti' && <AuthTable data={authPendenti} type="storico" />}
           {activeTab === 'attive' && <AuthTable data={authAttive} type="attive" onRevoca={handleRevoca} />}
           {activeTab === 'storico' && <AuthTable data={authStorico} type="storico" />}
         </div>

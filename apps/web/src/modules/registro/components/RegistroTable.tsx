@@ -60,7 +60,12 @@ export function RegistroTable({ movements, onSelect }: RegistroTableProps) {
                 <Badge color="gray">{SCENARIO_LABELS[m.scenario]}</Badge>
               </td>
               <td>
-                {m.auth ? (
+                {m.flag_attesa_auth ? (
+                  <span
+                    style={{ color: 'var(--color-text-warning)', fontWeight: 'bold', fontSize: '0.8rem' }}
+                    title="In attesa di Autorizzazione — da compilare in Direzione"
+                  >⏳ In attesa</span>
+                ) : m.auth ? (
                   <span style={{ color: 'var(--green)', fontWeight: 'bold' }}>✓ OK</span>
                 ) : (
                   <span style={{ color: 'var(--text3)' }}>-</span>

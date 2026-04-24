@@ -36,18 +36,26 @@ export function AuthTable({ data, type, onRevoca }: Props) {
               <div className="so-tel">{a.tel}</div>
             </td>
             <td style={{ textTransform: 'capitalize', fontWeight: 600 }}>{a.tipo}</td>
-            <td style={{ fontSize: '0.85rem' }}>{a.dal} <br/> {a.al}</td>
+            <td style={{ fontSize: '0.85rem' }}>
+              {a.stato === 'pendente' ? (
+                <span style={{ color: 'var(--color-text-warning)', fontStyle: 'italic' }}>Da compilare</span>
+              ) : (
+                <>{a.dal} <br/> {a.al}</>
+              )}
+            </td>
             {type === 'attive' && (
-              <td><strong>{a.giorniResidui} gg</strong></td>
+              <td><strong>{a.giorniResidui != null ? `${a.giorniResidui} gg` : '—'}</strong></td>
             )}
             <td>
               <div style={{ fontWeight: 600 }}>{a.barca}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>{a.matricola}</div>
             </td>
-            <td>{a.authDa}</td>
+            <td>{a.authDa ?? <span style={{ color: 'var(--text3)' }}>—</span>}</td>
             <td>
               <span className={`pill pill-auth-${a.stato}`}>
-                {a.stato.charAt(0).toUpperCase() + a.stato.slice(1)}
+                {a.stato === 'pendente'
+                  ? 'In attesa di Autorizzazione'
+                  : a.stato.charAt(0).toUpperCase() + a.stato.slice(1)}
               </span>
             </td>
             {type === 'attive' && (

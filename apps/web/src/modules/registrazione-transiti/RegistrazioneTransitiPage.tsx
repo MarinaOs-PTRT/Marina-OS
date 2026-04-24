@@ -94,8 +94,15 @@ export function RegistrazioneTransitiPage() {
     const cl = clienti.find(c => c.id === boat!.clientId)
     if (cl) {
       setExistingClient(cl)
-      setPNome(cl.nome.split(' ')[0] || '')
-      setPCognome(cl.nome.split(' ').slice(1).join(' ') || '')
+      // Se è un cliente scheletro creato dal Tempo 1 (nome = "Transito — …"),
+      // NON precompilare nome/cognome: l'operatore deve inserire i veri dati.
+      const isScheletro = cl.nome.startsWith('Transito —') || cl.nome.startsWith('Transito -')
+      if (isScheletro) {
+        setPNome(''); setPCognome('')
+      } else {
+        setPNome(cl.nome.split(' ')[0] || '')
+        setPCognome(cl.nome.split(' ').slice(1).join(' ') || '')
+      }
       setPTel(cl.tel || '')
       setPIndirizzo(cl.indirizzo || '')
       setPNaz(cl.naz || '')
@@ -275,7 +282,12 @@ export function RegistrazioneTransitiPage() {
         {step === 1 && !completato && (
           <div className="reg-card">
             <h2>👤 Dati Comandante / Proprietario</h2>
-            {existingClient && (
+            {selectedBoat && selectedBoat.registrazioneCompleta === false && (
+              <div className="reg-info-banner" style={{ background: 'rgba(186,117,23,0.12)', color: 'var(--color-text-warning)', borderColor: 'var(--color-text-warning)' }}>
+                ⏳ <strong>Registrazione incompleta (Tempo 1).</strong> L'ingresso è già stato registrato in Torre. Completa i dati del comandante e della barca per emettere la ricevuta.
+              </div>
+            )}
+            {existingClient && !(selectedBoat && selectedBoat.registrazioneCompleta === false) && (
               <div className="reg-info-banner">ℹ️ Cliente già registrato nel sistema: <strong>{existingClient.nome}</strong>. Verifica e completa i dati.</div>
             )}
             {errore && <div className="reg-error">{errore}</div>}

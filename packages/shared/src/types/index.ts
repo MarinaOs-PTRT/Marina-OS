@@ -33,7 +33,11 @@ export type MovementScenario = 'socio' | 'transito' | 'affittuario'
 export type AuthType = 'affitto' | 'ospite' | 'amico'
 
 // ── Stato autorizzazione ──
-export type AuthStatus = 'attiva' | 'scaduta' | 'revocata'
+// 'pendente' = autorizzazione creata automaticamente dalla Torre al momento
+// dell'ingresso di un affittuario senza doc. ufficiale. È un placeholder:
+// la Direzione DEVE completare numero_protocollo, data_firma, canone,
+// data_inizio, data_fine prima di passarla ad 'attiva'.
+export type AuthStatus = 'pendente' | 'attiva' | 'scaduta' | 'revocata'
 
 // ── Tipo manutenzione ──
 export type MaintenanceType = 'subacqueo' | 'ordinario' | 'straordinario' | 'cantiere'
@@ -139,12 +143,18 @@ export interface Authorization {
   barca: string
   matricola: string
   tel: string
-  dal: string
-  al: string
-  giorniResidui: number
+  // Campi documentali: obbligatori per 'attiva' | 'scaduta' | 'revocata',
+  // opzionali per 'pendente' (placeholder creato dalla Torre, da compilare in Direzione).
+  dal?: string
+  al?: string
+  giorniResidui?: number
   stato: AuthStatus
   note?: string
-  authDa: string
+  authDa?: string
+  // Tracciabilità: chi e quando ha creato il record pendente.
+  creatoDaMovementId?: number
+  creatoDa?: string // operatore Torre
+  creatoIl?: string // ISO datetime
 }
 
 export interface Movement {
@@ -158,6 +168,10 @@ export interface Movement {
   postoOrigine?: string // per spostamento, cantiere, bunker
   scenario: MovementScenario
   auth: boolean
+  // Marca il movimento come registrato senza autorizzazione valida:
+  // la Torre ha creato un'auth 'pendente' che la Direzione deve compilare.
+  // Ortogonale a `auth`: auth=false + flag_attesa_auth=true → registrato in attesa.
+  flag_attesa_auth?: boolean
   origine?: string
   destinazione?: string
   pagamento: string

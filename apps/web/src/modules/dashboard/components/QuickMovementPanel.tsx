@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { useGlobalState } from '../../../store/GlobalState'
-import { Berth, Boat, MovementScenario } from '@shared/types'
+import { Berth, Boat, Client, MovementScenario } from '@shared/types'
 import { BERTH_STATUS_LABELS } from '@shared/constants'
 import './QuickMovementPanel.css'
 
@@ -15,11 +15,12 @@ type SearchSuggestion = {
 }
 
 export function QuickMovementPanel() {
-  const { 
+  const {
     posti, barche, clienti,
     registraEntrata, registraUscitaTemporanea, registraUscitaDefinitiva,
     registraSpostamento, registraCantiere, registraBunker, registraRientro,
-    isPostoOccupato, checkPagamentoSaldato, checkAutorizzazione, getScenarioBarca
+    isPostoOccupato, checkPagamentoSaldato, checkAutorizzazione, getScenarioBarca,
+    addCliente, addBarca
   } = useGlobalState()
 
   // ── Stato del form ──
@@ -54,6 +55,13 @@ export function QuickMovementPanel() {
   const [showWarning, setShowWarning] = useState(false)
   const [warningMessage, setWarningMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+  // Modale BLOCCANTE per ingresso affittuario senza autorizzazione valida:
+  // 2 bottoni (Annulla / Registra come Pendente). Vedi MEDIO 4.
+  const [authMissingModal, setAuthMissingModal] = useState<{
+    show: boolean
+    motivo: string
+    onProceed: () => void
+  }>({ show: false, motivo: '', onProceed: () => {} })
 
   // ════════════════════════════════════════════
   // RICERCA LIVE — 3 pilastri
@@ -185,6 +193,67 @@ export function QuickMovementPanel() {
   }
 
   // ────────────────────────────────────────────
+  // MEDIO 3-bis: anagrafica minima per transiti sconosciuti (Tempo 1)
+  //
+  // Cerca la barca per nome o matricola. Se non esiste e la tipologia è
+  // 'transito', crea due record "scheletro":
+  //   1. Un Client placeholder ("Transito — <nome barca>") da completare in Tempo 2.
+  //   2. Una Boat con registrazioneCompleta=false, flag che la
+  //      RegistrazioneTransitiPage usa per mostrare "da completare".
+  //
+  // Socio e Affittuario: se non esistono, è un errore di altro tipo (anagrafica
+  // doveva essere caricata in Ufficio). Qui NON creiamo nulla, lasciamo proseguire
+  // il flusso — se serve, verrà bloccato più a valle da checkAutorizzazione.
+  // ────────────────────────────────────────────
+  const ensureBoatExists = (): void => {
+    if (tipologia !== 'transito') return
+    const nomeTrim = nome.trim()
+    const targaTrim = targa.trim()
+    if (!nomeTrim && !targaTrim) return
+
+    const esistente = barche.find(b =>
+      (nomeTrim && b.nome.toLowerCase() === nomeTrim.toLowerCase()) ||
+      (targaTrim && b.matricola.toLowerCase() === targaTrim.toLowerCase())
+    )
+    if (esistente) return // già in anagrafica, niente da fare
+
+    // Calcolo iniziali placeholder: prime due lettere del nome barca (o "??" se vuoto)
+    const baseIniz = nomeTrim || targaTrim || '??'
+    const iniziali = baseIniz.substring(0, 2).toUpperCase()
+
+    // 1. Crea Client scheletro
+    const nuovoClientId = Math.max(0, ...clienti.map(c => c.id)) + 1
+    const nuovoClient: Client = {
+      id: nuovoClientId,
+      tipo: 'pf',
+      nome: `Transito — ${nomeTrim || targaTrim}`,
+      iniziali
+    }
+    addCliente(nuovoClient)
+
+    // 2. Crea Boat scheletro, collegata al Client appena creato
+    const nuovoBoatId = Math.max(0, ...barche.map(b => b.id)) + 1
+    const lunVal = parseFloat(lunghezza) || 0
+    const pesVal = parseFloat(pescaggio) || 0
+    const nuovaBoat: Boat = {
+      id: nuovoBoatId,
+      clientId: nuovoClientId,
+      nome: nomeTrim || `Barca ${targaTrim}`,
+      matricola: targaTrim || 'N/D',
+      tipo: 'Altro',
+      tipologia: 'transito',
+      lunghezza: lunVal,
+      larghezza: 0,
+      pescaggio: pesVal,
+      bandiera: 'N/D',
+      posto: posto.trim() || undefined,
+      stato: 'occupato_transito',
+      registrazioneCompleta: false
+    }
+    addBarca(nuovaBoat)
+  }
+
+  // ────────────────────────────────────────────
   // Helper per creare oggetto Movement base
   // ────────────────────────────────────────────
   const buildMovement = (tipo: any, postoVal: string) => ({
@@ -220,14 +289,32 @@ export function QuickMovementPanel() {
     if (!validateBase()) return
     if (!posto.trim()) { setErrorMessage('Inserisci o seleziona un posto barca.'); return }
     if (isPostoOccupato(posto)) { setErrorMessage(`Il posto ${posto} è già occupato. Scegli un posto differente.`); return }
-    if (tipologia === 'socio' || tipologia === 'affittuario') {
+
+    // Tempo 1: se è un transito nuovo, crea anagrafica minima (Client + Boat scheletro)
+    ensureBoatExists()
+    const m = buildMovement('entrata', posto)
+
+    // Affittuario senza autorizzazione valida: modale BLOCCANTE a 2 bottoni.
+    // L'operatore Torre può solo annullare o registrare come "In attesa di Autorizzazione".
+    // La creazione dell'auth ufficiale è compito esclusivo della Direzione.
+    if (tipologia === 'affittuario') {
       const authCheck = checkAutorizzazione(posto, nome)
       if (!authCheck.autorizzato) {
-        setWarningMessage(`⚠️ Attenzione: ${authCheck.motivo}\nL'assegnazione verrà comunque registrata.`)
-        setShowWarning(true)
+        setAuthMissingModal({
+          show: true,
+          motivo: authCheck.motivo || 'Autorizzazione non trovata per questa imbarcazione.',
+          onProceed: () => {
+            const r = registraEntrata(m, { pendente: true })
+            if (!r.ok) { setErrorMessage(r.errore || 'Errore durante la registrazione.'); return }
+            setAuthMissingModal({ show: false, motivo: '', onProceed: () => {} })
+            handleClear()
+          }
+        })
+        return
       }
     }
-    const m = buildMovement('entrata', posto)
+
+    // Socio sul proprio posto, o affittuario con auth attiva, o transito: flusso diretto.
     const result = registraEntrata(m)
     if (!result.ok) { setErrorMessage(result.errore || 'Errore durante la registrazione.'); return }
     handleClear()
@@ -255,8 +342,16 @@ export function QuickMovementPanel() {
       return
     }
     if (tipologia === 'transito' && !checkPagamentoSaldato(nome)) {
-      setWarningMessage('⚠️ Attenzione: non risulta emessa una ricevuta saldata per questa imbarcazione. L\'operatore può comunque confermare l\'uscita.')
-      setShowWarning(true)
+      // Warning BLOCCANTE: la Torre deve confermare esplicitamente.
+      setConfirmMessage('Non risulta emessa una ricevuta saldata per questa imbarcazione. Vuoi registrare comunque l\'uscita definitiva?')
+      setConfirmAction(() => () => {
+        const r = registraUscitaDefinitiva(buildMovement('uscita_definitiva', posto))
+        if (!r.ok) { setErrorMessage(r.errore || 'Errore durante l\'uscita definitiva.') }
+        else { handleClear() }
+        setShowConfirmPopup(false)
+      })
+      setShowConfirmPopup(true)
+      return
     }
     const result = registraUscitaDefinitiva(buildMovement('uscita_definitiva', posto))
     if (!result.ok) { setErrorMessage(result.errore || 'Errore durante l\'uscita definitiva.'); return }
@@ -274,6 +369,7 @@ export function QuickMovementPanel() {
   const handleCantiere = () => {
     if (!validateBase()) return
     if (!posto.trim()) { setErrorMessage('Inserisci il posto da cui parte la barca (verso il cantiere).'); return }
+    ensureBoatExists()
     const result = registraCantiere(buildMovement('cantiere', 'Cantiere'), posto)
     if (!result.ok) { setErrorMessage(result.errore || 'Errore durante la registrazione cantiere.'); return }
     handleClear()
@@ -282,6 +378,7 @@ export function QuickMovementPanel() {
   const handleBunker = () => {
     if (!validateBase()) return
     if (!posto.trim()) { setErrorMessage('Inserisci il posto da cui parte la barca (verso il bunker).'); return }
+    ensureBoatExists()
     const result = registraBunker(buildMovement('bunker', 'Bunker'), posto)
     if (!result.ok) { setErrorMessage(result.errore || 'Errore durante la registrazione bunker.'); return }
     handleClear()
@@ -290,6 +387,7 @@ export function QuickMovementPanel() {
   const handleRientro = () => {
     if (!validateBase()) return
     if (!posto.trim()) { setErrorMessage('Inserisci il posto in cui rientra la barca.'); return }
+    ensureBoatExists()
     const result = registraRientro(buildMovement('entrata', posto))
     if (!result.ok) { setErrorMessage(result.errore || 'Errore durante la registrazione del rientro.'); return }
     handleClear()
@@ -491,7 +589,7 @@ export function QuickMovementPanel() {
         </div>
       )}
 
-      {/* AVVISO WARNING */}
+      {/* AVVISO WARNING (non bloccante — riservato a note informative) */}
       {showWarning && (
         <div className="modal-overlay" onClick={() => setShowWarning(false)}>
           <div className="modal-box warning" onClick={e => e.stopPropagation()}>
@@ -500,6 +598,36 @@ export function QuickMovementPanel() {
             <p className="modal-message">{warningMessage}</p>
             <div className="modal-actions">
               <button className="btn btn-mode-entrata" onClick={() => setShowWarning(false)}>Ho capito</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODALE BLOCCANTE — autorizzazione affittuario mancante (MEDIO 4) */}
+      {authMissingModal.show && (
+        <div className="modal-overlay" onClick={() => setAuthMissingModal({ show: false, motivo: '', onProceed: () => {} })}>
+          <div className="modal-box warning" onClick={e => e.stopPropagation()}>
+            <div className="modal-icon">⚠️</div>
+            <h3 className="modal-title">Autorizzazione non trovata</h3>
+            <p className="modal-message">{authMissingModal.motivo}</p>
+            <p className="modal-message" style={{ marginTop: '12px', fontSize: '0.9rem', color: 'var(--text2)' }}>
+              L'autorizzazione è un documento formale gestito dalla Direzione.<br/>
+              Puoi registrare comunque l'ingresso come <strong>"In attesa di Autorizzazione"</strong>:
+              la Direzione riceverà una notifica per compilare il documento.
+            </p>
+            <div className="modal-actions">
+              <button
+                className="btn btn-outline"
+                onClick={() => setAuthMissingModal({ show: false, motivo: '', onProceed: () => {} })}
+              >
+                Annulla
+              </button>
+              <button
+                className="btn btn-mode-entrata"
+                onClick={() => authMissingModal.onProceed()}
+              >
+                Registra come Pendente
+              </button>
             </div>
           </div>
         </div>

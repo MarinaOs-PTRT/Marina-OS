@@ -33,7 +33,9 @@ interface GlobalState {
   markNotifica: (id: number, stato: 'letta' | 'risolta') => void
 
   // Azioni Logica Operativa
-  registraEntrata: (m: Movement) => { ok: boolean; errore?: string }
+  // opts.pendente=true: affittuario senza autorizzazione valida → crea auth placeholder
+  // e notifica la Direzione. Scelta consapevole dall'operatore Torre via modale bloccante.
+  registraEntrata: (m: Movement, opts?: { pendente?: boolean }) => { ok: boolean; errore?: string }
   registraUscitaTemporanea: (m: Movement) => { ok: boolean; errore?: string }
   registraUscitaDefinitiva: (m: Movement) => { ok: boolean; errore?: string }
   registraSpostamento: (m: Movement, postoOrigine: string, postoDestinazione: string) => { ok: boolean; errore?: string }
@@ -218,8 +220,19 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
   const STATI_ENTRATA: BerthStatus[] = ['libero', 'socio_assente', 'socio_assente_lungo', 'affittuario_assente', 'transito_assente']
   const STATI_USCITA: BerthStatus[] = ['occupato_socio', 'occupato_transito', 'occupato_affittuario']
 
-  /** M-01: Protocollo di Entrata */
-  const registraEntrata = (m: Movement): { ok: boolean; errore?: string } => {
+  /** M-01: Protocollo di Entrata
+   *
+   *  opts.pendente=true:
+   *    L'operatore Torre ha confermato in modale bloccante l'ingresso di un
+   *    affittuario senza autorizzazione valida. Creiamo:
+   *      1. Il Movement con flag_attesa_auth=true (e auth=false)
+   *      2. Un'Authorization placeholder con stato='pendente' e campi
+   *         documentali (dal/al/authDa/giorniResidui) volutamente undefined:
+   *         la Direzione DEVE compilarli consapevolmente.
+   *      3. Un SystemAlert per la Direzione (categoria='operativo', urgenza='media')
+   *    Il berth diventa 'occupato_affittuario' perché la barca È fisicamente entrata.
+   */
+  const registraEntrata = (m: Movement, opts?: { pendente?: boolean }): { ok: boolean; errore?: string } => {
     if (!m.posto || m.posto === '—') {
       // Entrata senza posto assegnato — registra solo il movimento
       setMovimenti(prev => [m, ...prev])
@@ -242,8 +255,47 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     }
 
     // Registra il movimento (senza mutare il parametro originale)
-    const mov: Movement = { ...m, auth: authValida }
+    const isPendente = opts?.pendente === true
+    const mov: Movement = {
+      ...m,
+      auth: isPendente ? false : authValida,
+      flag_attesa_auth: isPendente ? true : undefined
+    }
     setMovimenti(prev => [mov, ...prev])
+
+    // Modalità pendente: crea placeholder auth + alert Direzione
+    if (isPendente) {
+      const posto = validazione.posto!
+      const nuovaAuthId = Math.max(0, ...autorizzazioni.map(a => a.id)) + 1
+      const authPendente: Authorization = {
+        id: nuovaAuthId,
+        socioId: posto.socioId ?? 0, // 0 = nessun socio titolare noto al momento
+        berthId: mov.posto,
+        tipo: 'affitto',             // default sensato per una pendente da compilare
+        beneficiario: mov.nome,      // usiamo il nome barca come segnaposto
+        barca: mov.nome,
+        matricola: mov.matricola,
+        tel: '',
+        stato: 'pendente',
+        // dal, al, giorniResidui, authDa: volutamente undefined → Direzione deve compilare
+        creatoDaMovementId: mov.id,
+        creatoDa: mov.operatore.nome,
+        creatoIl: new Date().toISOString()
+      }
+      setAutorizzazioni(prev => [...prev, authPendente])
+
+      const nuovaNotificaId = Math.max(0, ...notifiche.map(n => n.id)) + 1
+      const alert: SystemAlert = {
+        id: nuovaNotificaId,
+        titolo: 'Autorizzazione da compilare',
+        descrizione: `Posto ${mov.posto} — barca "${mov.nome}" (${mov.matricola}). Ingresso registrato in attesa di autorizzazione dal ${mov.operatore.nome}. Compilare il documento ufficiale.`,
+        urgenza: 'media',
+        categoria: 'operativo',
+        data: new Date().toISOString(),
+        stato: 'nuova'
+      }
+      setNotifiche(prev => [alert, ...prev])
+    }
 
     const nuovoStato = mov.scenario === 'socio' ? 'occupato_socio' as const
       : mov.scenario === 'affittuario' ? 'occupato_affittuario' as const
