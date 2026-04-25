@@ -27,8 +27,8 @@ export function Sidebar() {
 
       <nav className="sidebar-nav">
         {MODULE_NAV.map((item) => (
-          <Link 
-            key={item.path} 
+          <Link
+            key={item.path}
             to={item.path}
             className={`nav-item ${location.pathname.startsWith(item.path) ? 'active' : ''}`}
           >
@@ -36,10 +36,10 @@ export function Sidebar() {
           </Link>
         ))}
       </nav>
-      
+
       <div className="sidebar-footer">
         <button className="btn-logout">
-          Esci
+          Esci/Logout
         </button>
       </div>
     </aside>

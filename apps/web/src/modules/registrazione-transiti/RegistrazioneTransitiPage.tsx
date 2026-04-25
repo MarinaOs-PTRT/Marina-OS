@@ -10,8 +10,7 @@ import './RegistrazioneTransitiPage.css'
  * ordinato in modo crescente per lunMax. Vedi Master File §4 — Calcolo Tariffe.
  *
  * Ritorna `null` se la lunghezza non è valida (0, NaN, negativa) o se
- * l'elenco tariffe è vuoto. Il chiamante DEVE gestire il caso null —
- * non accedere mai a `.prezzoGiorno` senza aver prima verificato il valore.
+ * l'elenco tariffe è vuoto. Il chiamante DEVE gestire il caso null.
  */
 function getTariffaDaLunghezza(tariffe: any[], lunghezza: number) {
   if (!Number.isFinite(lunghezza) || lunghezza <= 0) return null
@@ -21,36 +20,36 @@ function getTariffaDaLunghezza(tariffe: any[], lunghezza: number) {
   return sorted[sorted.length - 1]
 }
 
+// ── Tipi interni ───────────────────────────────────────────
+type StatoAnagrafica = 'nessuna' | 'incompleta' | 'completa'
+
 export function RegistrazioneTransitiPage() {
   const {
-    barche, clienti, tariffe, posti, movimenti, ricevute,
-    addCliente, addBarca, updateBarca, addRicevuta
-    // NOTA: NON importiamo registraEntrata. Il movimento d'entrata è già
-    // stato registrato al Tempo 1 dal QuickMovementPanel in Torre.
-    // Questa pagina completa solo anagrafica + ricevuta (Tempo 2).
+    barche, clienti, tariffe, ricevute,
+    addCliente, updateBarca, addRicevuta
+    // NON importiamo registraEntrata: il movimento è già stato registrato
+    // al Tempo 1 dal QuickMovementPanel. Questa pagina completa
+    // anagrafica + ricevuta (Tempo 2).
   } = useGlobalState()
 
-  // ── Barca selezionata ──
+  // ── Selezione barca ──
   const [selectedBoat, setSelectedBoat] = useState<Boat | null>(null)
   const [selectedPostoId, setSelectedPostoId] = useState('')
+  const [existingClient, setExistingClient] = useState<Client | null>(null)
 
-  // ── Step attivo ──
-  const [step, setStep] = useState(0) // 0 = ricerca, 1 = persona, 2 = barca, 3 = pagamento
-
-  // ── Dati Persona ──
+  // ── Dati Comandante ──
   const [pNome, setPNome] = useState('')
   const [pCognome, setPCognome] = useState('')
   const [pTel, setPTel] = useState('')
   const [pIndirizzo, setPIndirizzo] = useState('')
   const [pNaz, setPNaz] = useState('')
-  const [pDocTipo, setPDocTipo] = useState('Carta d\'identità')
+  const [pDocTipo, setPDocTipo] = useState("Carta d'identità")
   const [pDocNum, setPDocNum] = useState('')
   const [pLicenza, setPLicenza] = useState('')
   const [pEmail, setPEmail] = useState('')
   const [pTipoCliente, setPTipoCliente] = useState<'pf' | 'az'>('pf')
   const [pPiva, setPPiva] = useState('')
   const [pRagione, setPRagione] = useState('')
-  const [existingClient, setExistingClient] = useState<Client | null>(null)
 
   // ── Dati Barca ──
   const [bNome, setBNome] = useState('')
@@ -69,9 +68,58 @@ export function RegistrazioneTransitiPage() {
   const [extra, setExtra] = useState('')
   const [metodo, setMetodo] = useState<'contante' | 'pos' | 'bonifico'>('pos')
 
-  // ── Errori e successo ──
-  const [errore, setErrore] = useState('')
+  // ── Feedback UI ──
+  const [erroreAnagrafica, setErroreAnagrafica] = useState('')
+  const [erroreCassa, setErroreCassa] = useState('')
+  const [salvatoOk, setSalvatoOk] = useState(false)
   const [completato, setCompletato] = useState(false)
+  const [erroreOmnibar, setErroreOmnibar] = useState('')
+
+  // ════════════════════════════════════════════
+  // Stato anagrafica (badge)
+  // ════════════════════════════════════════════
+  const statoAnagrafica: StatoAnagrafica = useMemo(() => {
+    if (!selectedBoat) return 'nessuna'
+    const campiOk =
+      pNome.trim() && pCognome.trim() && pTel.trim() &&
+      pIndirizzo.trim() && pDocNum.trim() && pLicenza.trim() &&
+      bNome.trim() && parseFloat(bLunghezza) > 0 &&
+      parseFloat(bLarghezza) > 0 && parseFloat(bPescaggio) > 0
+    return campiOk ? 'completa' : 'incompleta'
+  }, [selectedBoat, pNome, pCognome, pTel, pIndirizzo, pDocNum, pLicenza,
+      bNome, bLunghezza, bLarghezza, bPescaggio])
+
+  // ════════════════════════════════════════════
+  // Calcolo tariffa (reattivo)
+  // ════════════════════════════════════════════
+  const calcResult = useMemo(() => {
+    const lun = parseFloat(bLunghezza) || 0
+    if (!dal || !al || lun <= 0) return null
+    const giorni = Math.max(0, Math.round(
+      (new Date(al).getTime() - new Date(dal).getTime()) / 86400000
+    ))
+    if (giorni <= 0) return null
+    const t = getTariffaDaLunghezza(tariffe, lun)
+    if (!t) return null
+    const subtotale = t.prezzoGiorno * giorni
+    const extraVal = parseFloat(extra) || 0
+    return {
+      categoria: t.categoria,
+      tariffaGg: t.prezzoGiorno,
+      giorni,
+      subtotale,
+      extra: extraVal,
+      totale: subtotale + extraVal
+    }
+  }, [tariffe, bLunghezza, dal, al, extra])
+
+  const tariffaPreview = useMemo(() => {
+    const lun = parseFloat(bLunghezza) || 0
+    if (lun <= 0) return null
+    const t = getTariffaDaLunghezza(tariffe, lun)
+    if (!t) return null
+    return `${t.categoria} — €${t.prezzoGiorno}/giorno`
+  }, [tariffe, bLunghezza])
 
   // ════════════════════════════════════════════
   // Omnibar seleziona una barca
@@ -87,10 +135,15 @@ export function RegistrazioneTransitiPage() {
       boat = barche.find(b => b.nome === orig.barcaOra || b.posto === orig.id)
     }
 
-    if (!boat) { setErrore('Barca non trovata nel sistema.'); return }
+    if (!boat) { setErroreOmnibar('Barca non trovata nel sistema.'); return }
 
     setSelectedBoat(boat)
     setSelectedPostoId(boat.posto || '')
+    setSalvatoOk(false)
+    setErroreAnagrafica('')
+    setErroreCassa('')
+    setErroreOmnibar('')
+    setCompletato(false)
 
     // Precompila dati barca
     setBNome(boat.nome)
@@ -103,14 +156,13 @@ export function RegistrazioneTransitiPage() {
     setBPortoIscr(boat.portoIscrizione || '')
     setBStazza(String(boat.stazzaGT || ''))
 
-    // Controlla se il cliente esiste
+    // Precompila dati cliente
     const cl = clienti.find(c => c.id === boat!.clientId)
     if (cl) {
       setExistingClient(cl)
-      // Se è un cliente scheletro creato dal Tempo 1 (nome = "Transito — …"),
-      // NON precompilare nome/cognome: l'operatore deve inserire i veri dati.
       const isScheletro = cl.nome.startsWith('Transito —') || cl.nome.startsWith('Transito -')
       if (isScheletro) {
+        // Scheletro Tempo 1: lascia nome/cognome vuoti — operatore inserisce i veri dati
         setPNome(''); setPCognome('')
       } else {
         setPNome(cl.nome.split(' ')[0] || '')
@@ -119,89 +171,100 @@ export function RegistrazioneTransitiPage() {
       setPTel(cl.tel || '')
       setPIndirizzo(cl.indirizzo || '')
       setPNaz(cl.naz || '')
-      setPDocTipo(cl.docTipo || 'Carta d\'identità')
+      setPDocTipo(cl.docTipo || "Carta d'identità")
       setPDocNum(cl.docNum || '')
       setPEmail(cl.email || '')
+      setPLicenza((cl as any).licenza || '')
+    } else {
+      setExistingClient(null)
+      setPNome(''); setPCognome(''); setPTel(''); setPIndirizzo('')
+      setPNaz(''); setPDocTipo("Carta d'identità"); setPDocNum('')
+      setPLicenza(''); setPEmail(''); setPTipoCliente('pf')
+      setPPiva(''); setPRagione('')
     }
-
-    setStep(1)
-    setErrore('')
   }
 
   // ════════════════════════════════════════════
-  // Calcolo tariffa
+  // Validazioni
   // ════════════════════════════════════════════
-  const calcResult = useMemo(() => {
-    const lun = parseFloat(bLunghezza) || 0
-    if (!dal || !al || lun <= 0) return null
-    const giorni = Math.max(0, Math.round((new Date(al).getTime() - new Date(dal).getTime()) / 86400000))
-    if (giorni <= 0) return null
-    const t = getTariffaDaLunghezza(tariffe, lun)
-    if (!t) return null // lunghezza non valida o elenco tariffe vuoto
-    const subtotale = t.prezzoGiorno * giorni
-    const extraVal = parseFloat(extra) || 0
-    return { categoria: t.categoria, tariffaGg: t.prezzoGiorno, giorni, subtotale, extra: extraVal, totale: subtotale + extraVal }
-  }, [tariffe, bLunghezza, dal, al, extra])
-
-  // ════════════════════════════════════════════
-  // Validazioni step
-  // ════════════════════════════════════════════
-  const validateStep1 = () => {
+  const validateAnagrafica = (): string | null => {
     if (!pNome.trim() || !pCognome.trim()) return 'Nome e cognome sono obbligatori.'
     if (!pTel.trim()) return 'Il telefono è obbligatorio.'
-    if (!pIndirizzo.trim()) return 'L\'indirizzo è obbligatorio.'
+    if (!pIndirizzo.trim()) return "L'indirizzo è obbligatorio."
     if (!pDocNum.trim()) return 'Il numero del documento è obbligatorio.'
     if (!pLicenza.trim()) return 'La licenza di navigazione è obbligatoria.'
+    if (!bNome.trim()) return 'Il nome della barca è obbligatorio.'
+    if (!bLunghezza || parseFloat(bLunghezza) <= 0) return 'La lunghezza è obbligatoria e deve essere > 0.'
+    if (!bLarghezza || parseFloat(bLarghezza) <= 0) return 'La larghezza è obbligatoria e deve essere > 0.'
+    if (!bPescaggio || parseFloat(bPescaggio) <= 0) return 'Il pescaggio è obbligatorio e deve essere > 0.'
     if (pTipoCliente === 'az' && !pPiva.trim()) return 'La Partita IVA è obbligatoria per le aziende.'
     return null
   }
 
-  const validateStep2 = () => {
-    if (!bNome.trim()) return 'Il nome della barca è obbligatorio.'
-    if (!bLunghezza || parseFloat(bLunghezza) <= 0) return 'La lunghezza è obbligatoria.'
-    if (!bLarghezza || parseFloat(bLarghezza) <= 0) return 'La larghezza è obbligatoria.'
-    if (!bPescaggio || parseFloat(bPescaggio) <= 0) return 'Il pescaggio è obbligatorio.'
-    return null
-  }
+  // ════════════════════════════════════════════
+  // Salva Anagrafica (senza emettere ricevuta)
+  // ════════════════════════════════════════════
+  const handleSalvaAnagrafica = () => {
+    setErroreAnagrafica('')
+    const err = validateAnagrafica()
+    if (err) { setErroreAnagrafica(err); return }
 
-  // ════════════════════════════════════════════
-  // Navigazione step
-  // ════════════════════════════════════════════
-  const goNext = () => {
-    setErrore('')
-    if (step === 1) {
-      const err = validateStep1()
-      if (err) { setErrore(err); return }
-    } else if (step === 2) {
-      const err = validateStep2()
-      if (err) { setErrore(err); return }
+    const clienteId = existingClient?.id || Date.now()
+    const nomeCompleto = `${pNome.trim()} ${pCognome.trim()}`
+
+    if (!existingClient) {
+      const newClient: Client = {
+        id: clienteId, tipo: pTipoCliente, nome: nomeCompleto,
+        iniziali: `${pNome[0] || ''}${pCognome[0] || ''}`.toUpperCase(),
+        naz: pNaz, docTipo: pDocTipo, docNum: pDocNum,
+        tel: pTel, email: pEmail, indirizzo: pIndirizzo,
+        ...(pTipoCliente === 'az' ? { piva: pPiva, ragione: pRagione || nomeCompleto } : {})
+      }
+      addCliente(newClient)
     }
-    setStep(s => s + 1)
+
+    if (selectedBoat) {
+      updateBarca(selectedBoat.id, {
+        nome: bNome, matricola: bMatricola, tipo: bTipo,
+        lunghezza: parseFloat(bLunghezza),
+        larghezza: parseFloat(bLarghezza),
+        pescaggio: parseFloat(bPescaggio),
+        bandiera: bBandiera, portoIscrizione: bPortoIscr,
+        stazzaGT: parseFloat(bStazza) || undefined,
+        clientId: clienteId, tipologia: 'transito',
+        registrazioneCompleta: true
+      })
+      // Aggiorna la barca locale per riflettere il nuovo stato
+      setSelectedBoat(prev => prev ? { ...prev, registrazioneCompleta: true } : prev)
+    }
+
+    setSalvatoOk(true)
   }
 
-  const goBack = () => { setErrore(''); setStep(s => s - 1) }
-
   // ════════════════════════════════════════════
-  // Conferma e Registra
+  // Conferma e Incassa (emette ricevuta)
   // ════════════════════════════════════════════
   const handleConfirm = () => {
-    if (!calcResult) { setErrore('Compila le date per calcolare la tariffa.'); return }
+    setErroreCassa('')
+    if (!calcResult) { setErroreCassa('Compila le date per calcolare la tariffa.'); return }
 
-    // 1. Crea/aggiorna cliente
+    // Salva anche l'anagrafica se non era già stata salvata
+    const errA = validateAnagrafica()
+    if (errA) { setErroreCassa(`Completa l'anagrafica prima di incassare: ${errA}`); return }
+
     const clienteId = existingClient?.id || Date.now()
     const nomeCompleto = `${pNome.trim()} ${pCognome.trim()}`
     if (!existingClient) {
       const newClient: Client = {
         id: clienteId, tipo: pTipoCliente, nome: nomeCompleto,
         iniziali: `${pNome[0] || ''}${pCognome[0] || ''}`.toUpperCase(),
-        naz: pNaz, docTipo: pDocTipo, docNum: pDocNum, tel: pTel,
-        email: pEmail, indirizzo: pIndirizzo,
+        naz: pNaz, docTipo: pDocTipo, docNum: pDocNum,
+        tel: pTel, email: pEmail, indirizzo: pIndirizzo,
         ...(pTipoCliente === 'az' ? { piva: pPiva, ragione: pRagione || nomeCompleto } : {})
       }
       addCliente(newClient)
     }
 
-    // 2. Aggiorna barca
     if (selectedBoat) {
       updateBarca(selectedBoat.id, {
         nome: bNome, matricola: bMatricola, tipo: bTipo,
@@ -212,7 +275,6 @@ export function RegistrazioneTransitiPage() {
       })
     }
 
-    // 3. Emetti ricevuta
     const anno = new Date().getFullYear()
     const ultimoNumero = ricevute.length > 0
       ? Math.max(...ricevute.map(r => parseInt(r.numero.split('/')[1]) || 0))
@@ -224,173 +286,298 @@ export function RegistrazioneTransitiPage() {
       periodo: `${dal} – ${al}`, giorni: calcResult.giorni,
       categoria: calcResult.categoria, tariffa: calcResult.tariffaGg,
       extra: calcResult.extra, totale: calcResult.totale,
-      metodo, operatore: 'Operatore Torre'
+      metodo, operatore: 'Operatore Ufficio'
     })
 
     setCompletato(true)
   }
 
   // ════════════════════════════════════════════
-  // Stampa ricevuta
-  // ════════════════════════════════════════════
-  const handlePrint = () => { window.print() }
-
-  // ════════════════════════════════════════════
   // Reset
   // ════════════════════════════════════════════
   const handleReset = () => {
-    setSelectedBoat(null); setStep(0); setCompletato(false); setErrore('')
+    setSelectedBoat(null); setSelectedPostoId(''); setExistingClient(null)
     setPNome(''); setPCognome(''); setPTel(''); setPIndirizzo(''); setPNaz('')
-    setPDocTipo('Carta d\'identità'); setPDocNum(''); setPLicenza(''); setPEmail('')
+    setPDocTipo("Carta d'identità"); setPDocNum(''); setPLicenza(''); setPEmail('')
     setPTipoCliente('pf'); setPPiva(''); setPRagione('')
     setBNome(''); setBMatricola(''); setBTipo('Motore'); setBLunghezza('')
     setBLarghezza(''); setBPescaggio(''); setBBandiera(''); setBPortoIscr(''); setBStazza('')
     setDal(new Date().toISOString().split('T')[0]); setAl(''); setExtra(''); setMetodo('pos')
-    setExistingClient(null)
+    setErroreAnagrafica(''); setErroreCassa(''); setSalvatoOk(false)
+    setCompletato(false); setErroreOmnibar('')
+  }
+
+  const handlePrint = () => { window.print() }
+
+  // ════════════════════════════════════════════
+  // Badge anagrafica
+  // ════════════════════════════════════════════
+  const BadgeAnagrafica = () => {
+    if (!selectedBoat) return null
+    if (statoAnagrafica === 'completa') {
+      return <span className="reg-badge reg-badge-completa">✓ Anagrafica completa</span>
+    }
+    return <span className="reg-badge reg-badge-incompleta">⚠ Anagrafica incompleta</span>
   }
 
   // ════════════════════════════════════════════
-  // Tariffa in tempo reale (Step 2)
+  // RENDER
   // ════════════════════════════════════════════
-  const tariffaPreview = useMemo(() => {
-    const lun = parseFloat(bLunghezza) || 0
-    if (lun <= 0) return null
-    const t = getTariffaDaLunghezza(tariffe, lun)
-    if (!t) return null
-    return `${t.categoria} — €${t.prezzoGiorno}/giorno`
-  }, [tariffe, bLunghezza])
-
-  // Steps label
-  const steps = ['Ricerca', 'Dati Persona', 'Dati Barca', 'Pagamento']
-
   return (
     <>
       <TopBar title="Registrazione Transiti" />
       <div className="page-container reg-transiti-page">
 
-        {/* Progress Bar */}
-        {step > 0 && !completato && (
-          <div className="reg-progress">
-            {steps.map((s, i) => (
-              <div key={i} className={`reg-progress-step ${i <= step ? 'active' : ''} ${i === step ? 'current' : ''}`}>
-                <div className="reg-step-num">{i}</div>
-                <span>{s}</span>
-              </div>
-            ))}
+        {/* ── Omnibar sempre in cima ── */}
+        <div className="reg-omnibar-header">
+          <div className="reg-omnibar-wrap">
+            <Omnibar onAction={handleOmnibarSelect} />
           </div>
-        )}
-
-        {/* ── STEP 0: Ricerca ── */}
-        {step === 0 && !completato && (
-          <div className="reg-search-state">
-            <div className="reg-search-icon">📋</div>
-            <h2>Registrazione Transiti</h2>
-            <p>Cerca la barca o il posto per completare la registrazione del transito.</p>
-            <div className="reg-omnibar-wrap">
-              <Omnibar onAction={handleOmnibarSelect} />
-            </div>
-            {errore && <div className="reg-error">{errore}</div>}
-          </div>
-        )}
-
-        {/* ── STEP 1: Dati Persona ── */}
-        {step === 1 && !completato && (
-          <div className="reg-card">
-            <h2>👤 Dati Comandante / Proprietario</h2>
-            {selectedBoat && selectedBoat.registrazioneCompleta === false && (
-              <div className="reg-info-banner" style={{ background: 'rgba(186,117,23,0.12)', color: 'var(--color-text-warning)', borderColor: 'var(--color-text-warning)' }}>
-                ⏳ <strong>Registrazione incompleta (Tempo 1).</strong> L'ingresso è già stato registrato in Torre. Completa i dati del comandante e della barca per emettere la ricevuta.
-              </div>
-            )}
-            {existingClient && !(selectedBoat && selectedBoat.registrazioneCompleta === false) && (
-              <div className="reg-info-banner">ℹ️ Cliente già registrato nel sistema: <strong>{existingClient.nome}</strong>. Verifica e completa i dati.</div>
-            )}
-            {errore && <div className="reg-error">{errore}</div>}
-
-            <div className="reg-tipo-row">
-              <button className={`tipologia-btn ${pTipoCliente === 'pf' ? 'active socio' : ''}`} onClick={() => setPTipoCliente('pf')}>👤 Persona Fisica</button>
-              <button className={`tipologia-btn ${pTipoCliente === 'az' ? 'active transito' : ''}`} onClick={() => setPTipoCliente('az')}>🏢 Azienda</button>
-            </div>
-
-            <div className="reg-form-grid">
-              <div className="reg-field"><label>Nome *</label><input value={pNome} onChange={e => setPNome(e.target.value)} placeholder="Mario" /></div>
-              <div className="reg-field"><label>Cognome *</label><input value={pCognome} onChange={e => setPCognome(e.target.value)} placeholder="Rossi" /></div>
-              <div className="reg-field"><label>Telefono *</label><input type="tel" value={pTel} onChange={e => setPTel(e.target.value)} placeholder="+39 333 1234567" /></div>
-              <div className="reg-field"><label>Email</label><input type="email" value={pEmail} onChange={e => setPEmail(e.target.value)} placeholder="mario@email.com" /></div>
-              <div className="reg-field full"><label>Indirizzo *</label><input value={pIndirizzo} onChange={e => setPIndirizzo(e.target.value)} placeholder="Via Roma 1, 00100 Roma" /></div>
-              <div className="reg-field"><label>Nazionalità</label><input value={pNaz} onChange={e => setPNaz(e.target.value)} placeholder="Italiana" /></div>
-              <div className="reg-field"><label>Tipo Documento *</label>
-                <select value={pDocTipo} onChange={e => setPDocTipo(e.target.value)}>
-                  <option>Carta d'identità</option><option>Passaporto</option><option>Patente nautica</option>
-                </select>
-              </div>
-              <div className="reg-field"><label>Numero Documento *</label><input value={pDocNum} onChange={e => setPDocNum(e.target.value)} placeholder="AB1234567" /></div>
-              <div className="reg-field"><label>Licenza di Navigazione *</label><input value={pLicenza} onChange={e => setPLicenza(e.target.value)} placeholder="N. licenza" /></div>
-              {pTipoCliente === 'az' && (
-                <>
-                  <div className="reg-field"><label>Ragione Sociale</label><input value={pRagione} onChange={e => setPRagione(e.target.value)} placeholder="Azienda SRL" /></div>
-                  <div className="reg-field"><label>Partita IVA *</label><input value={pPiva} onChange={e => setPPiva(e.target.value)} placeholder="IT01234567890" /></div>
-                </>
+          {!selectedBoat && (
+            <p className="reg-omnibar-hint">
+              Cerca la barca, il comandante o il posto per iniziare la registrazione.
+            </p>
+          )}
+          {erroreOmnibar && <div className="reg-error">{erroreOmnibar}</div>}
+          {selectedBoat && !completato && (
+            <div className="reg-selected-summary">
+              <span className="reg-selected-label">Selezionata:</span>
+              <strong>{bNome}</strong>
+              {selectedPostoId && <span className="reg-selected-posto">· Posto {selectedPostoId}</span>}
+              <BadgeAnagrafica />
+              {salvatoOk && (
+                <span className="reg-badge-saved">✅ Anagrafica salvata</span>
               )}
             </div>
-            <div className="reg-actions">
-              <button className="btn btn-outline" onClick={() => setStep(0)}>← Indietro</button>
-              <button className="btn btn-mode-entrata" onClick={goNext}>Avanti →</button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* ── STEP 2: Dati Barca ── */}
-        {step === 2 && !completato && (
-          <div className="reg-card">
-            <h2>⛵ Dati Imbarcazione</h2>
-            {errore && <div className="reg-error">{errore}</div>}
-            <div className="reg-form-grid">
-              <div className="reg-field"><label>Nome Barca *</label><input value={bNome} onChange={e => setBNome(e.target.value)} /></div>
-              <div className="reg-field"><label>Matricola</label><input value={bMatricola} onChange={e => setBMatricola(e.target.value)} /></div>
-              <div className="reg-field"><label>Tipo *</label>
-                <select value={bTipo} onChange={e => setBTipo(e.target.value as Boat['tipo'])}>
-                  <option>Motore</option><option>Vela</option><option>Catamarano</option><option>Gommone</option><option>Altro</option>
-                </select>
-              </div>
-              <div className="reg-field"><label>Lunghezza (m) *</label><input type="number" step="0.1" value={bLunghezza} onChange={e => setBLunghezza(e.target.value)} /></div>
-              <div className="reg-field"><label>Larghezza (m) *</label><input type="number" step="0.1" value={bLarghezza} onChange={e => setBLarghezza(e.target.value)} /></div>
-              <div className="reg-field"><label>Pescaggio (m) *</label><input type="number" step="0.1" value={bPescaggio} onChange={e => setBPescaggio(e.target.value)} /></div>
-              <div className="reg-field"><label>Bandiera</label><input value={bBandiera} onChange={e => setBBandiera(e.target.value)} /></div>
-              <div className="reg-field"><label>Porto Iscrizione</label><input value={bPortoIscr} onChange={e => setBPortoIscr(e.target.value)} /></div>
-              <div className="reg-field"><label>Stazza GT</label><input type="number" value={bStazza} onChange={e => setBStazza(e.target.value)} /></div>
-            </div>
-            {tariffaPreview && (
-              <div className="reg-tariffa-preview">📊 Categoria rilevata: <strong>{tariffaPreview}</strong></div>
+        {/* ── Schermata di completamento ── */}
+        {completato && (
+          <div className="reg-card reg-success">
+            <div className="reg-success-icon">✅</div>
+            <h2>Registrazione Completata</h2>
+            <p>
+              Il transito di <strong>{bNome}</strong> è stato registrato con successo
+              {selectedPostoId && <> al posto <strong>{selectedPostoId}</strong></>}.
+            </p>
+            {calcResult && (
+              <p className="reg-success-total">
+                Totale incassato: <strong>€ {calcResult.totale.toFixed(2)}</strong>
+                {' '}—{' '}
+                {metodo === 'pos' ? 'POS' : metodo === 'contante' ? 'Contante' : 'Bonifico'}
+              </p>
             )}
-            <div className="reg-actions">
-              <button className="btn btn-outline" onClick={goBack}>← Indietro</button>
-              <button className="btn btn-mode-entrata" onClick={goNext}>Avanti →</button>
+            <div className="reg-actions reg-actions-centered">
+              <button className="btn btn-outline" onClick={handlePrint}>🖨️ Stampa Ricevuta</button>
+              <button className="btn btn-mode-entrata" onClick={handleReset}>📋 Nuova Registrazione</button>
             </div>
           </div>
         )}
 
-        {/* ── STEP 3: Pagamento ── */}
-        {step === 3 && !completato && (
-          <div className="reg-card">
-            <h2>💶 Assegnazione e Pagamento</h2>
-            {errore && <div className="reg-error">{errore}</div>}
-            <div className="reg-payment-layout">
-              <div className="reg-payment-left">
-                <div className="reg-field"><label>Posto Barca</label><input value={selectedPostoId} disabled className="reg-input-disabled" /></div>
-                <div className="reg-field"><label>Data Arrivo</label><input type="date" value={dal} onChange={e => setDal(e.target.value)} /></div>
-                <div className="reg-field"><label>Data Partenza Prevista</label><input type="date" value={al} onChange={e => setAl(e.target.value)} /></div>
-                <div className="reg-field"><label>Extra / Servizi (€)</label><input type="number" step="0.01" value={extra} onChange={e => setExtra(e.target.value)} placeholder="Es. 15.00" /></div>
+        {/* ── Layout a due colonne (visibile solo dopo selezione, se non completato) ── */}
+        {selectedBoat && !completato && (
+          <div className="reg-dashboard">
+
+            {/* ═══════════════════════════════════════
+                COLONNA SINISTRA — Anagrafica
+            ═══════════════════════════════════════ */}
+            <div className="reg-panel reg-panel-anagrafica">
+              <div className="reg-panel-header">
+                <h2>👤 Anagrafica</h2>
+                <BadgeAnagrafica />
               </div>
-              <div className="reg-payment-right" id="print-receipt">
-                <h3>Anteprima Ricevuta</h3>
+
+              {selectedBoat.registrazioneCompleta === false && (
+                <div className="reg-info-banner reg-banner-warning">
+                  ⏳ <strong>Tempo 1 completato.</strong> L'ingresso è già stato registrato in Torre.
+                  Completa i dati del comandante e dell'imbarcazione.
+                </div>
+              )}
+              {existingClient && selectedBoat.registrazioneCompleta !== false && (
+                <div className="reg-info-banner">
+                  ℹ️ Cliente già presente: <strong>{existingClient.nome}</strong>. Verifica e aggiorna se necessario.
+                </div>
+              )}
+
+              {erroreAnagrafica && <div className="reg-error">{erroreAnagrafica}</div>}
+
+              {/* Tipo cliente */}
+              <div className="reg-tipo-row">
+                <button
+                  className={`tipologia-btn ${pTipoCliente === 'pf' ? 'active socio' : ''}`}
+                  onClick={() => setPTipoCliente('pf')}
+                >👤 Persona Fisica</button>
+                <button
+                  className={`tipologia-btn ${pTipoCliente === 'az' ? 'active transito' : ''}`}
+                  onClick={() => setPTipoCliente('az')}
+                >🏢 Azienda</button>
+              </div>
+
+              {/* ── Dati Comandante ── */}
+              <div className="reg-subsection-label">Comandante / Proprietario</div>
+              <div className="reg-form-grid">
+                <div className="reg-field">
+                  <label>Nome *</label>
+                  <input value={pNome} onChange={e => setPNome(e.target.value)} placeholder="Mario" />
+                </div>
+                <div className="reg-field">
+                  <label>Cognome *</label>
+                  <input value={pCognome} onChange={e => setPCognome(e.target.value)} placeholder="Rossi" />
+                </div>
+                <div className="reg-field">
+                  <label>Telefono *</label>
+                  <input type="tel" value={pTel} onChange={e => setPTel(e.target.value)} placeholder="+39 333 1234567" />
+                </div>
+                <div className="reg-field">
+                  <label>Email</label>
+                  <input type="email" value={pEmail} onChange={e => setPEmail(e.target.value)} placeholder="mario@email.com" />
+                </div>
+                <div className="reg-field full">
+                  <label>Indirizzo *</label>
+                  <input value={pIndirizzo} onChange={e => setPIndirizzo(e.target.value)} placeholder="Via Roma 1, 00100 Roma" />
+                </div>
+                <div className="reg-field">
+                  <label>Nazionalità</label>
+                  <input value={pNaz} onChange={e => setPNaz(e.target.value)} placeholder="Italiana" />
+                </div>
+                <div className="reg-field">
+                  <label>Tipo Documento *</label>
+                  <select value={pDocTipo} onChange={e => setPDocTipo(e.target.value)}>
+                    <option>Carta d'identità</option>
+                    <option>Passaporto</option>
+                    <option>Patente nautica</option>
+                  </select>
+                </div>
+                <div className="reg-field">
+                  <label>Numero Documento *</label>
+                  <input value={pDocNum} onChange={e => setPDocNum(e.target.value)} placeholder="AB1234567" />
+                </div>
+                <div className="reg-field">
+                  <label>Licenza di Navigazione *</label>
+                  <input value={pLicenza} onChange={e => setPLicenza(e.target.value)} placeholder="N. licenza" />
+                </div>
+                {pTipoCliente === 'az' && (
+                  <>
+                    <div className="reg-field">
+                      <label>Ragione Sociale</label>
+                      <input value={pRagione} onChange={e => setPRagione(e.target.value)} placeholder="Azienda SRL" />
+                    </div>
+                    <div className="reg-field">
+                      <label>Partita IVA *</label>
+                      <input value={pPiva} onChange={e => setPPiva(e.target.value)} placeholder="IT01234567890" />
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* ── Dati Imbarcazione ── */}
+              <div className="reg-subsection-label" style={{ marginTop: 'var(--space-lg)' }}>Imbarcazione</div>
+              <div className="reg-form-grid">
+                <div className="reg-field">
+                  <label>Nome Barca *</label>
+                  <input value={bNome} onChange={e => setBNome(e.target.value)} />
+                </div>
+                <div className="reg-field">
+                  <label>Matricola</label>
+                  <input value={bMatricola} onChange={e => setBMatricola(e.target.value)} />
+                </div>
+                <div className="reg-field">
+                  <label>Tipo *</label>
+                  <select value={bTipo} onChange={e => setBTipo(e.target.value as Boat['tipo'])}>
+                    <option>Motore</option>
+                    <option>Vela</option>
+                    <option>Catamarano</option>
+                    <option>Gommone</option>
+                    <option>Altro</option>
+                  </select>
+                </div>
+                <div className="reg-field">
+                  <label>Lunghezza (m) *</label>
+                  <input type="number" step="0.1" value={bLunghezza} onChange={e => setBLunghezza(e.target.value)} />
+                </div>
+                <div className="reg-field">
+                  <label>Larghezza (m) *</label>
+                  <input type="number" step="0.1" value={bLarghezza} onChange={e => setBLarghezza(e.target.value)} />
+                </div>
+                <div className="reg-field">
+                  <label>Pescaggio (m) *</label>
+                  <input type="number" step="0.1" value={bPescaggio} onChange={e => setBPescaggio(e.target.value)} />
+                </div>
+                <div className="reg-field">
+                  <label>Bandiera</label>
+                  <input value={bBandiera} onChange={e => setBBandiera(e.target.value)} />
+                </div>
+                <div className="reg-field">
+                  <label>Porto Iscrizione</label>
+                  <input value={bPortoIscr} onChange={e => setBPortoIscr(e.target.value)} />
+                </div>
+                <div className="reg-field">
+                  <label>Stazza GT</label>
+                  <input type="number" value={bStazza} onChange={e => setBStazza(e.target.value)} />
+                </div>
+              </div>
+
+              {tariffaPreview && (
+                <div className="reg-tariffa-preview">
+                  📊 Categoria rilevata: <strong>{tariffaPreview}</strong>
+                </div>
+              )}
+
+              <div className="reg-actions">
+                <button className="btn btn-outline" onClick={handleReset}>✕ Annulla</button>
+                <button className="btn btn-mode-entrata" onClick={handleSalvaAnagrafica}>
+                  💾 Salva Anagrafica
+                </button>
+              </div>
+            </div>
+
+            {/* ═══════════════════════════════════════
+                COLONNA DESTRA — Cassa / Pagamento
+            ═══════════════════════════════════════ */}
+            <div className="reg-panel reg-panel-cassa">
+              <div className="reg-panel-header">
+                <h2>💶 Cassa</h2>
+              </div>
+
+              {erroreCassa && <div className="reg-error">{erroreCassa}</div>}
+
+              <div className="reg-subsection-label">Periodo di permanenza</div>
+              <div className="reg-form-grid reg-form-grid-single">
+                <div className="reg-field">
+                  <label>Posto Barca</label>
+                  <input value={selectedPostoId} disabled className="reg-input-disabled" />
+                </div>
+                <div className="reg-field">
+                  <label>Data Arrivo</label>
+                  <input type="date" value={dal} onChange={e => setDal(e.target.value)} />
+                </div>
+                <div className="reg-field">
+                  <label>Data Partenza Prevista</label>
+                  <input type="date" value={al} onChange={e => setAl(e.target.value)} />
+                </div>
+                <div className="reg-field">
+                  <label>Extra / Servizi (€)</label>
+                  <input
+                    type="number" step="0.01" value={extra}
+                    onChange={e => setExtra(e.target.value)}
+                    placeholder="Es. 15.00"
+                  />
+                </div>
+              </div>
+
+              {/* Anteprima Ricevuta */}
+              <div className="reg-subsection-label" style={{ marginTop: 'var(--space-lg)' }}>
+                Anteprima Ricevuta
+              </div>
+              <div id="print-receipt">
                 {!calcResult ? (
                   <div className="reg-receipt-empty">
                     🧮 {(() => {
                       const lun = parseFloat(bLunghezza) || 0
-                      if (lun <= 0) return 'La lunghezza della barca non è valida. Torna allo Step 2 per inserirla.'
-                      if (!dal || !al) return 'Inserisci la data di partenza per vedere il calcolo.'
-                      return 'Controlla le date (partenza deve essere successiva all\'arrivo).'
+                      if (lun <= 0) return 'Inserisci la lunghezza nella sezione Anagrafica.'
+                      if (!al) return 'Inserisci la data di partenza per calcolare.'
+                      return "La data di partenza deve essere successiva all'arrivo."
                     })()}
                   </div>
                 ) : (
@@ -400,53 +587,104 @@ export function RegistrazioneTransitiPage() {
                       <div className="receipt-company-sub">Via Aurelia Km 67,580 · Civitavecchia (RM)</div>
                     </div>
                     <div className="receipt-rows">
-                      <div className="receipt-row"><span className="label">Imbarcazione</span><span className="value">{bNome}</span></div>
-                      <div className="receipt-row"><span className="label">Matricola</span><span className="value">{bMatricola || '—'}</span></div>
-                      <div className="receipt-row"><span className="label">Comandante</span><span className="value">{pNome} {pCognome}</span></div>
-                      <div className="receipt-row"><span className="label">Posto</span><span className="value">{selectedPostoId}</span></div>
-                      <div className="receipt-row"><span className="label">Periodo</span><span className="value">{dal} → {al}</span></div>
+                      <div className="receipt-row">
+                        <span className="label">Imbarcazione</span>
+                        <span className="value">{bNome}</span>
+                      </div>
+                      <div className="receipt-row">
+                        <span className="label">Matricola</span>
+                        <span className="value">{bMatricola || '—'}</span>
+                      </div>
+                      <div className="receipt-row">
+                        <span className="label">Comandante</span>
+                        <span className="value">{pNome} {pCognome}</span>
+                      </div>
+                      <div className="receipt-row">
+                        <span className="label">Posto</span>
+                        <span className="value">{selectedPostoId || '—'}</span>
+                      </div>
+                      <div className="receipt-row">
+                        <span className="label">Periodo</span>
+                        <span className="value">{dal} → {al}</span>
+                      </div>
                       <hr className="receipt-divider" />
-                      <div className="receipt-row"><span className="label">Categoria</span><span className="value">{calcResult.categoria}</span></div>
-                      <div className="receipt-row"><span className="label">Tariffa/giorno</span><span className="value">€ {calcResult.tariffaGg}</span></div>
-                      <div className="receipt-row"><span className="label">Giorni</span><span className="value">{calcResult.giorni}</span></div>
-                      <div className="receipt-row"><span className="label">Subtotale</span><span className="value">€ {calcResult.subtotale.toFixed(2)}</span></div>
+                      <div className="receipt-row">
+                        <span className="label">Categoria</span>
+                        <span className="value">{calcResult.categoria}</span>
+                      </div>
+                      <div className="receipt-row">
+                        <span className="label">Tariffa/giorno</span>
+                        <span className="value">€ {calcResult.tariffaGg}</span>
+                      </div>
+                      <div className="receipt-row">
+                        <span className="label">Giorni</span>
+                        <span className="value">{calcResult.giorni}</span>
+                      </div>
+                      <div className="receipt-row">
+                        <span className="label">Subtotale</span>
+                        <span className="value">€ {calcResult.subtotale.toFixed(2)}</span>
+                      </div>
                       {calcResult.extra > 0 && (
-                        <div className="receipt-row"><span className="label">Extra</span><span className="value">€ {calcResult.extra.toFixed(2)}</span></div>
+                        <div className="receipt-row">
+                          <span className="label">Extra</span>
+                          <span className="value">€ {calcResult.extra.toFixed(2)}</span>
+                        </div>
                       )}
                     </div>
                     <div className="receipt-total-row">
                       <span className="total-label">Totale (IVA incl.)</span>
                       <span className="total-value">€ {calcResult.totale.toFixed(2)}</span>
                     </div>
-                    <div className="receipt-payment-row">
-                      <button className={`payment-btn ${metodo === 'pos' ? 'selected' : ''}`} onClick={() => setMetodo('pos')}>💳 POS</button>
-                      <button className={`payment-btn ${metodo === 'contante' ? 'selected' : ''}`} onClick={() => setMetodo('contante')}>💵 Contante</button>
-                      <button className={`payment-btn ${metodo === 'bonifico' ? 'selected' : ''}`} onClick={() => setMetodo('bonifico')}>🏦 Bonifico</button>
-                    </div>
                   </div>
                 )}
               </div>
+
+              {/* Metodo pagamento */}
+              <div className="reg-subsection-label" style={{ marginTop: 'var(--space-lg)' }}>
+                Metodo di Pagamento
+              </div>
+              <div className="receipt-payment-row">
+                <button
+                  className={`payment-btn ${metodo === 'pos' ? 'selected' : ''}`}
+                  onClick={() => setMetodo('pos')}
+                >💳 POS</button>
+                <button
+                  className={`payment-btn ${metodo === 'contante' ? 'selected' : ''}`}
+                  onClick={() => setMetodo('contante')}
+                >💵 Contante</button>
+                <button
+                  className={`payment-btn ${metodo === 'bonifico' ? 'selected' : ''}`}
+                  onClick={() => setMetodo('bonifico')}
+                >🏦 Bonifico</button>
+              </div>
+
+              <div className="reg-actions">
+                <div /> {/* spacer */}
+                <button
+                  className="btn btn-mode-entrata"
+                  onClick={handleConfirm}
+                  disabled={!calcResult}
+                >
+                  ✅ Conferma e Incassa
+                </button>
+              </div>
             </div>
-            <div className="reg-actions">
-              <button className="btn btn-outline" onClick={goBack}>← Indietro</button>
-              <button className="btn btn-mode-entrata" onClick={handleConfirm} disabled={!calcResult}>✅ Conferma e Registra</button>
-            </div>
+
           </div>
         )}
 
-        {/* ── COMPLETATO ── */}
-        {completato && (
-          <div className="reg-card reg-success">
-            <div className="reg-success-icon">✅</div>
-            <h2>Registrazione Completata</h2>
-            <p>Il transito di <strong>{bNome}</strong> è stato registrato con successo al posto <strong>{selectedPostoId}</strong>.</p>
-            {calcResult && <p className="reg-success-total">Totale incassato: <strong>€ {calcResult.totale.toFixed(2)}</strong> — {metodo === 'pos' ? 'POS' : metodo === 'contante' ? 'Contante' : 'Bonifico'}</p>}
-            <div className="reg-actions">
-              <button className="btn btn-outline" onClick={handlePrint}>🖨️ Stampa Ricevuta</button>
-              <button className="btn btn-mode-entrata" onClick={handleReset}>📋 Nuova Registrazione</button>
-            </div>
+        {/* ── Empty state (nessuna barca selezionata, non completato) ── */}
+        {!selectedBoat && !completato && (
+          <div className="reg-empty-state">
+            <div className="reg-search-icon">📋</div>
+            <h2>Registrazione Transiti</h2>
+            <p>Usa la barra di ricerca in alto per trovare la barca da registrare.</p>
+            <p className="reg-empty-hint">
+              Puoi cercare per nome barca, matricola, nome comandante o numero posto.
+            </p>
           </div>
         )}
+
       </div>
     </>
   )
