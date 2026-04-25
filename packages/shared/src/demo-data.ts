@@ -91,9 +91,6 @@ function genBerths(
   return out
 }
 
-// Pattern base pontili A/B/C/D: lato alternato sinistro/destro per coppie.
-const latoByIndex = (i: number): 'Sinistro' | 'Destro' => (i % 2 === 0 ? 'Sinistro' : 'Destro')
-
 // Posti manualmente "occupati" per conservare i link con barche/clienti demo.
 // Gli altri saranno tutti 'libero' (stato di partenza realistico).
 const POSTI_OCCUPATI_OVERRIDE: Record<string, Partial<Berth>> = {
@@ -116,7 +113,6 @@ const POSTI_B: Berth[] = genBerths('B', 'Pontile Bravo', 36, (n) => {
   // Cicla Cat.III (12m) / Cat.IV (15.5m) per varietà
   const cat4 = n % 3 === 0
   return {
-    lato: latoByIndex(n),
     lunMax: cat4 ? 15.5 : 12.0,
     larMax: cat4 ? 4.5 : 4.0,
     profondita: cat4 ? 3.5 : 3.0,
@@ -132,7 +128,7 @@ const POSTI_A: Berth[] = genBerths('A', 'Pontile Alfa', 26, (n) => {
   const lun = mod === 0 ? 15.5 : mod === 1 ? 12.0 : 10.0
   const lar = mod === 0 ? 4.5  : mod === 1 ? 4.0  : 3.5
   const pro = mod === 0 ? 3.5  : mod === 1 ? 3.0  : 2.8
-  return { lato: latoByIndex(n), lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero' }
+  return { lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero' }
 })
 
 // Pontile C (28 posti) — pontile più piccolo, 8-12m, Cat. I/II/III
@@ -142,7 +138,7 @@ const POSTI_C: Berth[] = genBerths('C', 'Pontile Charlie', 28, (n) => {
   const lun = mod === 0 ? 12.0 : mod === 1 ? 10.0 : 9.0
   const lar = mod === 0 ? 4.0  : mod === 1 ? 3.5  : 3.25
   const pro = mod === 0 ? 3.0  : mod === 1 ? 2.8  : 2.5
-  return { lato: latoByIndex(n), lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero' }
+  return { lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero' }
 })
 
 // Pontile D (32 posti) — pontile grande, 12-18m, Cat. III/IV/V
@@ -152,7 +148,7 @@ const POSTI_D: Berth[] = genBerths('D', 'Pontile Delta', 32, (n) => {
   const lun = mod === 0 ? 18.0 : mod === 1 ? 15.5 : 12.0
   const lar = mod === 0 ? 5.0  : mod === 1 ? 4.5  : 4.0
   const pro = mod === 0 ? 4.0  : mod === 1 ? 3.5  : 3.0
-  return { lato: latoByIndex(n), lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero' }
+  return { lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero' }
 })
 
 // Frangiflutti nord FF100-FF113 (14 posti) — transiti grandi 18-30m, Cat. V/VI/VII
@@ -162,12 +158,11 @@ const POSTI_FF_NORD: Berth[] = genBerths('FF', 'Frangiflutti Nord', 14, (n) => {
   const lun = mod === 0 ? 30.0 : mod === 1 ? 22.0 : 18.0
   const lar = mod === 0 ? 8.0  : mod === 1 ? 6.5  : 5.0
   const pro = mod === 0 ? 5.0  : mod === 1 ? 4.5  : 4.0
-  return { lato: latoByIndex(n), lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero' }
+  return { lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero' }
 }, { idStyle: 'compact', startIndex: 100 })
 
 // Frangiflutti sud FF1-FF3 (3 posti) — piccoli, Cat. I (tender, gommoni)
 const POSTI_FF_SUD: Berth[] = genBerths('FF', 'Frangiflutti Sud', 3, (_) => ({
-  lato: 'Destro',
   lunMax: 7.0,
   larMax: 2.8,
   profondita: 1.8,
@@ -182,7 +177,7 @@ const POSTI_TW: Berth[] = genBerths('TW', 'Torre / Transito', 10, (n) => {
   const lun = mod === 0 ? 40.0 : mod === 1 ? 30.0 : 22.0
   const lar = mod === 0 ? 9.0  : mod === 1 ? 8.0  : 6.5
   const pro = mod === 0 ? 6.0  : mod === 1 ? 5.0  : 4.5
-  return { lato: latoByIndex(n), lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero' }
+  return { lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero' }
 }, { idStyle: 'compact', startIndex: 1 })
 
 export const POSTI_DEMO: Berth[] = [

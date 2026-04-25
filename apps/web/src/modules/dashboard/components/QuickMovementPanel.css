@@ -183,13 +183,34 @@
 .quick-panel-title {
   margin-top: var(--space-lg);
   margin-bottom: var(--space-lg);
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .quick-panel-title h3 {
   margin: 0 0 4px 0;
   color: var(--text);
   font-family: var(--font-display);
+}
+
+.quick-panel-fullpage-link {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent, #38bdf8);
+  text-decoration: none;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border, #334155);
+  background: var(--bg2, #1e293b);
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.quick-panel-fullpage-link:hover {
+  border-color: var(--accent, #38bdf8);
+  background: var(--accent-light, rgba(56, 189, 248, 0.12));
 }
 
 .quick-panel-title p {

@@ -39,7 +39,7 @@ export function BerthDetailDrawer({ berth, onClose }: BerthDetailDrawerProps) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <div>
             <div style={{ fontSize: '0.85rem', color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 'bold' }}>{berth.pontile}</div>
-            <div style={{ fontWeight: 'bold' }}>Lato {berth.lato}</div>
+            <div style={{ fontWeight: 'bold' }}>{berth.id}</div>
           </div>
           <Badge color={BERTH_STATUS_BADGE[berth.stato]}>{BERTH_STATUS_LABELS[berth.stato]}</Badge>
         </div>

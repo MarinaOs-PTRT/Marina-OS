@@ -15,14 +15,16 @@
  *   node tools/seed-berths/import-csv.js posti.csv > posti-generato.ts
  *
  * Formato CSV atteso (separatore ";"):
- *   id;pontile;lato;lunMax;larMax;profondita;categoria;stato;barcaOra;socioId
+ *   id;pontile;lunMax;larMax;profondita;categoria;stato;barcaOra;socioId
  *
- * Campi obbligatori: id, pontile, lato, lunMax, larMax, profondita, categoria, stato
+ * Campi obbligatori: id, pontile, lunMax, larMax, profondita, categoria, stato
  * Campi opzionali: barcaOra, socioId (lasciare vuoti se non applicabili)
+ *
+ * Nota: il "lato" del posto NON è una proprietà del Berth — la lettera del
+ * pontile (A, B, C, D...) identifica già il lato del braccio.
  *
  * Validazioni:
  *  - stato deve essere uno dei BerthStatus ammessi
- *  - lato deve essere "Sinistro" o "Destro"
  *  - lunMax/larMax/profondita devono essere numeri positivi
  *  - socioId se presente deve essere intero
  * ------------------------------------------------------------------
@@ -45,12 +47,9 @@ const STATI_AMMESSI = new Set([
   'riservato',
 ])
 
-const LATI_AMMESSI = new Set(['Sinistro', 'Destro'])
-
 const HEADER_ATTESO = [
   'id',
   'pontile',
-  'lato',
   'lunMax',
   'larMax',
   'profondita',
@@ -119,14 +118,13 @@ function main() {
     const fields = parseCSVLine(line)
     const rowNum = i + 1 // riga 1-based
 
-    const [id, pontile, lato, lunMax, larMax, profondita, categoria, stato, barcaOra, socioId] = fields
+    const [id, pontile, lunMax, larMax, profondita, categoria, stato, barcaOra, socioId] = fields
 
     // Validazioni
     if (!id) { errors.push(`riga ${rowNum}: id vuoto`); continue }
     if (seenIds.has(id)) { errors.push(`riga ${rowNum}: id duplicato "${id}"`); continue }
     seenIds.add(id)
     if (!pontile) errors.push(`riga ${rowNum}: pontile vuoto`)
-    if (!LATI_AMMESSI.has(lato)) errors.push(`riga ${rowNum}: lato "${lato}" non valido (Sinistro|Destro)`)
     if (!STATI_AMMESSI.has(stato)) errors.push(`riga ${rowNum}: stato "${stato}" non valido`)
 
     const lunN = parseFloat(lunMax.replace(',', '.'))
@@ -143,7 +141,6 @@ function main() {
     berths.push({
       id,
       pontile,
-      lato,
       lunMax: lunN,
       larMax: larN,
       profondita: proN,
@@ -170,7 +167,6 @@ function main() {
     const parts = [
       `id: ${JSON.stringify(b.id)}`,
       `pontile: ${JSON.stringify(b.pontile)}`,
-      `lato: ${JSON.stringify(b.lato)}`,
       `lunMax: ${b.lunMax}`,
       `larMax: ${b.larMax}`,
       `profondita: ${b.profondita}`,

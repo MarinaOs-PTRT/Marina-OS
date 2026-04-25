@@ -1,16 +1,28 @@
 import React from 'react'
 import { Authorization } from '@shared/types'
 
+type TableMode = 'attive' | 'pendenti' | 'storico'
+
 interface Props {
   data: Authorization[]
-  type: 'attive' | 'storico'
+  type: TableMode
   onRevoca?: (id: number) => void
+  onCompleta?: (auth: Authorization) => void
 }
 
-export function AuthTable({ data, type, onRevoca }: Props) {
+const EMPTY_LABEL: Record<TableMode, string> = {
+  attive: 'Nessuna autorizzazione attiva.',
+  pendenti: 'Nessuna autorizzazione da compilare.',
+  storico: 'Nessuna autorizzazione nello storico.'
+}
+
+export function AuthTable({ data, type, onRevoca, onCompleta }: Props) {
   if (data.length === 0) {
-    return <div className="empty-message">Nessuna autorizzazione {type === 'attive' ? 'attiva' : 'nello storico'}.</div>
+    return <div className="empty-message">{EMPTY_LABEL[type]}</div>
   }
+
+  // Una colonna Azioni esiste sia per 'attive' (Revoca) che per 'pendenti' (Completa).
+  const showAzioni = type === 'attive' || type === 'pendenti'
 
   return (
     <table className="soci-table">
@@ -24,7 +36,7 @@ export function AuthTable({ data, type, onRevoca }: Props) {
           <th>Barca</th>
           <th>Autorizzato Da</th>
           <th>Stato</th>
-          {type === 'attive' && <th>Azioni</th>}
+          {showAzioni && <th>Azioni</th>}
         </tr>
       </thead>
       <tbody>
@@ -61,6 +73,17 @@ export function AuthTable({ data, type, onRevoca }: Props) {
             {type === 'attive' && (
               <td>
                 <button className="btn-revoca" onClick={() => onRevoca && onRevoca(a.id)}>Revoca</button>
+              </td>
+            )}
+            {type === 'pendenti' && (
+              <td>
+                <button
+                  className="btn btn-primary"
+                  style={{ padding: '6px 12px', fontSize: '0.85rem' }}
+                  onClick={() => onCompleta && onCompleta(a)}
+                >
+                  Completa
+                </button>
               </td>
             )}
           </tr>

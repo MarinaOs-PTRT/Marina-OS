@@ -2,6 +2,7 @@ import React from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppLayout } from './layouts/AppLayout'
 import { DashboardPage } from './modules/dashboard/DashboardPage'
+import { TorrePage } from './modules/torre/TorrePage'
 import { RegistrazioneTransitiPage } from './modules/registrazione-transiti/RegistrazioneTransitiPage'
 import { RegistroPage } from './modules/registro/RegistroPage'
 import { ClientiPage } from './modules/clienti/ClientiPage'
@@ -27,6 +28,10 @@ export const router = createBrowserRouter([
       {
         path: 'dashboard',
         element: <DashboardPage />
+      },
+      {
+        path: 'torre',
+        element: <TorrePage />
       },
       {
         path: 'registrazione-transiti',

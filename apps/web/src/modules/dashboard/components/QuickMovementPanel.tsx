@@ -1,106 +1,75 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react'
-import { useGlobalState } from '../../../store/GlobalState'
-import { Berth, Boat, Client, MovementScenario } from '@shared/types'
-import { BERTH_STATUS_LABELS } from '@shared/constants'
+import React, { useState, useEffect, useRef } from 'react'
+import { Link } from 'react-router-dom'
+import { Berth, Boat } from '@shared/types'
+import { BERTH_STATUS_LABELS, BERTH_STATUS_HEX } from '@shared/constants'
+import { useTorreForm, SearchSuggestion } from '../../torre/hooks/useTorreForm'
 import './QuickMovementPanel.css'
 
-type PanelMode = 'movimento' | 'spostamento'
-
-// ── Tipo per suggerimenti ricerca ──
-type SearchSuggestion = {
-  label: string
-  sublabel: string
-  boat?: Boat
-  berth?: Berth
-}
-
+/**
+ * QuickMovementPanel — Pannello di registrazione movimenti nella sidebar Dashboard.
+ *
+ * NOTA POST-REFACTOR (Apr 2026): tutta la business logic è stata estratta in
+ * useTorreForm() per essere condivisa con la TorrePage (pagina dedicata
+ * full-screen). Qui restano solo:
+ *   - Lo stato dei dropdown (visible/idx/ref) — pura presentazione.
+ *   - Il keyboard handler — pura presentazione.
+ *   - Il render — pura presentazione.
+ *
+ * Niente più useState per i campi del form, niente più useMemo per i suggerimenti,
+ * niente più handler delle azioni: tutto viene dal hook useTorreForm. In questo
+ * modo TorrePage e QuickMovementPanel restano allineati senza divergenze.
+ */
 export function QuickMovementPanel() {
+  // ════════════════════════════════════════════
+  // Business logic (condivisa con TorrePage)
+  // ════════════════════════════════════════════
+  const form = useTorreForm()
   const {
-    posti, barche, clienti,
-    registraEntrata, registraUscitaTemporanea, registraUscitaDefinitiva,
-    registraSpostamento, registraCantiere, registraBunker, registraRientro,
-    isPostoOccupato, checkPagamentoSaldato, checkAutorizzazione, getScenarioBarca,
-    addCliente, addBarca
-  } = useGlobalState()
+    nome, setNome, targa, setTarga, lunghezza, setLunghezza,
+    pescaggio, setPescaggio, posto, setPosto,
+    tipologia, setTipologia, tipologiaLocked,
+    panelMode, setPanelMode, postoOrigine, setPostoOrigine,
+    postoDestinazione, setPostoDestinazione,
+    showConfirmPopup, setShowConfirmPopup, confirmMessage, confirmAction,
+    showWarning, setShowWarning, warningMessage,
+    errorMessage, authMissingModal, setAuthMissingModal,
+    nomeSuggestions, targaSuggestions, postoSuggestions,
+    origineSuggestions, destinazioneSuggestions,
+    destinazioneBerth, dimensionWarnings, suggestedBerths,
+    fillFromBoat, fillFromBerth,
+    handleClear, handleEntrata, handleUscitaTemporanea, handleUscitaDefinitiva,
+    handleSpostamento, handleCantiere, handleBunker, handleRientro,
+  } = form
 
-  // ── Stato del form ──
-  const [nome, setNome] = useState('')
-  const [targa, setTarga] = useState('')
-  const [lunghezza, setLunghezza] = useState('')
-  const [pescaggio, setPescaggio] = useState('')
-  const [posto, setPosto] = useState('')
-  const [tipologia, setTipologia] = useState<MovementScenario | ''>('')
-  const [tipologiaLocked, setTipologiaLocked] = useState(false)
-
-  // ── Spostamento ──
-  const [panelMode, setPanelMode] = useState<PanelMode>('movimento')
-  const [postoOrigine, setPostoOrigine] = useState('')
-  const [postoDestinazione, setPostoDestinazione] = useState('')
-
-  // ── Dropdown di ricerca ──
+  // ════════════════════════════════════════════
+  // UI-only state — dropdown visibility + ref + selected index
+  // ════════════════════════════════════════════
   const [showNomeDropdown, setShowNomeDropdown] = useState(false)
   const [showTargaDropdown, setShowTargaDropdown] = useState(false)
   const [showPostoDropdown, setShowPostoDropdown] = useState(false)
+  const [showOrigineDropdown, setShowOrigineDropdown] = useState(false)
+  const [showDestinazioneDropdown, setShowDestinazioneDropdown] = useState(false)
   const [selectedNomeIdx, setSelectedNomeIdx] = useState(0)
   const [selectedTargaIdx, setSelectedTargaIdx] = useState(0)
   const [selectedPostoIdx, setSelectedPostoIdx] = useState(0)
+  const [selectedOrigineIdx, setSelectedOrigineIdx] = useState(0)
+  const [selectedDestinazioneIdx, setSelectedDestinazioneIdx] = useState(0)
   const nomeRef = useRef<HTMLDivElement>(null)
   const targaRef = useRef<HTMLDivElement>(null)
   const postoRef = useRef<HTMLDivElement>(null)
-
-  // ── Modali ──
-  const [showConfirmPopup, setShowConfirmPopup] = useState(false)
-  const [confirmMessage, setConfirmMessage] = useState('')
-  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null)
-  const [showWarning, setShowWarning] = useState(false)
-  const [warningMessage, setWarningMessage] = useState('')
-  const [errorMessage, setErrorMessage] = useState('')
-  // Modale BLOCCANTE per ingresso affittuario senza autorizzazione valida:
-  // 2 bottoni (Annulla / Registra come Pendente). Vedi MEDIO 4.
-  const [authMissingModal, setAuthMissingModal] = useState<{
-    show: boolean
-    motivo: string
-    onProceed: () => void
-  }>({ show: false, motivo: '', onProceed: () => { } })
+  const origineRef = useRef<HTMLDivElement>(null)
+  const destinazioneRef = useRef<HTMLDivElement>(null)
 
   // ════════════════════════════════════════════
-  // RICERCA LIVE — 3 pilastri
+  // UI EFFECTS — reset indici e click-outside (presentation only)
   // ════════════════════════════════════════════
-
-  const nomeSuggestions = useMemo<SearchSuggestion[]>(() => {
-    if (nome.trim().length < 1) return []
-    const q = nome.toLowerCase()
-    return barche
-      .filter(b => b.nome.toLowerCase().includes(q))
-      .slice(0, 5)
-      .map(b => ({ label: b.nome, sublabel: `${b.matricola} · Posto: ${b.posto || '—'}`, boat: b }))
-  }, [nome, barche])
-
-  const targaSuggestions = useMemo<SearchSuggestion[]>(() => {
-    if (targa.trim().length < 1) return []
-    const q = targa.toLowerCase()
-    return barche
-      .filter(b => b.matricola.toLowerCase().includes(q))
-      .slice(0, 5)
-      .map(b => ({ label: b.matricola, sublabel: `${b.nome} · Posto: ${b.posto || '—'}`, boat: b }))
-  }, [targa, barche])
-
-  const postoSuggestions = useMemo<SearchSuggestion[]>(() => {
-    if (posto.trim().length < 1) return []
-    const q = posto.toLowerCase()
-    return posti
-      .filter(p => p.id.toLowerCase().includes(q))
-      .slice(0, 5)
-      .map(p => {
-        const stato = BERTH_STATUS_LABELS[p.stato] || p.stato
-        return { label: p.id, sublabel: `${p.pontile} · ${stato}${p.barcaOra ? ` · ${p.barcaOra}` : ''}`, berth: p }
-      })
-  }, [posto, posti])
 
   // Reset indici quando cambiano i suggerimenti
   useEffect(() => { setSelectedNomeIdx(0) }, [nomeSuggestions])
   useEffect(() => { setSelectedTargaIdx(0) }, [targaSuggestions])
   useEffect(() => { setSelectedPostoIdx(0) }, [postoSuggestions])
+  useEffect(() => { setSelectedOrigineIdx(0) }, [origineSuggestions])
+  useEffect(() => { setSelectedDestinazioneIdx(0) }, [destinazioneSuggestions])
 
   // Chiudi dropdown cliccando fuori
   useEffect(() => {
@@ -108,45 +77,29 @@ export function QuickMovementPanel() {
       if (nomeRef.current && !nomeRef.current.contains(e.target as Node)) setShowNomeDropdown(false)
       if (targaRef.current && !targaRef.current.contains(e.target as Node)) setShowTargaDropdown(false)
       if (postoRef.current && !postoRef.current.contains(e.target as Node)) setShowPostoDropdown(false)
+      if (origineRef.current && !origineRef.current.contains(e.target as Node)) setShowOrigineDropdown(false)
+      if (destinazioneRef.current && !destinazioneRef.current.contains(e.target as Node)) setShowDestinazioneDropdown(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  // ── Auto-compilazione da barca ──
-  const fillFromBoat = (b: Boat) => {
-    setNome(b.nome)
-    setTarga(b.matricola)
-    if (b.posto) setPosto(b.posto)
-    if (b.lunghezza) setLunghezza(String(b.lunghezza))
-    if (b.pescaggio) setPescaggio(String(b.pescaggio))
-    // Auto-detect socio
-    const scenario = getScenarioBarca(b.nome, b.matricola)
-    if (scenario === 'socio') {
-      setTipologia('socio')
-      setTipologiaLocked(true)
-    } else {
-      setTipologiaLocked(false)
-    }
+  // ════════════════════════════════════════════
+  // UI WRAPPERS — chiamano hook autofill + chiudono dropdown
+  // ════════════════════════════════════════════
+  const onSelectBoat = (b: Boat) => {
+    fillFromBoat(b)
     setShowNomeDropdown(false)
     setShowTargaDropdown(false)
     setShowPostoDropdown(false)
-    setErrorMessage('')
   }
 
-  // ── Auto-compilazione da posto ──
-  const fillFromBerth = (p: Berth) => {
-    setPosto(p.id)
-    // Se il posto è occupato, compila i dati barca
-    if (p.barcaOra && p.stato !== 'libero') {
-      const barca = barche.find(b => b.nome === p.barcaOra || b.posto === p.id)
-      if (barca) fillFromBoat(barca)
-    }
+  const onSelectBerth = (p: Berth) => {
+    fillFromBerth(p)
     setShowPostoDropdown(false)
-    setErrorMessage('')
   }
 
-  // ── Keyboard handler per dropdown ──
+  // ── Keyboard handler per dropdown (UI only) ──
   const makeKeyHandler = (
     suggestions: SearchSuggestion[],
     selectedIdx: number,
@@ -167,231 +120,6 @@ export function QuickMovementPanel() {
     } else if (e.key === 'Escape') {
       setShowDropdown(false)
     }
-  }
-
-  // ────────────────────────────────────────────
-  // Suggerimenti posti: SOLO per transiti, filtrati per dimensioni
-  // ────────────────────────────────────────────
-  const suggestedBerths = useMemo(() => {
-    if (tipologia !== 'transito') return []
-    let free = posti.filter(p => p.stato === 'libero')
-    const lunVal = parseFloat(lunghezza)
-    if (!isNaN(lunVal) && lunVal > 0) free = free.filter(p => p.lunMax >= lunVal)
-    const pesVal = parseFloat(pescaggio)
-    if (!isNaN(pesVal) && pesVal > 0) free = free.filter(p => p.profondita >= pesVal)
-    return free
-  }, [posti, tipologia, lunghezza, pescaggio])
-
-  // ────────────────────────────────────────────
-  // Pulizia form
-  // ────────────────────────────────────────────
-  const handleClear = () => {
-    setNome(''); setTarga(''); setPosto(''); setLunghezza(''); setPescaggio('')
-    setTipologia(''); setTipologiaLocked(false)
-    setPostoOrigine(''); setPostoDestinazione('')
-    setErrorMessage(''); setPanelMode('movimento')
-  }
-
-  // ────────────────────────────────────────────
-  // MEDIO 3-bis: anagrafica minima per transiti sconosciuti (Tempo 1)
-  //
-  // Cerca la barca per nome o matricola. Se non esiste e la tipologia è
-  // 'transito', crea due record "scheletro":
-  //   1. Un Client placeholder ("Transito — <nome barca>") da completare in Tempo 2.
-  //   2. Una Boat con registrazioneCompleta=false, flag che la
-  //      RegistrazioneTransitiPage usa per mostrare "da completare".
-  //
-  // Socio e Affittuario: se non esistono, è un errore di altro tipo (anagrafica
-  // doveva essere caricata in Ufficio). Qui NON creiamo nulla, lasciamo proseguire
-  // il flusso — se serve, verrà bloccato più a valle da checkAutorizzazione.
-  // ────────────────────────────────────────────
-  const ensureBoatExists = (): void => {
-    if (tipologia !== 'transito') return
-    const nomeTrim = nome.trim()
-    const targaTrim = targa.trim()
-    if (!nomeTrim && !targaTrim) return
-
-    const esistente = barche.find(b =>
-      (nomeTrim && b.nome.toLowerCase() === nomeTrim.toLowerCase()) ||
-      (targaTrim && b.matricola.toLowerCase() === targaTrim.toLowerCase())
-    )
-    if (esistente) return // già in anagrafica, niente da fare
-
-    // Calcolo iniziali placeholder: prime due lettere del nome barca (o "??" se vuoto)
-    const baseIniz = nomeTrim || targaTrim || '??'
-    const iniziali = baseIniz.substring(0, 2).toUpperCase()
-
-    // 1. Crea Client scheletro
-    const nuovoClientId = Math.max(0, ...clienti.map(c => c.id)) + 1
-    const nuovoClient: Client = {
-      id: nuovoClientId,
-      tipo: 'pf',
-      nome: `Transito — ${nomeTrim || targaTrim}`,
-      iniziali
-    }
-    addCliente(nuovoClient)
-
-    // 2. Crea Boat scheletro, collegata al Client appena creato
-    const nuovoBoatId = Math.max(0, ...barche.map(b => b.id)) + 1
-    const lunVal = parseFloat(lunghezza) || 0
-    const pesVal = parseFloat(pescaggio) || 0
-    const nuovaBoat: Boat = {
-      id: nuovoBoatId,
-      clientId: nuovoClientId,
-      nome: nomeTrim || `Barca ${targaTrim}`,
-      matricola: targaTrim || 'N/D',
-      tipo: 'Altro',
-      tipologia: 'transito',
-      lunghezza: lunVal,
-      larghezza: 0,
-      pescaggio: pesVal,
-      bandiera: 'N/D',
-      posto: posto.trim() || undefined,
-      // MEDIO 5: niente `stato` sulla barca — lo stato è derivato da berth.stato.
-      // Il successivo registraEntrata imposterà berth.stato='occupato_transito'.
-      registrazioneCompleta: false
-    }
-    addBarca(nuovaBoat)
-  }
-
-  // ────────────────────────────────────────────
-  // Helper per creare oggetto Movement base
-  // ────────────────────────────────────────────
-  const buildMovement = (tipo: any, postoVal: string) => ({
-    id: Date.now(),
-    ora: new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
-    data: new Date().toISOString().split('T')[0],
-    nome, matricola: targa || 'N/D', tipo,
-    posto: postoVal || '—',
-    scenario: (tipologia || 'transito') as MovementScenario,
-    auth: true,
-    pagamento: tipologia === 'socio' ? 'Titolo Attivo' : 'Da saldare',
-    operatore: { nome: 'Operatore', ruolo: 'torre', iniziali: 'OP' }
-  })
-
-  const validateBase = (): boolean => {
-    setErrorMessage('')
-    if (!nome.trim() && !targa.trim()) {
-      setErrorMessage('Inserisci almeno il nome o la matricola dell\'imbarcazione.')
-      return false
-    }
-    if (!tipologia) {
-      setErrorMessage('Seleziona la tipologia (Socio, Transito o Affittuario) prima di registrare il movimento.')
-      return false
-    }
-    return true
-  }
-
-  // ════════════════════════════════════════════
-  // AZIONI PRINCIPALI
-  // ════════════════════════════════════════════
-
-  const handleEntrata = () => {
-    if (!validateBase()) return
-    if (!posto.trim()) { setErrorMessage('Inserisci o seleziona un posto barca.'); return }
-    if (isPostoOccupato(posto)) { setErrorMessage(`Il posto ${posto} è già occupato. Scegli un posto differente.`); return }
-
-    // Tempo 1: se è un transito nuovo, crea anagrafica minima (Client + Boat scheletro)
-    ensureBoatExists()
-    const m = buildMovement('entrata', posto)
-
-    // Affittuario senza autorizzazione valida: modale BLOCCANTE a 2 bottoni.
-    // L'operatore Torre può solo annullare o registrare come "In attesa di Autorizzazione".
-    // La creazione dell'auth ufficiale è compito esclusivo della Direzione.
-    if (tipologia === 'affittuario') {
-      const authCheck = checkAutorizzazione(posto, nome)
-      if (!authCheck.autorizzato) {
-        setAuthMissingModal({
-          show: true,
-          motivo: authCheck.motivo || 'Autorizzazione non trovata per questa imbarcazione.',
-          onProceed: () => {
-            const r = registraEntrata(m, { pendente: true })
-            if (!r.ok) { setErrorMessage(r.errore || 'Errore durante la registrazione.'); return }
-            setAuthMissingModal({ show: false, motivo: '', onProceed: () => { } })
-            handleClear()
-          }
-        })
-        return
-      }
-    }
-
-    // Socio sul proprio posto, o affittuario con auth attiva, o transito: flusso diretto.
-    const result = registraEntrata(m)
-    if (!result.ok) { setErrorMessage(result.errore || 'Errore durante la registrazione.'); return }
-    handleClear()
-  }
-
-  const handleUscitaTemporanea = () => {
-    if (!validateBase()) return
-    if (!posto.trim()) { setErrorMessage('Inserisci il posto barca per l\'uscita temporanea.'); return }
-    const result = registraUscitaTemporanea(buildMovement('uscita_temporanea', posto))
-    if (!result.ok) { setErrorMessage(result.errore || 'Errore durante l\'uscita temporanea.'); return }
-    handleClear()
-  }
-
-  const handleUscitaDefinitiva = () => {
-    if (!validateBase()) return
-    if (tipologia === 'socio') {
-      setConfirmMessage('Vuoi rimuovere titolo al proprietario?')
-      setConfirmAction(() => () => {
-        const r = registraUscitaDefinitiva(buildMovement('uscita_definitiva', posto))
-        if (!r.ok) { setErrorMessage(r.errore || 'Errore durante l\'uscita definitiva.') }
-        else { handleClear() }
-        setShowConfirmPopup(false)
-      })
-      setShowConfirmPopup(true)
-      return
-    }
-    if (tipologia === 'transito' && !checkPagamentoSaldato(nome)) {
-      // Warning BLOCCANTE: la Torre deve confermare esplicitamente.
-      setConfirmMessage('Non risulta emessa una ricevuta saldata per questa imbarcazione. Vuoi registrare comunque l\'uscita definitiva?')
-      setConfirmAction(() => () => {
-        const r = registraUscitaDefinitiva(buildMovement('uscita_definitiva', posto))
-        if (!r.ok) { setErrorMessage(r.errore || 'Errore durante l\'uscita definitiva.') }
-        else { handleClear() }
-        setShowConfirmPopup(false)
-      })
-      setShowConfirmPopup(true)
-      return
-    }
-    const result = registraUscitaDefinitiva(buildMovement('uscita_definitiva', posto))
-    if (!result.ok) { setErrorMessage(result.errore || 'Errore durante l\'uscita definitiva.'); return }
-    handleClear()
-  }
-
-  const handleSpostamento = () => {
-    if (!validateBase()) return
-    if (!postoOrigine.trim() || !postoDestinazione.trim()) { setErrorMessage('Inserisci sia il posto di origine che quello di destinazione.'); return }
-    const result = registraSpostamento(buildMovement('spostamento', postoDestinazione), postoOrigine, postoDestinazione)
-    if (!result.ok) { setErrorMessage(result.errore || 'Errore durante lo spostamento.'); return }
-    handleClear()
-  }
-
-  const handleCantiere = () => {
-    if (!validateBase()) return
-    if (!posto.trim()) { setErrorMessage('Inserisci il posto da cui parte la barca (verso il cantiere).'); return }
-    ensureBoatExists()
-    const result = registraCantiere(buildMovement('cantiere', 'Cantiere'), posto)
-    if (!result.ok) { setErrorMessage(result.errore || 'Errore durante la registrazione cantiere.'); return }
-    handleClear()
-  }
-
-  const handleBunker = () => {
-    if (!validateBase()) return
-    if (!posto.trim()) { setErrorMessage('Inserisci il posto da cui parte la barca (verso il bunker).'); return }
-    ensureBoatExists()
-    const result = registraBunker(buildMovement('bunker', 'Bunker'), posto)
-    if (!result.ok) { setErrorMessage(result.errore || 'Errore durante la registrazione bunker.'); return }
-    handleClear()
-  }
-
-  const handleRientro = () => {
-    if (!validateBase()) return
-    if (!posto.trim()) { setErrorMessage('Inserisci il posto in cui rientra la barca.'); return }
-    ensureBoatExists()
-    const result = registraRientro(buildMovement('entrata', posto))
-    if (!result.ok) { setErrorMessage(result.errore || 'Errore durante la registrazione del rientro.'); return }
-    handleClear()
   }
 
   // ════════════════════════════════════════════
@@ -436,10 +164,10 @@ export function QuickMovementPanel() {
               type="text" value={nome}
               onChange={e => { setNome(e.target.value); setShowNomeDropdown(true) }}
               onFocus={() => { if (nome.length > 0) setShowNomeDropdown(true) }}
-              onKeyDown={makeKeyHandler(nomeSuggestions, selectedNomeIdx, setSelectedNomeIdx, s => { if (s.boat) fillFromBoat(s.boat) }, setShowNomeDropdown)}
+              onKeyDown={makeKeyHandler(nomeSuggestions, selectedNomeIdx, setSelectedNomeIdx, s => { if (s.boat) onSelectBoat(s.boat) }, setShowNomeDropdown)}
               placeholder=""
             />
-            {showNomeDropdown && renderDropdown(nomeSuggestions, selectedNomeIdx, s => { if (s.boat) fillFromBoat(s.boat) }, setSelectedNomeIdx)}
+            {showNomeDropdown && renderDropdown(nomeSuggestions, selectedNomeIdx, s => { if (s.boat) onSelectBoat(s.boat) }, setSelectedNomeIdx)}
           </div>
 
           {/* MATRICOLA */}
@@ -449,10 +177,10 @@ export function QuickMovementPanel() {
               type="text" value={targa}
               onChange={e => { setTarga(e.target.value); setShowTargaDropdown(true) }}
               onFocus={() => { if (targa.length > 0) setShowTargaDropdown(true) }}
-              onKeyDown={makeKeyHandler(targaSuggestions, selectedTargaIdx, setSelectedTargaIdx, s => { if (s.boat) fillFromBoat(s.boat) }, setShowTargaDropdown)}
+              onKeyDown={makeKeyHandler(targaSuggestions, selectedTargaIdx, setSelectedTargaIdx, s => { if (s.boat) onSelectBoat(s.boat) }, setShowTargaDropdown)}
               placeholder=""
             />
-            {showTargaDropdown && renderDropdown(targaSuggestions, selectedTargaIdx, s => { if (s.boat) fillFromBoat(s.boat) }, setSelectedTargaIdx)}
+            {showTargaDropdown && renderDropdown(targaSuggestions, selectedTargaIdx, s => { if (s.boat) onSelectBoat(s.boat) }, setSelectedTargaIdx)}
           </div>
 
           {/* POSTO */}
@@ -462,10 +190,10 @@ export function QuickMovementPanel() {
               type="text" value={posto}
               onChange={e => { setPosto(e.target.value); setShowPostoDropdown(true) }}
               onFocus={() => { if (posto.length > 0) setShowPostoDropdown(true) }}
-              onKeyDown={makeKeyHandler(postoSuggestions, selectedPostoIdx, setSelectedPostoIdx, s => { if (s.berth) fillFromBerth(s.berth) }, setShowPostoDropdown)}
+              onKeyDown={makeKeyHandler(postoSuggestions, selectedPostoIdx, setSelectedPostoIdx, s => { if (s.berth) onSelectBerth(s.berth) }, setShowPostoDropdown)}
               placeholder=""
             />
-            {showPostoDropdown && renderDropdown(postoSuggestions, selectedPostoIdx, s => { if (s.berth) fillFromBerth(s.berth) }, setSelectedPostoIdx)}
+            {showPostoDropdown && renderDropdown(postoSuggestions, selectedPostoIdx, s => { if (s.berth) onSelectBerth(s.berth) }, setSelectedPostoIdx)}
           </div>
         </div>
       </div>
@@ -474,7 +202,9 @@ export function QuickMovementPanel() {
       <div className="quick-panel-body">
         <div className="quick-panel-title">
           <h3>Registra Movimento</h3>
-
+          <Link to="/torre" className="quick-panel-fullpage-link">
+            Apri pagina completa →
+          </Link>
         </div>
 
         {errorMessage && (<div className="panel-error-banner">❌ {errorMessage}</div>)}
@@ -555,16 +285,88 @@ export function QuickMovementPanel() {
           {panelMode === 'spostamento' && (
             <>
               <div className="spostamento-grid">
-                <div className="form-group">
+                {/* ORIGINE — dropdown con posti occupati */}
+                <div className="form-group search-field-wrapper" ref={origineRef}>
                   <label>Posto di Origine</label>
-                  <input type="text" className="posto-input" value={postoOrigine} onChange={e => setPostoOrigine(e.target.value)} placeholder="Es. A 5" />
+                  <input
+                    type="text"
+                    className="posto-input"
+                    value={postoOrigine}
+                    onChange={e => { setPostoOrigine(e.target.value); setShowOrigineDropdown(true) }}
+                    onFocus={() => { if (postoOrigine.length > 0) setShowOrigineDropdown(true) }}
+                    onKeyDown={makeKeyHandler(
+                      origineSuggestions, selectedOrigineIdx, setSelectedOrigineIdx,
+                      s => { if (s.berth) { setPostoOrigine(s.berth.id); setShowOrigineDropdown(false) } },
+                      setShowOrigineDropdown
+                    )}
+                    placeholder="Es. A 5"
+                  />
+                  {showOrigineDropdown && renderDropdown(
+                    origineSuggestions, selectedOrigineIdx,
+                    s => { if (s.berth) { setPostoOrigine(s.berth.id); setShowOrigineDropdown(false) } },
+                    setSelectedOrigineIdx
+                  )}
                 </div>
+
                 <div className="spostamento-arrow">→</div>
-                <div className="form-group">
+
+                {/* DESTINAZIONE — dropdown con posti liberi + badge stato live */}
+                <div className="form-group search-field-wrapper" ref={destinazioneRef}>
                   <label>Posto di Destinazione</label>
-                  <input type="text" className="posto-input" value={postoDestinazione} onChange={e => setPostoDestinazione(e.target.value)} placeholder="Es. B 10" />
+                  <input
+                    type="text"
+                    className="posto-input"
+                    value={postoDestinazione}
+                    onChange={e => { setPostoDestinazione(e.target.value); setShowDestinazioneDropdown(true) }}
+                    onFocus={() => { if (postoDestinazione.length > 0) setShowDestinazioneDropdown(true) }}
+                    onKeyDown={makeKeyHandler(
+                      destinazioneSuggestions, selectedDestinazioneIdx, setSelectedDestinazioneIdx,
+                      s => { if (s.berth) { setPostoDestinazione(s.berth.id); setShowDestinazioneDropdown(false) } },
+                      setShowDestinazioneDropdown
+                    )}
+                    placeholder="Es. B 10"
+                  />
+                  {showDestinazioneDropdown && renderDropdown(
+                    destinazioneSuggestions, selectedDestinazioneIdx,
+                    s => { if (s.berth) { setPostoDestinazione(s.berth.id); setShowDestinazioneDropdown(false) } },
+                    setSelectedDestinazioneIdx
+                  )}
+
+                  {/* Badge live stato del posto digitato */}
+                  {destinazioneBerth && (
+                    <div
+                      className="dest-status-badge"
+                      style={{
+                        marginTop: '4px',
+                        display: 'inline-block',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        fontSize: '0.78rem',
+                        fontWeight: 600,
+                        color: '#fff',
+                        background: BERTH_STATUS_HEX[destinazioneBerth.stato] || '#cbd5e1'
+                      }}
+                    >
+                      {BERTH_STATUS_LABELS[destinazioneBerth.stato] || destinazioneBerth.stato}
+                      {destinazioneBerth.barcaOra && ` · ${destinazioneBerth.barcaOra}`}
+                    </div>
+                  )}
                 </div>
               </div>
+
+              {/* Warning dimensionale (non bloccante) */}
+              {dimensionWarnings.length > 0 && (
+                <div
+                  className="spostamento-info"
+                  style={{ background: 'var(--bg2)', borderLeft: '3px solid var(--color-text-warning)' }}
+                >
+                  ⚠️ <strong>Attenzione dimensioni:</strong>
+                  <ul style={{ margin: '4px 0 0 20px', padding: 0 }}>
+                    {dimensionWarnings.map((w, i) => <li key={i}>{w}</li>)}
+                  </ul>
+                </div>
+              )}
+
               <div className="spostamento-info">⚠️ Lo spostamento richiede sempre l'autorizzazione del proprietario del posto di destinazione.</div>
               <div className="quick-panel-actions">
                 <button type="button" className="btn btn-outline" onClick={handleClear}>Pulisci</button>

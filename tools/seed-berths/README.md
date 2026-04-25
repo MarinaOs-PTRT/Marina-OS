@@ -23,8 +23,7 @@ Copia `posti-template.csv` e compilalo con i dati reali del Porto.
 | colonna      | tipo             | obbligatorio | note                                                         |
 |--------------|------------------|--------------|--------------------------------------------------------------|
 | `id`         | string           | sì           | es. `A 1`, `D 12`, `TW3`, `FF100`                            |
-| `pontile`    | string           | sì           | es. `Pontile Alfa`                                           |
-| `lato`       | `Sinistro`/`Destro` | sì        |                                                              |
+| `pontile`    | string           | sì           | es. `Pontile Alfa` (la lettera identifica già il lato del braccio) |
 | `lunMax`     | numero           | sì           | lunghezza massima barca accettata (metri)                    |
 | `larMax`     | numero           | sì           | larghezza massima (metri)                                    |
 | `profondita` | numero           | sì           | profondità acqua al posto (metri)                            |
@@ -54,7 +53,6 @@ Copia il contenuto del file generato e incollalo nel blocco `POSTI_DEMO` di `pac
 
 Lo script blocca con exit code 1 se trova:
 - id vuoti o duplicati
-- lato diverso da `Sinistro`/`Destro`
 - stato non in `BerthStatus`
 - valori numerici non validi (zero, negativi, non-numerici)
 

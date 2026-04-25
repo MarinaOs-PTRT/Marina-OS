@@ -4,16 +4,24 @@ import { SociTable } from './components/SociTable'
 import { AuthTable } from './components/AuthTable'
 import { AuthForm } from './components/AuthForm'
 import { useGlobalState } from '../../store/GlobalState'
-import { Authorization, AuthStatus } from '@shared/types'
+import { Authorization } from '@shared/types'
 import './SociPage.css'
 
 type ActiveTab = 'soci' | 'pendenti' | 'attive' | 'storico'
 
 export function SociPage() {
-  const { clienti, posti, titoli, autorizzazioni: autorizzazioniGlobali } = useGlobalState()
+  // SSOT: tutte le scritture passano per il Context (non c'è più stato locale).
+  // Le autorizzazioni 'pendente' create da registraEntrata({pendente:true})
+  // appaiono qui automaticamente perché leggiamo dal Context.
+  const {
+    clienti, posti, titoli, autorizzazioni,
+    addAutorizzazione, completaAutorizzazionePendente, revocaAutorizzazione
+  } = useGlobalState()
   const [activeTab, setActiveTab] = useState<ActiveTab>('soci')
-  const [autorizzazioni, setAutorizzazioni] = useState<Authorization[]>(autorizzazioniGlobali)
   const [showForm, setShowForm] = useState(false)
+  // editingAuth: l'autorizzazione pendente attualmente in modalità "Completa".
+  // Quando valorizzato, AuthForm si apre in edit-mode con i campi pre-popolati.
+  const [editingAuth, setEditingAuth] = useState<Authorization | null>(null)
 
   // Calcola dati soci aggregati
   const sociAggregati = useMemo(() => {
@@ -44,7 +52,7 @@ export function SociPage() {
         statoClass
       }
     })
-  }, [autorizzazioni])
+  }, [clienti, posti, titoli, autorizzazioni])
 
   const authPendenti = autorizzazioni.filter(a => a.stato === 'pendente')
   const authAttive = autorizzazioni.filter(a => a.stato === 'attiva')
@@ -53,19 +61,50 @@ export function SociPage() {
   const authStorico = autorizzazioni.filter(a => a.stato === 'scaduta' || a.stato === 'revocata')
 
   const handleRevoca = (id: number) => {
-    if (confirm('Sei sicuro di voler revocare questa autorizzazione?')) {
-      setAutorizzazioni(prev => prev.map(a => a.id === id ? { ...a, stato: 'revocata' as AuthStatus } : a))
+    const motivo = prompt('Motivo della revoca (opzionale):') ?? undefined
+    if (motivo === null) return // utente ha annullato
+    revocaAutorizzazione(id, motivo || undefined)
+  }
+
+  /** Apertura form per completare un'auth pendente (loop MEDIO 4) */
+  const handleCompleta = (auth: Authorization) => {
+    setEditingAuth(auth)
+    setShowForm(true)
+  }
+
+  /** Submit del form: due rami in base al modo (create vs edit) */
+  const handleAuthSubmit = (auth: Omit<Authorization, 'id'>) => {
+    if (editingAuth) {
+      // Modalità EDIT: completiamo una pendente esistente.
+      const res = completaAutorizzazionePendente(editingAuth.id, {
+        tipo: auth.tipo,
+        beneficiario: auth.beneficiario,
+        tel: auth.tel,
+        barca: auth.barca,
+        matricola: auth.matricola,
+        dal: auth.dal!,
+        al: auth.al!,
+        note: auth.note,
+        authDa: auth.authDa ?? 'Direzione'
+      })
+      if (!res.ok) {
+        alert(`Errore: ${res.errore}`)
+        return
+      }
+      setEditingAuth(null)
+      setShowForm(false)
+      setActiveTab('attive')
+    } else {
+      // Modalità CREATE: nuova autorizzazione dalla Direzione.
+      addAutorizzazione(auth)
+      setShowForm(false)
+      setActiveTab('attive')
     }
   }
 
-  const handleNuovaAuth = (auth: Omit<Authorization, 'id'>) => {
-    const newAuth: Authorization = {
-      ...auth,
-      id: autorizzazioni.length + 1,
-    }
-    setAutorizzazioni(prev => [newAuth, ...prev])
+  const handleCloseForm = () => {
     setShowForm(false)
-    setActiveTab('attive')
+    setEditingAuth(null)
   }
 
   return (
@@ -106,7 +145,7 @@ export function SociPage() {
             </button>
           </div>
 
-          {(activeTab === 'attive' || activeTab === 'storico') && (
+          {(activeTab === 'attive' || activeTab === 'storico') && !editingAuth && (
             <button className="btn btn-mode-entrata" onClick={() => setShowForm(!showForm)}>
               {showForm ? 'Chiudi' : '+ Nuova Autorizzazione'}
             </button>
@@ -115,14 +154,21 @@ export function SociPage() {
 
         {/* Content */}
         <div className="soci-content">
-          {showForm && (activeTab === 'attive' || activeTab === 'storico') && (
+          {showForm && (
             <div className="soci-form-wrapper">
-              <AuthForm onSubmit={handleNuovaAuth} onClose={() => setShowForm(false)} soci={sociAggregati.map(s => s.socio)} />
+              <AuthForm
+                onSubmit={handleAuthSubmit}
+                onClose={handleCloseForm}
+                soci={sociAggregati.map(s => s.socio)}
+                initial={editingAuth ?? undefined}
+              />
             </div>
           )}
 
           {activeTab === 'soci' && <SociTable data={sociAggregati} />}
-          {activeTab === 'pendenti' && <AuthTable data={authPendenti} type="storico" />}
+          {activeTab === 'pendenti' && (
+            <AuthTable data={authPendenti} type="pendenti" onCompleta={handleCompleta} />
+          )}
           {activeTab === 'attive' && <AuthTable data={authAttive} type="attive" onRevoca={handleRevoca} />}
           {activeTab === 'storico' && <AuthTable data={authStorico} type="storico" />}
         </div>

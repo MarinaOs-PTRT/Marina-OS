@@ -6,38 +6,56 @@ interface Props {
   onSubmit: (auth: Omit<Authorization, 'id'>) => void
   onClose: () => void
   soci: Client[]
+  /** Se valorizzato, il form parte in modalità EDIT (completa una pendente).
+   *  Socio e posto vengono bloccati perché legati al placeholder originale
+   *  creato dalla Torre al momento dell'ingresso fisico della barca. */
+  initial?: Authorization
 }
 
-export function AuthForm({ onSubmit, onClose, soci }: Props) {
+export function AuthForm({ onSubmit, onClose, soci, initial }: Props) {
   const { titoli } = useGlobalState()
-  const [socioId, setSocioId] = useState('')
-  const [tipo, setTipo] = useState<AuthType>('affitto')
-  const [beneficiario, setBeneficiario] = useState('')
-  const [tel, setTel] = useState('')
-  const [barca, setBarca] = useState('')
-  const [matricola, setMatricola] = useState('')
-  const [dal, setDal] = useState('')
-  const [al, setAl] = useState('')
-  const [note, setNote] = useState('')
+  const isEditMode = initial !== undefined
+
+  // Pre-popolazione dai dati che la Torre aveva inserito (in edit-mode)
+  // o stringhe vuote/default per la creazione manuale.
+  const [socioId, setSocioId] = useState(initial ? String(initial.socioId) : '')
+  const [tipo, setTipo] = useState<AuthType>(initial?.tipo ?? 'affitto')
+  const [beneficiario, setBeneficiario] = useState(initial?.beneficiario ?? '')
+  const [tel, setTel] = useState(initial?.tel ?? '')
+  const [barca, setBarca] = useState(initial?.barca ?? '')
+  const [matricola, setMatricola] = useState(initial?.matricola ?? '')
+  const [dal, setDal] = useState(initial?.dal ?? '')
+  const [al, setAl] = useState(initial?.al ?? '')
+  const [note, setNote] = useState(initial?.note ?? '')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!socioId || !beneficiario || !barca || !dal || !al) return
 
     const sId = parseInt(socioId)
-    const titolo = titoli.find(t => t.clientId === sId)
-    if (!titolo) {
-      alert("Il socio selezionato non ha un posto fisso assegnato.")
-      return
+
+    // In edit-mode: usa il berthId originale (è bloccato in UI ma confermiamo qui).
+    // In create-mode: deriva dal titolo di possesso del socio selezionato.
+    let berthId: string
+    if (isEditMode) {
+      berthId = initial!.berthId
+    } else {
+      const titolo = titoli.find(t => t.clientId === sId)
+      if (!titolo) {
+        alert("Il socio selezionato non ha un posto fisso assegnato.")
+        return
+      }
+      berthId = titolo.berthId
     }
 
-    const d1 = new Date(dal)
     const d2 = new Date(al)
-    const residui = Math.max(0, Math.round((d2.getTime() - new Date().getTime()) / 86400000))
+    const oggi = new Date()
+    oggi.setHours(0, 0, 0, 0)
+    const residui = Math.max(0, Math.round((d2.getTime() - oggi.getTime()) / 86400000))
 
     onSubmit({
       socioId: sId,
-      berthId: titolo.berthId,
+      berthId,
       tipo,
       beneficiario,
       tel,
@@ -48,17 +66,47 @@ export function AuthForm({ onSubmit, onClose, soci }: Props) {
       giorniResidui: residui,
       stato: 'attiva',
       note,
-      authDa: 'Operatore Torre'
+      authDa: isEditMode ? 'Direzione' : 'Operatore Torre',
+      // In edit-mode preserviamo la tracciabilità dell'origine (Torre).
+      creatoDaMovementId: initial?.creatoDaMovementId,
+      creatoDa: initial?.creatoDa,
+      creatoIl: initial?.creatoIl
     })
   }
 
   return (
     <form onSubmit={handleSubmit}>
-      <h3 className="so-form-title">Registra Nuova Autorizzazione</h3>
+      <h3 className="so-form-title">
+        {isEditMode
+          ? `Completa Autorizzazione — Posto ${initial!.berthId}`
+          : 'Registra Nuova Autorizzazione'}
+      </h3>
+
+      {isEditMode && (
+        <div style={{
+          background: 'var(--bg2)',
+          border: '1px solid var(--color-text-warning)',
+          borderRadius: '6px',
+          padding: '10px 14px',
+          marginBottom: '14px',
+          fontSize: '0.85rem'
+        }}>
+          ⚠ <strong>Modalità completamento.</strong> La Torre ha registrato l'ingresso il{' '}
+          {initial!.creatoIl ? new Date(initial!.creatoIl).toLocaleString('it-IT') : 'data non disponibile'}
+          {initial!.creatoDa && ` (operatore: ${initial!.creatoDa})`}.
+          Verifica i dati provvisori, completa periodo e tipo, salva per attivare l'autorizzazione.
+        </div>
+      )}
+
       <div className="so-form-grid">
         <div className="form-group">
           <label>Socio Titolare *</label>
-          <select value={socioId} onChange={e => setSocioId(e.target.value)} required>
+          <select
+            value={socioId}
+            onChange={e => setSocioId(e.target.value)}
+            required
+            disabled={isEditMode}
+          >
             <option value="">Seleziona socio...</option>
             {soci.map(s => (
               <option key={s.id} value={s.id}>{s.nome} ({s.posto || 'Senza posto'})</option>
@@ -104,7 +152,9 @@ export function AuthForm({ onSubmit, onClose, soci }: Props) {
       </div>
       <div className="so-form-actions">
         <button type="button" className="btn btn-outline" onClick={onClose}>Annulla</button>
-        <button type="submit" className="btn btn-primary">Salva Autorizzazione</button>
+        <button type="submit" className="btn btn-primary">
+          {isEditMode ? 'Salva e Attiva' : 'Salva Autorizzazione'}
+        </button>
       </div>
     </form>
   )

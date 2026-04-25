@@ -115,8 +115,11 @@ export interface Boat {
 
 export interface Berth {
   id: string         // es. "C 1"
+  // Nota: la lettera del pontile (A, B, C, D...) IDENTIFICA già il lato del
+  // braccio. Ogni braccio ha due fiancate, ciascuna con la propria lettera
+  // (es. braccio 1 = pontile A a destra + pontile B a sinistra). Per questo
+  // NON esiste una proprietà `lato` sul Berth: sarebbe ridondante.
   pontile: string    // es. "Pontile Charlie"
-  lato: 'Sinistro' | 'Destro'
   lunMax: number
   larMax: number
   profondita: number
@@ -284,4 +287,11 @@ export interface SystemAlert {
   categoria: AlertCategory
   data: string
   stato: 'nuova' | 'letta' | 'risolta'
+  // Tracciabilità: collega l'alert all'entità che lo ha generato.
+  // Usato dal flusso "auth pendente": registraEntrata({ pendente: true })
+  // crea un'Authorization placeholder + un SystemAlert legato via
+  // relatedAuthId. Quando la Direzione completa l'autorizzazione,
+  // l'alert viene marcato 'risolta' automaticamente.
+  relatedAuthId?: number
+  relatedMovementId?: number
 }

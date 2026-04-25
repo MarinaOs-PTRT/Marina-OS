@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react'
 import {
   Client, Boat, Berth, BerthStatus, Movement, Tariff, MaintenanceJob, Report,
-  Receipt, Arrival, OwnershipTitle, Authorization, SystemUser, SystemAlert,
+  Receipt, Arrival, OwnershipTitle, Authorization, AuthType, SystemUser, SystemAlert,
   MovementScenario
 } from '@shared/types'
 import {
@@ -49,6 +49,35 @@ interface GlobalState {
   updateBarca: (id: number, updates: Partial<Boat>) => void
   addRicevuta: (r: Receipt) => void
 
+  // ── Autorizzazioni (M-10) ──
+  // addAutorizzazione: creazione manuale dalla Direzione (form "Nuova Autorizzazione").
+  //   Default stato='attiva'. Ritorna l'id assegnato.
+  // updateAutorizzazione: edit generico (note, telefono, ecc.) senza cambio stato.
+  // completaAutorizzazionePendente: passaggio chiave del loop MEDIO 4.
+  //   Dato l'id di un'auth pendente + i dati documentali compilati dalla Direzione:
+  //     1. Aggiorna l'auth → stato='attiva' + dal/al/giorniResidui/authDa
+  //     2. Aggiorna il Movement collegato → auth=true, flag_attesa_auth=undefined
+  //     3. Marca il SystemAlert correlato → stato='risolta'
+  //   Ritorna { ok, errore? } per gestire validazione (date coerenti, ecc.).
+  // revocaAutorizzazione: passaggio attiva→revocata (con motivo opzionale).
+  addAutorizzazione: (a: Omit<Authorization, 'id'>) => number
+  updateAutorizzazione: (id: number, updates: Partial<Authorization>) => void
+  completaAutorizzazionePendente: (
+    id: number,
+    dati: {
+      tipo: AuthType
+      beneficiario: string
+      tel?: string
+      barca: string
+      matricola?: string
+      dal: string
+      al: string
+      note?: string
+      authDa: string
+    }
+  ) => { ok: boolean; errore?: string }
+  revocaAutorizzazione: (id: number, motivo?: string) => void
+
   // Helper di verifica
   isPostoOccupato: (postoId: string) => boolean
   checkPagamentoSaldato: (nomeBarca: string) => boolean
@@ -89,7 +118,6 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
         const newBerth: Berth = {
           id,
           pontile: `Pontile ${pontile}`,
-          lato: 'Sinistro',
           lunMax: 15,
           larMax: 4.5,
           profondita: 3.0,
@@ -292,7 +320,11 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
         urgenza: 'media',
         categoria: 'operativo',
         data: new Date().toISOString(),
-        stato: 'nuova'
+        stato: 'nuova',
+        // Loop di chiusura: completaAutorizzazionePendente troverà
+        // questo alert via relatedAuthId e lo marcherà 'risolta'.
+        relatedAuthId: nuovaAuthId,
+        relatedMovementId: mov.id
       }
       setNotifiche(prev => [alert, ...prev])
     }
@@ -535,12 +567,117 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     setNotifiche(prev => prev.map(n => n.id === id ? { ...n, stato } : n))
   }
 
+  // ════════════════════════════════════════════
+  // CRUD — Autorizzazioni (M-10)
+  // ════════════════════════════════════════════
+
+  /** Crea una nuova autorizzazione (di solito dalla Direzione, stato 'attiva' di default).
+   *  Ritorna l'id assegnato per permettere ai chiamanti di referenziarla. */
+  const addAutorizzazione = (a: Omit<Authorization, 'id'>): number => {
+    const newId = Math.max(0, ...autorizzazioni.map(x => x.id)) + 1
+    const newAuth: Authorization = { ...a, id: newId }
+    setAutorizzazioni(prev => [...prev, newAuth])
+    return newId
+  }
+
+  /** Edit generico (note, telefono, ecc.). NON usare per cambio stato:
+   *  per il flusso pendente→attiva esiste completaAutorizzazionePendente,
+   *  per attiva→revocata esiste revocaAutorizzazione. */
+  const updateAutorizzazione = (id: number, updates: Partial<Authorization>) => {
+    setAutorizzazioni(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a))
+  }
+
+  /** Loop di chiusura MEDIO 4: pendente → attiva.
+   *  La Direzione fornisce i dati documentali mancanti. Il sistema:
+   *    1. Aggiorna l'Authorization (stato + campi documentali)
+   *    2. Regolarizza il Movement collegato (auth=true, flag_attesa_auth via)
+   *    3. Marca il SystemAlert correlato come 'risolta' */
+  const completaAutorizzazionePendente = (
+    id: number,
+    dati: {
+      tipo: AuthType
+      beneficiario: string
+      tel?: string
+      barca: string
+      matricola?: string
+      dal: string
+      al: string
+      note?: string
+      authDa: string
+    }
+  ): { ok: boolean; errore?: string } => {
+    const auth = autorizzazioni.find(a => a.id === id)
+    if (!auth) {
+      return { ok: false, errore: `Autorizzazione #${id} non trovata.` }
+    }
+    if (auth.stato !== 'pendente') {
+      return { ok: false, errore: `Autorizzazione #${id} non è in stato 'pendente' (stato attuale: ${auth.stato}).` }
+    }
+
+    // Validazione date: al >= dal, al >= oggi
+    const dDal = new Date(dati.dal)
+    const dAl = new Date(dati.al)
+    if (isNaN(dDal.getTime()) || isNaN(dAl.getTime())) {
+      return { ok: false, errore: 'Date non valide.' }
+    }
+    if (dAl < dDal) {
+      return { ok: false, errore: 'La data fine non può essere precedente alla data inizio.' }
+    }
+
+    const oggi = new Date()
+    oggi.setHours(0, 0, 0, 0)
+    const giorniResidui = Math.max(0, Math.round((dAl.getTime() - oggi.getTime()) / 86400000))
+
+    // 1. Aggiorna l'autorizzazione
+    setAutorizzazioni(prev => prev.map(a => a.id === id ? {
+      ...a,
+      tipo: dati.tipo,
+      beneficiario: dati.beneficiario,
+      tel: dati.tel ?? a.tel,
+      barca: dati.barca,
+      matricola: dati.matricola ?? a.matricola,
+      dal: dati.dal,
+      al: dati.al,
+      giorniResidui,
+      note: dati.note ?? a.note,
+      authDa: dati.authDa,
+      stato: 'attiva'
+    } : a))
+
+    // 2. Regolarizza il Movement collegato (se presente)
+    if (auth.creatoDaMovementId !== undefined) {
+      setMovimenti(prev => prev.map(m => m.id === auth.creatoDaMovementId
+        ? { ...m, auth: true, flag_attesa_auth: undefined }
+        : m
+      ))
+    }
+
+    // 3. Marca come risolta la SystemAlert correlata
+    setNotifiche(prev => prev.map(n => n.relatedAuthId === id
+      ? { ...n, stato: 'risolta' as const }
+      : n
+    ))
+
+    return { ok: true }
+  }
+
+  /** Revoca un'autorizzazione attiva. Mantiene lo storico. */
+  const revocaAutorizzazione = (id: number, motivo?: string) => {
+    setAutorizzazioni(prev => prev.map(a => a.id === id ? {
+      ...a,
+      stato: 'revocata' as const,
+      note: motivo ? (a.note ? `${a.note} — Revoca: ${motivo}` : `Revoca: ${motivo}`) : a.note
+    } : a))
+  }
+
   return (
     <GlobalContext.Provider value={{
       clienti, barche, posti, movimenti, tariffe, manutenzioni,
       segnalazioni, ricevute, arrivi, titoli, autorizzazioni, utenti, notifiche,
       updatePosto, addArrivo, resolveArrivo, markNotifica,
       addCliente, addBarca, updateBarca, addRicevuta,
+      addAutorizzazione, updateAutorizzazione,
+      completaAutorizzazionePendente, revocaAutorizzazione,
       registraEntrata, registraUscitaTemporanea, registraUscitaDefinitiva,
       registraSpostamento, registraCantiere, registraBunker, registraRientro,
       isPostoOccupato, checkPagamentoSaldato, checkAutorizzazione, getScenarioBarca

@@ -1,0 +1,571 @@
+/* ════════════════════════════════════════════
+   TorrePage — pagina Registrazione Movimenti dedicata
+   Layout: header / 3 colonne / footer KPI.
+   Design: testo pulito, no icone, label come placeholder.
+   ════════════════════════════════════════════ */
+
+.torre-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px;
+  min-height: 100%;
+  background: var(--bg, #0b1220);
+  color: var(--text, #e2e8f0);
+}
+
+/* ── HEADER ── */
+.torre-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border, #334155);
+}
+
+.torre-header-title h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.torre-header-sub {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text3, #94a3b8);
+  margin-top: 4px;
+}
+
+.btn-text {
+  background: none;
+  border: none;
+  color: var(--accent, #38bdf8);
+  cursor: pointer;
+  font-size: 0.88rem;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.btn-text:hover {
+  background: var(--accent-light, rgba(56, 189, 248, 0.1));
+}
+
+/* ── GRID 3 COLONNE ── */
+.torre-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  flex: 1;
+}
+
+@media (max-width: 1280px) {
+  .torre-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .torre-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.torre-col {
+  background: var(--bg1, #0f172a);
+  border: 1px solid var(--border, #334155);
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  /* IMPORTANTE: niente overflow:hidden, taglierebbe i dropdown.
+     I dropdown del SearchDropdown usano z-index 1000 per stare sopra le
+     colonne adiacenti. */
+}
+
+.torre-col-title {
+  margin: 0 0 4px 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text3, #94a3b8);
+}
+
+/* ── INFO BOX (cliente/barca) ── */
+.torre-info-box {
+  background: var(--bg2, #1e293b);
+  border: 1px solid var(--border, #334155);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.torre-info-box-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text3, #94a3b8);
+  margin-bottom: 4px;
+}
+
+.torre-info-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.torre-info-row span {
+  color: var(--text3, #94a3b8);
+}
+
+.torre-info-row strong {
+  color: var(--text, #e2e8f0);
+  font-weight: 600;
+}
+
+/* ── DIM GRID (lunghezza/pescaggio) ── */
+.torre-dim-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.torre-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.torre-field label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text2, #cbd5e1);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.torre-field input {
+  padding: 8px 12px;
+  background: var(--bg, #0b1220);
+  border: 1px solid var(--border, #334155);
+  border-radius: 8px;
+  color: var(--text, #e2e8f0);
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.torre-field input:focus {
+  outline: none;
+  border-color: var(--accent, #38bdf8);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
+}
+
+/* ── MODE SELECTOR (Movimento / Spostamento) ── */
+.torre-mode-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  background: var(--bg2, #1e293b);
+  border: 1px solid var(--border, #334155);
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.torre-mode-btn {
+  background: transparent;
+  border: none;
+  padding: 8px 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text2, #cbd5e1);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.torre-mode-btn:hover {
+  color: var(--text, #e2e8f0);
+}
+
+/* Fix C: bottone attivo BLU PIENO (no fade), così è inequivocabile */
+.torre-mode-btn.active {
+  background: var(--accent, #38bdf8);
+  color: var(--bg, #0b1220);
+}
+
+/* ── TIPOLOGIA ── */
+.torre-tipologia {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.torre-section-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text2, #cbd5e1);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.torre-tipologia-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.torre-tipologia-btn {
+  padding: 10px 8px;
+  background: var(--bg2, #1e293b);
+  border: 1px solid var(--border, #334155);
+  border-radius: 8px;
+  color: var(--text2, #cbd5e1);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.torre-tipologia-btn:hover:not(:disabled) {
+  border-color: var(--accent, #38bdf8);
+  color: var(--text, #e2e8f0);
+}
+
+.torre-tipologia-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.torre-tipologia-btn.active.socio {
+  background: var(--color-text-info, #2E6CBC);
+  color: #fff;
+  border-color: var(--color-text-info, #2E6CBC);
+}
+
+.torre-tipologia-btn.active.transito {
+  background: var(--color-text-success, #1D9E75);
+  color: #fff;
+  border-color: var(--color-text-success, #1D9E75);
+}
+
+.torre-tipologia-btn.active.affittuario {
+  background: var(--color-text-warning, #BA7517);
+  color: #fff;
+  border-color: var(--color-text-warning, #BA7517);
+}
+
+.torre-locked-hint {
+  font-size: 0.75rem;
+  color: var(--text3, #94a3b8);
+  font-style: italic;
+}
+
+/* ── SEZIONE generica ── */
+.torre-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── BERTHS GRID (posti suggeriti) ── */
+.torre-berths-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.torre-berth-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 6px;
+  background: var(--bg2, #1e293b);
+  border: 1px solid var(--border, #334155);
+  border-radius: 6px;
+  color: var(--text, #e2e8f0);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.torre-berth-chip:hover {
+  border-color: var(--accent, #38bdf8);
+}
+
+.torre-berth-chip.selected {
+  background: var(--accent, #38bdf8);
+  color: var(--bg, #0b1220);
+  border-color: var(--accent, #38bdf8);
+}
+
+.berth-chip-id {
+  font-weight: 700;
+}
+
+.berth-chip-dim {
+  font-size: 0.7rem;
+  color: var(--text3, #94a3b8);
+}
+
+.torre-berth-chip.selected .berth-chip-dim {
+  color: var(--bg, #0b1220);
+  opacity: 0.8;
+}
+
+/* ── SPOSTAMENTO GRID (origine → destinazione) ── */
+.torre-spostamento-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 10px;
+  align-items: end;
+}
+
+.torre-arrow {
+  font-size: 1.2rem;
+  color: var(--text3, #94a3b8);
+  padding-bottom: 8px;
+  text-align: center;
+}
+
+.torre-status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #fff;
+  align-self: flex-start;
+}
+
+.torre-warning-box {
+  background: var(--bg2, #1e293b);
+  border-left: 3px solid var(--color-text-warning, #BA7517);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+}
+
+.torre-warning-title {
+  font-weight: 700;
+  color: var(--color-text-warning, #BA7517);
+  margin-bottom: 4px;
+}
+
+.torre-warning-box ul {
+  margin: 4px 0 0 16px;
+  padding: 0;
+  color: var(--text2, #cbd5e1);
+}
+
+/* ── SUMMARY (col 3) ── */
+.torre-summary {
+  background: var(--bg2, #1e293b);
+  border: 1px solid var(--border, #334155);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.torre-summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+}
+
+.torre-summary-row span {
+  color: var(--text3, #94a3b8);
+}
+
+.torre-summary-row strong {
+  color: var(--text, #e2e8f0);
+  font-weight: 600;
+}
+
+.torre-error {
+  background: rgba(163, 45, 45, 0.15);
+  border-left: 3px solid var(--color-text-danger, #A32D2D);
+  color: var(--color-text-danger, #A32D2D);
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+/* ── ACTIONS (col 3) ── */
+.torre-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.torre-actions-divider {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text3, #94a3b8);
+  margin: 8px 0 4px 0;
+}
+
+.torre-actions-secondary {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+}
+
+.torre-btn {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.torre-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.torre-btn.primary.entrata {
+  background: var(--color-text-success, #1D9E75);
+  color: #fff;
+}
+
+.torre-btn.primary.entrata:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.torre-btn.primary.uscita {
+  background: var(--color-text-info, #2E6CBC);
+  color: #fff;
+}
+
+.torre-btn.primary.uscita:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.torre-btn.primary.uscita-def {
+  background: var(--color-text-danger, #A32D2D);
+  color: #fff;
+}
+
+.torre-btn.primary.uscita-def:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.torre-btn.primary.spostamento {
+  background: var(--accent, #38bdf8);
+  color: var(--bg, #0b1220);
+}
+
+.torre-btn.primary.spostamento:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.torre-btn.secondary {
+  background: var(--bg2, #1e293b);
+  border-color: var(--border, #334155);
+  color: var(--text2, #cbd5e1);
+  font-size: 0.82rem;
+  padding: 8px 10px;
+}
+
+.torre-btn.secondary:hover:not(:disabled) {
+  border-color: var(--accent, #38bdf8);
+  color: var(--text, #e2e8f0);
+}
+
+/* ── FOOTER KPI ── */
+.torre-footer {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg1, #17223c);
+  border: 1px solid var(--border, #334155);
+  border-radius: 12px;
+}
+
+.torre-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.torre-kpi span {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text3, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.torre-kpi strong {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text, #e2e8f0);
+}
+
+/* ── MODALI ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal-box {
+  background: var(--bg1, #0f172a);
+  border: 1px solid var(--border, #334155);
+  border-radius: 12px;
+  padding: 22px 24px;
+  max-width: 480px;
+  width: calc(100% - 40px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+.modal-title {
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.modal-message {
+  margin: 0 0 8px 0;
+  color: var(--text2, #cbd5e1);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.modal-message-sub {
+  margin: 12px 0 0 0;
+  color: var(--text3, #94a3b8);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
