@@ -16,25 +16,27 @@ export function RegistroPage() {
 
   // Filter Logic
   const filteredMovements = useMemo(() => {
-    return movimenti.filter(m => {
-      // 1. Tipo
-      if (filterType !== 'tutti' && m.tipo !== filterType) return false
-      // 2. Scenario
-      if (filterScenario !== 'tutti' && m.scenario !== filterScenario) return false
-      // 3. Search
-      if (searchQuery.trim() !== '') {
-        const q = searchQuery.toLowerCase()
-        if (
-          !m.nome.toLowerCase().includes(q) &&
-          !m.matricola?.toLowerCase().includes(q) &&
-          !m.posto?.toLowerCase().includes(q)
-        ) {
-          return false
+    return movimenti
+      .filter(m => {
+        // 1. Tipo
+        if (filterType !== 'tutti' && m.tipo !== filterType) return false
+        // 2. Scenario
+        if (filterScenario !== 'tutti' && m.scenario !== filterScenario) return false
+        // 3. Search
+        if (searchQuery.trim() !== '') {
+          const q = searchQuery.toLowerCase()
+          if (
+            !m.nome.toLowerCase().includes(q) &&
+            !m.matricola?.toLowerCase().includes(q) &&
+            !m.posto?.toLowerCase().includes(q)
+          ) {
+            return false
+          }
         }
-      }
-      return true
-    })
-  }, [filterType, filterScenario, searchQuery])
+        return true
+      })
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+  }, [movimenti, filterType, filterScenario, searchQuery])
 
   // KPI Calculation
   const totMovements = filteredMovements.length

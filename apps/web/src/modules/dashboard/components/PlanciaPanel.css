@@ -1,0 +1,204 @@
+/* ════════════════════════════════════════════
+   PlanciaPanel — meteo + consegne turno
+   Usa solo CSS variables da tokens.css.
+   ════════════════════════════════════════════ */
+
+.plancia-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  min-width: 0;
+  height: 100%;
+}
+
+/* ── METEO ── */
+.plancia-meteo {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: background 0.2s;
+}
+
+.plancia-meteo.allerta {
+  background: rgba(186, 117, 23, 0.18);
+  border-color: var(--color-text-warning, #BA7517);
+}
+
+.plancia-meteo-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.plancia-meteo-temp {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.plancia-meteo-cond {
+  font-size: 0.85rem;
+  color: var(--text2);
+}
+
+.plancia-meteo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+  font-size: 0.82rem;
+}
+
+.plancia-meteo-grid > div {
+  display: flex;
+  justify-content: space-between;
+}
+
+.plancia-meteo-grid span {
+  color: var(--text3);
+}
+
+.plancia-meteo-grid strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.plancia-meteo-allerta {
+  font-size: 0.78rem;
+  color: var(--color-text-warning, #BA7517);
+  font-weight: 600;
+  border-top: 1px dashed var(--border);
+  padding-top: 8px;
+}
+
+/* ── CONSEGNE TURNO ── */
+.plancia-consegne {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+}
+
+.plancia-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.plancia-section-head h3 {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text2);
+}
+
+.plancia-counter {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text3);
+  background: var(--bg);
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+
+.plancia-consegne-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  overflow-y: auto;
+  max-height: 260px;
+}
+
+.plancia-empty {
+  font-size: 0.82rem;
+  color: var(--text3);
+  font-style: italic;
+  padding: 8px 0;
+}
+
+.plancia-consegna-item {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.plancia-consegna-meta {
+  font-size: 0.7rem;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.plancia-consegna-testo {
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+/* ── FORM nuova consegna ── */
+.plancia-consegna-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+
+.plancia-consegna-form textarea {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.85rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 48px;
+}
+
+.plancia-consegna-form textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+.plancia-btn {
+  align-self: flex-end;
+  padding: 6px 14px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.plancia-btn:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.plancia-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

@@ -1,7 +1,7 @@
 /* ════════════════════════════════════════════
    TorrePage — pagina Registrazione Movimenti dedicata
    Layout: header / 3 colonne / footer KPI.
-   Design: testo pulito, no icone, label come placeholder.
+   Usa solo CSS variables da tokens.css — nessun colore hardcoded.
    ════════════════════════════════════════════ */
 
 .torre-page {
@@ -10,8 +10,8 @@
   gap: 16px;
   padding: 20px 24px;
   min-height: 100%;
-  background: var(--bg, #0b1220);
-  color: var(--text, #e2e8f0);
+  background: var(--bg);
+  color: var(--text);
 }
 
 /* ── HEADER ── */
@@ -20,7 +20,7 @@
   justify-content: space-between;
   align-items: flex-end;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--border, #334155);
+  border-bottom: 1px solid var(--border);
 }
 
 .torre-header-title h1 {
@@ -33,14 +33,14 @@
 .torre-header-sub {
   display: block;
   font-size: 0.85rem;
-  color: var(--text3, #94a3b8);
+  color: var(--text3);
   margin-top: 4px;
 }
 
 .btn-text {
   background: none;
   border: none;
-  color: var(--accent, #38bdf8);
+  color: var(--accent);
   cursor: pointer;
   font-size: 0.88rem;
   padding: 6px 10px;
@@ -49,7 +49,7 @@
 }
 
 .btn-text:hover {
-  background: var(--accent-light, rgba(56, 189, 248, 0.1));
+  background: var(--accent-light);
 }
 
 /* ── GRID 3 COLONNE ── */
@@ -61,29 +61,24 @@
 }
 
 @media (max-width: 1280px) {
-  .torre-grid {
-    grid-template-columns: 1fr 1fr;
-  }
+  .torre-grid { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 900px) {
-  .torre-grid {
-    grid-template-columns: 1fr;
-  }
+  .torre-grid { grid-template-columns: 1fr; }
 }
 
 .torre-col {
-  background: var(--bg1, #0f172a);
-  border: 1px solid var(--border, #334155);
+  background: var(--bg2);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 18px;
   display: flex;
   flex-direction: column;
   gap: 14px;
   min-width: 0;
-  /* IMPORTANTE: niente overflow:hidden, taglierebbe i dropdown.
-     I dropdown del SearchDropdown usano z-index 1000 per stare sopra le
-     colonne adiacenti. */
+  /* IMPORTANTE: niente overflow:hidden — taglierebbe i dropdown.
+     I dropdown usano z-index 1000 per stare sopra le colonne adiacenti. */
 }
 
 .torre-col-title {
@@ -92,13 +87,13 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--text3, #94a3b8);
+  color: var(--text3);
 }
 
 /* ── INFO BOX (cliente/barca) ── */
 .torre-info-box {
-  background: var(--bg2, #1e293b);
-  border: 1px solid var(--border, #334155);
+  background: var(--bg3);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 12px 14px;
   display: flex;
@@ -111,7 +106,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--text3, #94a3b8);
+  color: var(--text3);
   margin-bottom: 4px;
 }
 
@@ -121,14 +116,8 @@
   font-size: 0.85rem;
 }
 
-.torre-info-row span {
-  color: var(--text3, #94a3b8);
-}
-
-.torre-info-row strong {
-  color: var(--text, #e2e8f0);
-  font-weight: 600;
-}
+.torre-info-row span  { color: var(--text3); }
+.torre-info-row strong { color: var(--text); font-weight: 600; }
 
 /* ── DIM GRID (lunghezza/pescaggio) ── */
 .torre-dim-grid {
@@ -146,25 +135,25 @@
 .torre-field label {
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--text2, #cbd5e1);
+  color: var(--text2);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .torre-field input {
   padding: 8px 12px;
-  background: var(--bg, #0b1220);
-  border: 1px solid var(--border, #334155);
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: var(--text, #e2e8f0);
+  color: var(--text);
   font-size: 0.9rem;
   font-family: inherit;
 }
 
 .torre-field input:focus {
   outline: none;
-  border-color: var(--accent, #38bdf8);
-  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-light);
 }
 
 /* ── MODE SELECTOR (Movimento / Spostamento) ── */
@@ -172,8 +161,8 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0;
-  background: var(--bg2, #1e293b);
-  border: 1px solid var(--border, #334155);
+  background: var(--bg3);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 4px;
 }
@@ -184,20 +173,19 @@
   padding: 8px 14px;
   font-size: 0.88rem;
   font-weight: 600;
-  color: var(--text2, #cbd5e1);
+  color: var(--text2);
   cursor: pointer;
   border-radius: 6px;
   transition: background 0.15s, color 0.15s;
 }
 
 .torre-mode-btn:hover {
-  color: var(--text, #e2e8f0);
+  color: var(--text);
 }
 
-/* Fix C: bottone attivo BLU PIENO (no fade), così è inequivocabile */
 .torre-mode-btn.active {
-  background: var(--accent, #38bdf8);
-  color: var(--bg, #0b1220);
+  background: var(--accent);
+  color: #ffffff;
 }
 
 /* ── TIPOLOGIA ── */
@@ -210,7 +198,7 @@
 .torre-section-label {
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--text2, #cbd5e1);
+  color: var(--text2);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -223,10 +211,10 @@
 
 .torre-tipologia-btn {
   padding: 10px 8px;
-  background: var(--bg2, #1e293b);
-  border: 1px solid var(--border, #334155);
+  background: var(--bg3);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: var(--text2, #cbd5e1);
+  color: var(--text2);
   font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
@@ -234,8 +222,8 @@
 }
 
 .torre-tipologia-btn:hover:not(:disabled) {
-  border-color: var(--accent, #38bdf8);
-  color: var(--text, #e2e8f0);
+  border-color: var(--accent);
+  color: var(--text);
 }
 
 .torre-tipologia-btn:disabled {
@@ -263,7 +251,7 @@
 
 .torre-locked-hint {
   font-size: 0.75rem;
-  color: var(--text3, #94a3b8);
+  color: var(--text3);
   font-style: italic;
 }
 
@@ -289,37 +277,30 @@
   align-items: center;
   gap: 2px;
   padding: 8px 6px;
-  background: var(--bg2, #1e293b);
-  border: 1px solid var(--border, #334155);
+  background: var(--bg3);
+  border: 1px solid var(--border);
   border-radius: 6px;
-  color: var(--text, #e2e8f0);
+  color: var(--text);
   font-size: 0.82rem;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .torre-berth-chip:hover {
-  border-color: var(--accent, #38bdf8);
+  border-color: var(--accent);
 }
 
 .torre-berth-chip.selected {
-  background: var(--accent, #38bdf8);
-  color: var(--bg, #0b1220);
-  border-color: var(--accent, #38bdf8);
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
 }
 
-.berth-chip-id {
-  font-weight: 700;
-}
-
-.berth-chip-dim {
-  font-size: 0.7rem;
-  color: var(--text3, #94a3b8);
-}
+.berth-chip-id  { font-weight: 700; }
+.berth-chip-dim { font-size: 0.7rem; color: var(--text3); }
 
 .torre-berth-chip.selected .berth-chip-dim {
-  color: var(--bg, #0b1220);
-  opacity: 0.8;
+  color: rgba(255,255,255,0.75);
 }
 
 /* ── SPOSTAMENTO GRID (origine → destinazione) ── */
@@ -332,7 +313,7 @@
 
 .torre-arrow {
   font-size: 1.2rem;
-  color: var(--text3, #94a3b8);
+  color: var(--text3);
   padding-bottom: 8px;
   text-align: center;
 }
@@ -348,9 +329,9 @@
 }
 
 .torre-warning-box {
-  background: var(--bg2, #1e293b);
+  background: var(--bg3);
   border-left: 3px solid var(--color-text-warning, #BA7517);
-  border-radius: 6px;
+  border-radius: 0;
   padding: 10px 12px;
   font-size: 0.85rem;
 }
@@ -364,13 +345,80 @@
 .torre-warning-box ul {
   margin: 4px 0 0 16px;
   padding: 0;
-  color: var(--text2, #cbd5e1);
+  color: var(--text2);
+}
+
+/* ── AUTORIZZAZIONE BOX (spostamento — live feedback) ── */
+.torre-auth-ok {
+  background: rgba(29, 158, 117, 0.08);
+  border: 1px solid var(--color-text-success, #1D9E75);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+}
+
+.torre-auth-ok-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--color-text-success, #1D9E75);
+  margin-bottom: 6px;
+}
+
+.torre-auth-ok-icon {
+  font-size: 1rem;
+}
+
+.torre-auth-ok-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--text2);
+  font-size: 0.82rem;
+  padding-left: 22px;
+}
+
+.torre-auth-missing {
+  background: rgba(186, 117, 23, 0.08);
+  border: 1px solid var(--color-text-warning, #BA7517);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+}
+
+.torre-auth-missing-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--color-text-warning, #BA7517);
+  margin-bottom: 6px;
+}
+
+.torre-auth-missing-icon {
+  font-size: 1rem;
+}
+
+.torre-auth-missing-desc {
+  margin: 0 0 6px 22px;
+  color: var(--text2);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.torre-auth-missing-hint {
+  margin: 0 0 0 22px;
+  color: var(--text3);
+  font-size: 0.78rem;
+  font-style: italic;
+  line-height: 1.4;
 }
 
 /* ── SUMMARY (col 3) ── */
 .torre-summary {
-  background: var(--bg2, #1e293b);
-  border: 1px solid var(--border, #334155);
+  background: var(--bg3);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 12px 14px;
   display: flex;
@@ -384,21 +432,15 @@
   font-size: 0.9rem;
 }
 
-.torre-summary-row span {
-  color: var(--text3, #94a3b8);
-}
-
-.torre-summary-row strong {
-  color: var(--text, #e2e8f0);
-  font-weight: 600;
-}
+.torre-summary-row span   { color: var(--text3); }
+.torre-summary-row strong { color: var(--text); font-weight: 600; }
 
 .torre-error {
-  background: rgba(163, 45, 45, 0.15);
+  background: rgba(163, 45, 45, 0.1);
   border-left: 3px solid var(--color-text-danger, #A32D2D);
   color: var(--color-text-danger, #A32D2D);
   padding: 10px 14px;
-  border-radius: 6px;
+  border-radius: 0;
   font-size: 0.88rem;
   font-weight: 500;
 }
@@ -416,7 +458,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--text3, #94a3b8);
+  color: var(--text3);
   margin: 8px 0 4px 0;
 }
 
@@ -446,49 +488,36 @@
   background: var(--color-text-success, #1D9E75);
   color: #fff;
 }
-
-.torre-btn.primary.entrata:hover:not(:disabled) {
-  filter: brightness(1.08);
-}
+.torre-btn.primary.entrata:hover:not(:disabled) { filter: brightness(1.08); }
 
 .torre-btn.primary.uscita {
   background: var(--color-text-info, #2E6CBC);
   color: #fff;
 }
-
-.torre-btn.primary.uscita:hover:not(:disabled) {
-  filter: brightness(1.08);
-}
+.torre-btn.primary.uscita:hover:not(:disabled) { filter: brightness(1.08); }
 
 .torre-btn.primary.uscita-def {
   background: var(--color-text-danger, #A32D2D);
   color: #fff;
 }
-
-.torre-btn.primary.uscita-def:hover:not(:disabled) {
-  filter: brightness(1.08);
-}
+.torre-btn.primary.uscita-def:hover:not(:disabled) { filter: brightness(1.08); }
 
 .torre-btn.primary.spostamento {
-  background: var(--accent, #38bdf8);
-  color: var(--bg, #0b1220);
+  background: var(--accent);
+  color: #ffffff;
 }
-
-.torre-btn.primary.spostamento:hover:not(:disabled) {
-  filter: brightness(1.08);
-}
+.torre-btn.primary.spostamento:hover:not(:disabled) { filter: brightness(1.08); }
 
 .torre-btn.secondary {
-  background: var(--bg2, #1e293b);
-  border-color: var(--border, #334155);
-  color: var(--text2, #cbd5e1);
+  background: var(--bg3);
+  border-color: var(--border);
+  color: var(--text2);
   font-size: 0.82rem;
   padding: 8px 10px;
 }
-
 .torre-btn.secondary:hover:not(:disabled) {
-  border-color: var(--accent, #38bdf8);
-  color: var(--text, #e2e8f0);
+  border-color: var(--accent);
+  color: var(--text);
 }
 
 /* ── FOOTER KPI ── */
@@ -497,8 +526,8 @@
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   padding: 12px 16px;
-  background: var(--bg1, #17223c);
-  border: 1px solid var(--border, #334155);
+  background: var(--bg2);
+  border: 1px solid var(--border);
   border-radius: 12px;
 }
 
@@ -511,7 +540,7 @@
 .torre-kpi span {
   font-size: 0.7rem;
   font-weight: 600;
-  color: var(--text3, #94a3b8);
+  color: var(--text3);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
@@ -519,7 +548,7 @@
 .torre-kpi strong {
   font-size: 1.4rem;
   font-weight: 700;
-  color: var(--text, #e2e8f0);
+  color: var(--text);
 }
 
 /* ── MODALI ── */
@@ -534,31 +563,37 @@
 }
 
 .modal-box {
-  background: var(--bg1, #0f172a);
-  border: 1px solid var(--border, #334155);
+  background: var(--bg2);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 22px 24px;
   max-width: 480px;
   width: calc(100% - 40px);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-lg);
+}
+
+.modal-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
 }
 
 .modal-title {
   margin: 0 0 8px 0;
   font-size: 1.1rem;
   font-weight: 700;
+  color: var(--text);
 }
 
 .modal-message {
   margin: 0 0 8px 0;
-  color: var(--text2, #cbd5e1);
+  color: var(--text2);
   font-size: 0.92rem;
   line-height: 1.5;
 }
 
 .modal-message-sub {
   margin: 12px 0 0 0;
-  color: var(--text3, #94a3b8);
+  color: var(--text3);
   font-size: 0.85rem;
   line-height: 1.5;
 }

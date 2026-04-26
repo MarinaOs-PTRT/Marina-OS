@@ -54,13 +54,14 @@
 }
 
 .btn-outline {
-  background: white;
-  border-color: var(--border);
+  background: var(--bg2);
+  border: 1px solid var(--border);
   color: var(--text);
 }
 
 .btn-outline:hover {
   background: var(--bg3);
+  border-color: var(--accent);
 }
 
 .btn-green {
@@ -258,6 +259,21 @@ tbody tr:hover {
   flex: 1;
   padding: 20px;
   overflow-y: auto;
+}
+
+.drawer-foot {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--bg2);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.drawer-foot-btn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .drawer-section {

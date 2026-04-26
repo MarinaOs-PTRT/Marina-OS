@@ -1,0 +1,64 @@
+/* ════════════════════════════════════════════
+   ThemeSwitcher — toggle tema chiaro/scuro
+   Vive nella sidebar (sempre scura), quindi i suoi colori
+   sono espressi in scala bianco/alpha — non in token.
+   ════════════════════════════════════════════ */
+
+.theme-switcher {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  background: transparent;
+  border: 1px solid var(--sidebar-divider);
+  border-radius: 8px;
+  color: var(--sidebar-text-muted);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  font-family: inherit;
+}
+
+.theme-switcher:hover {
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+/* ── Track + Thumb (interruttore stile iOS) ── */
+.theme-switcher-track {
+  position: relative;
+  width: 32px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.theme-switcher-track.dark {
+  background: var(--accent);
+}
+
+.theme-switcher-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.theme-switcher-track.dark .theme-switcher-thumb {
+  transform: translateX(14px);
+}
+
+.theme-switcher-label {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+}

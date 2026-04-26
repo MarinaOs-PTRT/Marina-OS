@@ -83,7 +83,7 @@ export function Calculator() {
   }
 
   const handleMatricolaChange = (v: string) => {
-    setMatricola(v)
+    setMatricola(v.toUpperCase())
     if (v.length >= 2) {
       const found = barche.filter(b => b.matricola.toLowerCase().includes(v.toLowerCase()))
       setMatricolaSuggestions(found)

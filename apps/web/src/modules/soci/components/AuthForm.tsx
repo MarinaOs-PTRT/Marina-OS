@@ -135,7 +135,7 @@ export function AuthForm({ onSubmit, onClose, soci, initial }: Props) {
         </div>
         <div className="form-group">
           <label>Matricola</label>
-          <input type="text" value={matricola} onChange={e => setMatricola(e.target.value)} placeholder="Es. IT-RM-1234" />
+          <input type="text" value={matricola} onChange={e => setMatricola(e.target.value.toUpperCase())} placeholder="Es. IT-RM-1234" />
         </div>
         <div className="form-group">
           <label>Data Inizio *</label>

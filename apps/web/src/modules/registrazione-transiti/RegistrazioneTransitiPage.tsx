@@ -87,7 +87,7 @@ export function RegistrazioneTransitiPage() {
       parseFloat(bLarghezza) > 0 && parseFloat(bPescaggio) > 0
     return campiOk ? 'completa' : 'incompleta'
   }, [selectedBoat, pNome, pCognome, pTel, pIndirizzo, pDocNum, pLicenza,
-      bNome, bLunghezza, bLarghezza, bPescaggio])
+    bNome, bLunghezza, bLarghezza, bPescaggio])
 
   // ════════════════════════════════════════════
   // Calcolo tariffa (reattivo)
@@ -328,30 +328,6 @@ export function RegistrazioneTransitiPage() {
       <TopBar title="Registrazione Transiti" />
       <div className="page-container reg-transiti-page">
 
-        {/* ── Omnibar sempre in cima ── */}
-        <div className="reg-omnibar-header">
-          <div className="reg-omnibar-wrap">
-            <Omnibar onAction={handleOmnibarSelect} />
-          </div>
-          {!selectedBoat && (
-            <p className="reg-omnibar-hint">
-              Cerca la barca, il comandante o il posto per iniziare la registrazione.
-            </p>
-          )}
-          {erroreOmnibar && <div className="reg-error">{erroreOmnibar}</div>}
-          {selectedBoat && !completato && (
-            <div className="reg-selected-summary">
-              <span className="reg-selected-label">Selezionata:</span>
-              <strong>{bNome}</strong>
-              {selectedPostoId && <span className="reg-selected-posto">· Posto {selectedPostoId}</span>}
-              <BadgeAnagrafica />
-              {salvatoOk && (
-                <span className="reg-badge-saved">✅ Anagrafica salvata</span>
-              )}
-            </div>
-          )}
-        </div>
-
         {/* ── Schermata di completamento ── */}
         {completato && (
           <div className="reg-card reg-success">
@@ -375,9 +351,35 @@ export function RegistrazioneTransitiPage() {
           </div>
         )}
 
-        {/* ── Layout a due colonne (visibile solo dopo selezione, se non completato) ── */}
-        {selectedBoat && !completato && (
-          <div className="reg-dashboard">
+        {/* ── Riquadro unico: Omnibar + due colonne ── */}
+        {!completato && (
+          <div className="reg-main-card">
+
+            {/* Omnibar header del riquadro */}
+            <div className="reg-main-card-header">
+              <div className="reg-omnibar-wrap">
+                <Omnibar onAction={handleOmnibarSelect} />
+              </div>
+              {erroreOmnibar && <div className="reg-error" style={{ marginTop: 'var(--space-sm)' }}>{erroreOmnibar}</div>}
+              {selectedBoat && (
+                <div className="reg-selected-summary">
+                  <span className="reg-selected-label">Selezionata:</span>
+                  <strong>{bNome}</strong>
+                  {selectedPostoId && <span className="reg-selected-posto">· Posto {selectedPostoId}</span>}
+                  <BadgeAnagrafica />
+                  {salvatoOk && <span className="reg-badge-saved">✅ Anagrafica salvata</span>}
+                </div>
+              )}
+              {!selectedBoat && (
+                <p className="reg-omnibar-hint">Cerca per nome barca, matricola, comandante o posto per pre-popolare i campi.</p>
+              )}
+            </div>
+
+            {/* Divisore */}
+            <div className="reg-main-card-divider" />
+
+            {/* Due colonne */}
+            <div className="reg-dashboard">
 
             {/* ═══════════════════════════════════════
                 COLONNA SINISTRA — Anagrafica
@@ -388,13 +390,13 @@ export function RegistrazioneTransitiPage() {
                 <BadgeAnagrafica />
               </div>
 
-              {selectedBoat.registrazioneCompleta === false && (
+              {selectedBoat?.registrazioneCompleta === false && (
                 <div className="reg-info-banner reg-banner-warning">
                   ⏳ <strong>Tempo 1 completato.</strong> L'ingresso è già stato registrato in Torre.
                   Completa i dati del comandante e dell'imbarcazione.
                 </div>
               )}
-              {existingClient && selectedBoat.registrazioneCompleta !== false && (
+              {existingClient && selectedBoat?.registrazioneCompleta !== false && (
                 <div className="reg-info-banner">
                   ℹ️ Cliente già presente: <strong>{existingClient.nome}</strong>. Verifica e aggiorna se necessario.
                 </div>
@@ -480,7 +482,7 @@ export function RegistrazioneTransitiPage() {
                 </div>
                 <div className="reg-field">
                   <label>Matricola</label>
-                  <input value={bMatricola} onChange={e => setBMatricola(e.target.value)} />
+                  <input value={bMatricola} onChange={e => setBMatricola(e.target.value.toUpperCase())} />
                 </div>
                 <div className="reg-field">
                   <label>Tipo *</label>
@@ -669,22 +671,9 @@ export function RegistrazioneTransitiPage() {
                 </button>
               </div>
             </div>
-
           </div>
+        </div>
         )}
-
-        {/* ── Empty state (nessuna barca selezionata, non completato) ── */}
-        {!selectedBoat && !completato && (
-          <div className="reg-empty-state">
-            <div className="reg-search-icon">📋</div>
-            <h2>Registrazione Transiti</h2>
-            <p>Usa la barra di ricerca in alto per trovare la barca da registrare.</p>
-            <p className="reg-empty-hint">
-              Puoi cercare per nome barca, matricola, nome comandante o numero posto.
-            </p>
-          </div>
-        )}
-
       </div>
     </>
   )

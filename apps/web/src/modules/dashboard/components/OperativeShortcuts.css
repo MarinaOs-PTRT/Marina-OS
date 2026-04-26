@@ -1,0 +1,113 @@
+.op-shortcuts {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow);
+  height: 100%;
+}
+
+.op-shortcuts-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--space-md);
+}
+
+.op-shortcuts-header h3 {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.op-shortcuts-sub {
+  font-size: 0.78rem;
+  color: var(--text3);
+}
+
+/* ── Griglia 2x3 ── */
+.op-shortcuts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+
+/* ── Tile ── */
+.op-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 14px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  cursor: pointer;
+}
+
+.op-tile:hover {
+  border-color: var(--accent);
+  background: var(--bg3);
+  transform: translateY(-1px);
+}
+
+.op-tile:active {
+  transform: translateY(0);
+}
+
+/* ── Icona ── */
+.op-tile-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.op-tile-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.op-icon-torre      { background: rgba(46, 107, 188, 0.12); color: #2E6CBC; }
+.op-icon-transiti   { background: rgba(29, 158, 117, 0.12); color: #1D9E75; }
+.op-icon-mappa      { background: rgba(186, 117, 23, 0.12); color: #BA7517; }
+.op-icon-tariffe    { background: rgba(163, 45, 45, 0.12);  color: #A32D2D; }
+.op-icon-soci       { background: rgba(83, 74, 183, 0.12);  color: #534AB7; }
+.op-icon-manutenzione { background: rgba(136, 135, 128, 0.15); color: var(--text2); }
+
+/* ── Testo ── */
+.op-tile-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.op-tile-sub {
+  font-size: 0.75rem;
+  color: var(--text3);
+}
+
+/* ── Badge contatore ── */
+.op-tile-badge {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 99px;
+  width: fit-content;
+}
+
+.op-badge-blue    { background: rgba(46, 107, 188, 0.12);  color: #2E6CBC; }
+.op-badge-green   { background: rgba(29, 158, 117, 0.12);  color: #1D9E75; }
+.op-badge-amber   { background: rgba(186, 117, 23, 0.12);  color: #BA7517; }
+.op-badge-red     { background: rgba(163, 45, 45, 0.12);   color: #A32D2D; }
+.op-badge-neutral { background: var(--bg3); color: var(--text3); }

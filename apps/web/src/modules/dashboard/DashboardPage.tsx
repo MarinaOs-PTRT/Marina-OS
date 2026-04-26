@@ -1,56 +1,77 @@
-import React from 'react'
+import React, { useState } from 'react'
+import { Berth } from '@shared/types'
 import { TopBar } from '../../components/TopBar'
-import { KpiCard } from '../../components/KpiCard'
-import { BoatList } from './components/BoatList'
-import { MovementTable } from './components/MovementTable'
+import { MarinaMap } from '../mappa/components/MarinaMap'
+import { BerthDetailDrawer } from '../mappa/components/BerthDetailDrawer'
+import { useGlobalState } from '../../store/GlobalState'
 import { ArrivalsPanel } from './components/ArrivalsPanel'
 import { PendingRegistrationsPanel } from './components/PendingRegistrationsPanel'
-import { QuickMovementPanel } from './components/QuickMovementPanel'
-import { useGlobalState } from '../../store/GlobalState'
+import { PlanciaPanel } from './components/PlanciaPanel'
+import './DashboardPage.css'
 
+/**
+ * DashboardPage — Centrale operativa mappa-centrica.
+ *
+ * Architettura "Strada A" (Apr 2026): la mappa è il TELECOMANDO VISIVO della
+ * Torre. Click su un posto → drawer con dettagli + bottone "Registra
+ * movimento" che porta su /torre?posto=XXX. Le azioni di registrazione NON
+ * vivono qui: sono centralizzate sulla TorrePage (rotta /torre), unico punto
+ * d'ingresso strutturato per i movimenti.
+ *
+ * Layout (desktop ≥ 1280px):
+ *   ┌──────────────────────────────────────────────────────────────┐
+ *   │ Header (titolo + data/ora). NIENTE pill — info ridondanti.   │
+ *   ├───────────────────────────────────────────┬──────────────────┤
+ *   │  MAPPA (65%)                              │  PLANCIA (35%)   │
+ *   │  click su posto → drawer                  │  meteo + cons.   │
+ *   ├──────────────────────────┬────────────────┴──────────────────┤
+ *   │  Arrivi previsti (50%)   │  Transiti pendenti (50%)          │
+ *   └──────────────────────────┴───────────────────────────────────┘
+ *
+ * Vedi memoria: dashboard_layout.md, ui_ingressi.md
+ */
 export function DashboardPage() {
-  const { posti, movimenti } = useGlobalState()
+  const { posti } = useGlobalState()
+  const [selectedBerth, setSelectedBerth] = useState<Berth | null>(null)
 
-  // Calcolo KPI LIVE dai posti barca (cambia in tempo reale!)
-  const postiOccupati = posti.filter(p => p.stato !== 'libero' && p.stato !== 'in_cantiere')
-  const barcheInPorto = postiOccupati.length
-  const postiLiberi = posti.filter(p => p.stato === 'libero').length
-  const barcheTransito = posti.filter(p => p.stato === 'occupato_transito').length
-  const inCantiere = posti.filter(p => p.stato === 'in_cantiere').length
-  
-  const movimentiOggi = movimenti.length
+  const oggi = new Date().toLocaleDateString('it-IT', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  })
+  const ora = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
 
   return (
     <>
-      <TopBar 
-        title="Dashboard Operativa" 
-        subtitle="Riva di Traiano — Vista globale in tempo reale"
+      <TopBar
+        title="Dashboard operativa"
+        subtitle={`Riva di Traiano · ${oggi} · ${ora}`}
       />
-      
-      <div className="page-container">
-        
-        {/* KPI Strip */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 'var(--space-lg)' }}>
-          <KpiCard label="Barche in porto" value={barcheInPorto} color="accent" />
-          <KpiCard label="Posti liberi" value={postiLiberi} color="green" />
-          <KpiCard label="Transiti" value={barcheTransito} color="teal" />
-          <KpiCard label="Movimenti oggi" value={movimentiOggi} color="amber" />
-          <KpiCard label="In manutenzione" value={inCantiere} color="red" />
-        </div>
 
-        {/* Top Split Section: Quick Registration & Latest Movements */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-xl)', alignItems: 'stretch' }}>
-          <QuickMovementPanel />
-          <MovementTable />
-        </div>
+      <div className="dashboard-page">
 
-        {/* Bottom Split Section: Boat List + Arrivals + Transiti da completare */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 'var(--space-xl)', alignItems: 'start', marginTop: 'var(--space-xl)' }}>
-          <BoatList />
+        {/* ── FASCIA SUPERIORE: Mappa (65%) + Plancia (35%) ── */}
+        <section className="dashboard-top">
+
+          <div className="dashboard-map-wrap">
+            <MarinaMap berths={posti} onBerthSelect={setSelectedBerth} />
+          </div>
+
+          <PlanciaPanel />
+        </section>
+
+        {/* ── FASCIA INFERIORE: Arrivi previsti + Transiti pendenti ── */}
+        <section className="dashboard-bottom">
           <ArrivalsPanel />
           <PendingRegistrationsPanel />
-        </div>
+        </section>
       </div>
+
+      {/* ── DRAWER dettaglio posto (overlay sopra tutto) ── */}
+      {selectedBerth && (
+        <BerthDetailDrawer
+          berth={selectedBerth}
+          onClose={() => setSelectedBerth(null)}
+        />
+      )}
     </>
   )
 }

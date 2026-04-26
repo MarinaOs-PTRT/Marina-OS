@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react'
+import React, { useEffect, useMemo, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useGlobalState } from '../../store/GlobalState'
 import { BERTH_STATUS_LABELS, BERTH_STATUS_HEX } from '@shared/constants'
 import { useTorreForm } from './hooks/useTorreForm'
@@ -25,6 +26,23 @@ import './TorrePage.css'
 export function TorrePage() {
   const { posti, movimenti } = useGlobalState()
   const f = useTorreForm()
+
+  // Pre-popolazione dal query param ?posto=XXX (es. arrivo dal drawer
+  // della Dashboard mappa-centrica). Si esegue UNA SOLA VOLTA al mount,
+  // così l'utente può poi modificare liberamente il campo.
+  // Vedi memoria: dashboard_layout.md (Strada A — mappa = telecomando).
+  const [searchParams] = useSearchParams()
+  const prefilledRef = useRef(false)
+  useEffect(() => {
+    if (prefilledRef.current) return
+    const qPosto = searchParams.get('posto')
+    if (!qPosto) return
+    const berth = posti.find(p => p.id === qPosto)
+    if (berth) {
+      f.fillFromBerth(berth)
+      prefilledRef.current = true
+    }
+  }, [searchParams, posti, f])
 
   // KPI calcolati inline (il GlobalState non espone un getKpis dedicato).
   const kpis = useMemo(() => {
@@ -86,7 +104,7 @@ export function TorrePage() {
             id="torre-matricola"
             placeholder="Matricola"
             value={f.targa}
-            onChange={f.setTarga}
+            onChange={v => f.setTarga(v.toUpperCase())}
             suggestions={f.targaSuggestions}
             onSelect={s => { if (s.boat) f.fillFromBoat(s.boat) }}
           />
@@ -227,6 +245,37 @@ export function TorrePage() {
                   {BERTH_STATUS_LABELS[f.destinazioneBerth.stato] || f.destinazioneBerth.stato}
                   {f.destinazioneBerth.barcaOra && ` · ${f.destinazioneBerth.barcaOra}`}
                 </div>
+              )}
+
+              {/* ── CONTROLLO AUTORIZZAZIONE live (spostamento) ── */}
+              {f.authDestinazioneInfo.controllato && (
+                f.authDestinazioneInfo.autorizzato ? (
+                  <div className="torre-auth-ok">
+                    <div className="torre-auth-ok-header">
+                      <span className="torre-auth-ok-icon">✓</span>
+                      <span>Autorizzazione valida</span>
+                    </div>
+                    {f.authDestinazioneInfo.auth && (
+                      <div className="torre-auth-ok-details">
+                        <span><strong>Beneficiario:</strong> {f.authDestinazioneInfo.auth.beneficiario}</span>
+                        <span><strong>Tipo:</strong> {f.authDestinazioneInfo.auth.tipo}</span>
+                        <span><strong>Periodo:</strong> {f.authDestinazioneInfo.auth.dal} → {f.authDestinazioneInfo.auth.al}</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="torre-auth-missing">
+                    <div className="torre-auth-missing-header">
+                      <span className="torre-auth-missing-icon">⚠</span>
+                      <span>Autorizzazione non trovata</span>
+                    </div>
+                    <p className="torre-auth-missing-desc">{f.authDestinazioneInfo.motivo}</p>
+                    <p className="torre-auth-missing-hint">
+                      Confermando lo spostamento, il sistema ti chiederà di procedere come pendente
+                      o di annullare l'operazione.
+                    </p>
+                  </div>
+                )
               )}
 
               {/* Warning dimensionale (non bloccante) */}

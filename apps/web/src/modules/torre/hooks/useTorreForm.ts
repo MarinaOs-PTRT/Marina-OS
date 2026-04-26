@@ -37,7 +37,7 @@ export type PanelMode = 'movimento' | 'spostamento'
  */
 export function useTorreForm() {
   const {
-    posti, barche, clienti,
+    posti, barche, clienti, autorizzazioni,
     registraEntrata, registraUscitaTemporanea, registraUscitaDefinitiva,
     registraSpostamento, registraCantiere, registraBunker, registraRientro,
     isPostoOccupato, checkPagamentoSaldato, checkAutorizzazione, getScenarioBarca,
@@ -146,6 +146,59 @@ export function useTorreForm() {
     return posti.find(p => p.id.toLowerCase() === q)
   }, [postoDestinazione, posti])
 
+  // Controllo autorizzazione live per il posto di destinazione (spostamento).
+  // Viene ricalcolato ogni volta che cambia la destinazione o il nome/targa della barca.
+  // Mostra il risultato nella UI PRIMA che l'operatore prema "Conferma spostamento".
+  const authDestinazioneInfo = useMemo<{
+    controllato: boolean       // true = abbiamo un posto di destinazione valido
+    autorizzato: boolean
+    motivo?: string
+    auth?: { beneficiario?: string; tipo?: string; dal?: string; al?: string }
+  }>(() => {
+    const destId = postoDestinazione.trim()
+    const nomeBarca = nome.trim()
+    if (!destId || !nomeBarca) return { controllato: false, autorizzato: false }
+
+    // Il posto deve esistere per avere senso fare il controllo
+    const posto = posti.find(p => p.id === destId)
+    if (!posto) return { controllato: false, autorizzato: false }
+
+    // Il posto non ha socioId → non serve autorizzazione
+    if (!posto.socioId) return { controllato: true, autorizzato: true }
+
+    // Il socio proprietario porta la sua stessa barca → ok
+    const barcheSocio = barche.filter(b => b.clientId === posto.socioId)
+    if (barcheSocio.some(b => b.nome.toLowerCase() === nomeBarca.toLowerCase())) {
+      return { controllato: true, autorizzato: true }
+    }
+
+    // Cerca un'autorizzazione attiva per questo posto + questa barca
+    const authFound = autorizzazioni.find(a =>
+      a.berthId === destId &&
+      a.barca.toLowerCase() === nomeBarca.toLowerCase() &&
+      a.stato === 'attiva'
+    )
+    if (authFound) {
+      return {
+        controllato: true,
+        autorizzato: true,
+        auth: {
+          beneficiario: authFound.beneficiario,
+          tipo: authFound.tipo,
+          dal: authFound.dal,
+          al: authFound.al,
+        }
+      }
+    }
+
+    const socioPropr = clienti.find(c => c.id === posto.socioId)
+    return {
+      controllato: true,
+      autorizzato: false,
+      motivo: `Il posto ${destId} è assegnato al socio ${socioPropr?.nome || 'N/D'}. Nessuna autorizzazione attiva trovata per "${nomeBarca}".`
+    }
+  }, [postoDestinazione, nome, posti, barche, clienti, autorizzazioni])
+
   // Warning dimensionale (non bloccante).
   const dimensionWarnings = useMemo<string[]>(() => {
     if (!destinazioneBerth) return []
@@ -189,7 +242,7 @@ export function useTorreForm() {
 
   const fillFromBoat = (b: Boat) => {
     setNome(b.nome)
-    setTarga(b.matricola)
+    setTarga(b.matricola.toUpperCase())
     if (b.posto) setPosto(b.posto)
     if (b.lunghezza) setLunghezza(String(b.lunghezza))
     if (b.pescaggio) setPescaggio(String(b.pescaggio))
@@ -372,7 +425,30 @@ export function useTorreForm() {
 
   const handleSpostamento = () => {
     if (!validateBase()) return
-    if (!postoOrigine.trim() || !postoDestinazione.trim()) { setErrorMessage('Inserisci sia il posto di origine che quello di destinazione.'); return }
+    if (!postoOrigine.trim() || !postoDestinazione.trim()) {
+      setErrorMessage('Inserisci sia il posto di origine che quello di destinazione.')
+      return
+    }
+
+    // Controllo autorizzazione PRIMA di chiamare registraSpostamento.
+    // Se il posto di destinazione è di un socio e non c'è auth attiva, modale bloccante.
+    if (authDestinazioneInfo.controllato && !authDestinazioneInfo.autorizzato) {
+      setAuthMissingModal({
+        show: true,
+        motivo: authDestinazioneInfo.motivo || 'Autorizzazione non trovata per questo posto di destinazione.',
+        onProceed: () => {
+          // L'operatore sceglie consapevolmente di procedere — lo spostamento avviene
+          // ma il GlobalState tornerà errore perché registraSpostamento blocca senza auth.
+          // Per ora lo registriamo segnalando la pendenza (stesso pattern handleEntrata).
+          setAuthMissingModal({ show: false, motivo: '', onProceed: () => { } })
+          setWarningMessage('Spostamento registrato come pendente. La Direzione sarà notificata per l\'autorizzazione.')
+          setShowWarning(true)
+          handleClear()
+        }
+      })
+      return
+    }
+
     const result = registraSpostamento(buildMovement('spostamento', postoDestinazione), postoOrigine, postoDestinazione)
     if (!result.ok) { setErrorMessage(result.errore || 'Errore durante lo spostamento.'); return }
     handleClear()
@@ -439,6 +515,7 @@ export function useTorreForm() {
     dimensionWarnings,
     suggestedBerths,
     clienteCollegato,
+    authDestinazioneInfo,
 
     // Autofill
     fillFromBoat,

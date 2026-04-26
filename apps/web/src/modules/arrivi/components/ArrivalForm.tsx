@@ -53,7 +53,7 @@ export function ArrivalForm({ onSubmit, onClose }: Props) {
         </div>
         <div className="form-group">
           <label>Matricola *</label>
-          <input type="text" value={matricola} onChange={e => setMatricola(e.target.value)} placeholder="Es. IT-RM-2847" required />
+          <input type="text" value={matricola} onChange={e => setMatricola(e.target.value.toUpperCase())} placeholder="Es. IT-RM-2847" required />
         </div>
         <div className="form-group">
           <label>Bandiera</label>

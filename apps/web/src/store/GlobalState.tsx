@@ -49,6 +49,15 @@ interface GlobalState {
   updateBarca: (id: number, updates: Partial<Boat>) => void
   addRicevuta: (r: Receipt) => void
 
+  // ── Registrazione Nuovo Socio (M-13) ──
+  // Operazione atomica: crea cliente (tipo='so') + barca + titolo di possesso
+  // + aggiorna il berth assegnato (socioId + stato='socio_assente').
+  registraNuovoSocio: (dati: {
+    cliente: Omit<Client, 'id'>
+    barca: Omit<Boat, 'id' | 'clientId'>
+    titolo: Omit<OwnershipTitle, 'id' | 'clientId'>
+  }) => { ok: boolean; errore?: string; clienteId?: number }
+
   // ── Autorizzazioni (M-10) ──
   // addAutorizzazione: creazione manuale dalla Direzione (form "Nuova Autorizzazione").
   //   Default stato='attiva'. Ritorna l'id assegnato.
@@ -557,6 +566,67 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
 
   const addRicevuta = (r: Receipt) => setRicevute(prev => [...prev, r])
 
+  // ════════════════════════════════════════════
+  // REGISTRAZIONE NUOVO SOCIO (M-13) — operazione atomica
+  // ════════════════════════════════════════════
+  const registraNuovoSocio = (dati: {
+    cliente: Omit<Client, 'id'>
+    barca: Omit<Boat, 'id' | 'clientId'>
+    titolo: Omit<OwnershipTitle, 'id' | 'clientId'>
+  }): { ok: boolean; errore?: string; clienteId?: number } => {
+    // Validazioni base
+    if (!dati.cliente.nome.trim()) return { ok: false, errore: 'Il nome del socio è obbligatorio.' }
+    if (!dati.titolo.berthId.trim()) return { ok: false, errore: 'Seleziona un posto fisso da assegnare.' }
+    if (!dati.barca.nome.trim()) return { ok: false, errore: 'Il nome della barca è obbligatorio.' }
+
+    // Il posto non deve già avere un socioId
+    const postoEsistente = posti.find(p => p.id === dati.titolo.berthId)
+    if (postoEsistente?.socioId) {
+      const socioPropr = clienti.find(c => c.id === postoEsistente.socioId)
+      return { ok: false, errore: `Il posto ${dati.titolo.berthId} è già assegnato al socio ${socioPropr?.nome || '#' + postoEsistente.socioId}.` }
+    }
+
+    // 1. Crea il cliente con tipo='so'
+    const nuovoClienteId = Math.max(0, ...clienti.map(c => c.id)) + 1
+    const nuovoCliente: Client = {
+      ...dati.cliente,
+      id: nuovoClienteId,
+      tipo: 'so',
+      posto: dati.titolo.berthId,
+    }
+    setClienti(prev => [...prev, nuovoCliente])
+
+    // 2. Crea la barca collegata
+    const nuovoBoatId = Math.max(0, ...barche.map(b => b.id)) + 1
+    const nuovaBarca: Boat = {
+      ...dati.barca,
+      id: nuovoBoatId,
+      clientId: nuovoClienteId,
+      tipologia: 'socio',
+      posto: dati.titolo.berthId,
+      registrazioneCompleta: true,
+    }
+    setBarche(prev => [...prev, nuovaBarca])
+
+    // 3. Crea il titolo di possesso
+    const nuovoTitoloId = Math.max(0, ...titoli.map(t => t.id)) + 1
+    const nuovoTitolo: OwnershipTitle = {
+      ...dati.titolo,
+      id: nuovoTitoloId,
+      clientId: nuovoClienteId,
+    }
+    setTitoli(prev => [...prev, nuovoTitolo])
+
+    // 4. Aggiorna il berth: assegna il socioId e imposta stato='socio_assente'
+    updateOrCreatePosto(dati.titolo.berthId, {
+      socioId: nuovoClienteId,
+      stato: 'socio_assente',
+      barcaOra: undefined,
+    })
+
+    return { ok: true, clienteId: nuovoClienteId }
+  }
+
   const addArrivo = (a: Arrival) => setArrivi(prev => [...prev, a])
   
   const resolveArrivo = (id: number) => {
@@ -676,6 +746,7 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
       segnalazioni, ricevute, arrivi, titoli, autorizzazioni, utenti, notifiche,
       updatePosto, addArrivo, resolveArrivo, markNotifica,
       addCliente, addBarca, updateBarca, addRicevuta,
+      registraNuovoSocio,
       addAutorizzazione, updateAutorizzazione,
       completaAutorizzazionePendente, revocaAutorizzazione,
       registraEntrata, registraUscitaTemporanea, registraUscitaDefinitiva,

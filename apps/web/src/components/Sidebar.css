@@ -1,130 +1,175 @@
+/* ════════════════════════════════════════════════════════════════
+   Sidebar — barra di navigazione fissa (sempre scura)
+   Token: --sidebar-* da tokens.css
+   ════════════════════════════════════════════════════════════════ */
+
 .sidebar {
   width: var(--sidebar-width);
   height: 100vh;
-  background: var(--accent);
-  color: white;
+  background: var(--sidebar-bg);
+  color: var(--sidebar-text);
   display: flex;
   flex-direction: column;
   position: fixed;
   left: 0;
   top: 0;
   z-index: 100;
+  font-family: var(--font-ui);
 }
 
-.sidebar-header {
-  height: var(--header-height);
-  padding: 0 var(--space-lg);
+/* ── Logo + wordmark (lockup orizzontale, sfondo trasparente) ──
+   Niente riquadro bianco: il PNG ha trasparenza e il disegno principale
+   è prevalentemente blu/bianco, leggibile sia su #1F3A52 (chiaro) che
+   su #0F1722 (scuro). La scritta "MARINA OS" rinforza l'identità verbale
+   e dà respiro al lockup orizzontale. */
+.sidebar-logo {
+  background: transparent;
+  padding: 14px 14px 16px;
   display: flex;
   align-items: center;
-  gap: var(--space-md);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 10px;
+  border-bottom: 1px solid var(--sidebar-divider);
 }
 
-.logo-box {
-  width: 44px;
+.sidebar-logo-img {
   height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.logo-box img {
-  width: 100%;
-  height: 100%;
+  width: 44px;
   object-fit: contain;
+  display: block;
+  flex-shrink: 0;
 }
 
-.logo-text h1 {
-  font-size: 1.2rem;
-  margin: 0;
-  color: white;
-}
-
-.logo-text span {
-  font-size: 0.75rem;
-  color: var(--text3);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.role-badge {
-  margin: var(--space-lg);
-  background: rgba(0, 0, 0, 0.2);
-  padding: 8px 12px;
-  border-radius: var(--radius);
-  font-size: 0.8rem;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.role-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 8px var(--green);
-}
-
-.sidebar-nav {
-  flex: 1;
-  padding: 0 var(--space-md);
+.sidebar-logo-text {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 1px;
+  min-width: 0;
+}
+
+.sidebar-logo-brand {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--sidebar-text);
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+}
+
+.sidebar-logo-sub {
+  font-size: 0.66rem;
+  color: var(--sidebar-text-muted);
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+
+/* ── Navigazione ── */
+.sidebar-nav {
+  flex: 1;
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   overflow-y: auto;
 }
 
-.nav-item {
+.sidebar-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar-group-label {
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: var(--sidebar-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 10px;
+  margin-bottom: 2px;
+}
+
+.sidebar-nav-item {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
-  padding: 10px 12px;
-  color: var(--text3);
-  border-radius: var(--radius);
-  font-size: 0.9rem;
-  background: rgba(0, 0, 0, 0.15);
-  transition: all 0.2s;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: var(--sidebar-text-muted);
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s;
 }
 
-.nav-item:hover {
-  background: rgba(0, 0, 0, 0.25);
-  color: white;
+.sidebar-nav-item:hover {
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text);
 }
 
-.nav-item.active {
-  background: rgba(0, 0, 0, 0.4);
-  color: rgb(182, 243, 226);
-  font-weight: bold;
-  border-left: 3px solid rgb(43, 149, 121);
-  padding-left: 9px;
-  /* 12px - 3px border */
+.sidebar-nav-item.active {
+  background: var(--sidebar-active-bg);
+  color: var(--sidebar-text);
+  font-weight: 500;
 }
 
-.nav-icon {
-  font-size: 1.1rem;
-  width: 20px;
-  text-align: center;
-}
-
+/* ── Footer (switcher + utente) ── */
 .sidebar-footer {
-  padding: var(--space-lg);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px 10px 12px;
+  border-top: 1px solid var(--sidebar-divider);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.btn-logout {
+.sidebar-user {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: var(--space-sm);
-  width: 100%;
-  padding: 10px 16px;
-  border-radius: var(--radius);
-  transition: all 0.2s;
+  gap: 10px;
+  padding: 4px 6px;
 }
 
-.btn-logout:hover {
-  background: rgba(231, 76, 60, 0.1);
-  color: var(--red);
+.sidebar-user-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--color-text-success);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.sidebar-user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar-user-name {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--sidebar-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user-role {
+  font-size: 0.66rem;
+  color: var(--sidebar-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Custom scrollbar (discreta) ── */
+.sidebar-nav::-webkit-scrollbar {
+  width: 6px;
+}
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+}
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
 }

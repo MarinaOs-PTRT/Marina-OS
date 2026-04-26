@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 import { Berth } from '@shared/types'
 import { useGlobalState } from '../../../store/GlobalState'
 import { Badge } from '../../../components/Badge'
@@ -93,8 +94,21 @@ export function BerthDetailDrawer({ berth, onClose }: BerthDetailDrawerProps) {
         )}
         </div>
 
-        {/* Piantina = sola lettura. I movimenti si registrano nel
-            QuickMovementPanel della Dashboard. Deciso con Ale il 24 Apr 2026. */}
+        {/* Azione di registrazione movimento.
+            Strada A (Apr 2026): la mappa è "telecomando visivo" della Torre.
+            Il drawer NON ospita le azioni: l'unico punto operativo per
+            i movimenti è /torre. Il link porta lì con il posto già
+            pre-selezionato via query param ?posto=XXX, gestito in TorrePage.
+            Vedi memoria: dashboard_layout.md. */}
+        <div className="drawer-foot">
+          <Link
+            to={`/torre?posto=${encodeURIComponent(berth.id)}`}
+            className="btn btn-mode-entrata drawer-foot-btn"
+            onClick={onClose}
+          >
+            Registra movimento →
+          </Link>
+        </div>
       </div>
     </div>
   )

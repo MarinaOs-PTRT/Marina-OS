@@ -3,11 +3,12 @@ import { TopBar } from '../../components/TopBar'
 import { SociTable } from './components/SociTable'
 import { AuthTable } from './components/AuthTable'
 import { AuthForm } from './components/AuthForm'
+import { NuovoSocioForm } from './components/NuovoSocioForm'
 import { useGlobalState } from '../../store/GlobalState'
 import { Authorization } from '@shared/types'
 import './SociPage.css'
 
-type ActiveTab = 'soci' | 'pendenti' | 'attive' | 'storico'
+type ActiveTab = 'soci' | 'pendenti' | 'attive' | 'storico' | 'nuovo'
 
 export function SociPage() {
   // SSOT: tutte le scritture passano per il Context (non c'è più stato locale).
@@ -143,9 +144,16 @@ export function SociPage() {
             >
               📜 Storico ({authStorico.length})
             </button>
+            <button
+              className={`soci-tab ${activeTab === 'nuovo' ? 'active' : ''}`}
+              onClick={() => setActiveTab('nuovo')}
+              style={{ color: activeTab === 'nuovo' ? undefined : 'var(--color-text-info, #2E6CBC)', fontWeight: 600 }}
+            >
+              + Nuovo Socio
+            </button>
           </div>
 
-          {(activeTab === 'attive' || activeTab === 'storico') && !editingAuth && (
+          {(activeTab === 'attive' || activeTab === 'storico') && activeTab !== 'nuovo' && !editingAuth && (
             <button className="btn btn-mode-entrata" onClick={() => setShowForm(!showForm)}>
               {showForm ? 'Chiudi' : '+ Nuova Autorizzazione'}
             </button>
@@ -171,6 +179,11 @@ export function SociPage() {
           )}
           {activeTab === 'attive' && <AuthTable data={authAttive} type="attive" onRevoca={handleRevoca} />}
           {activeTab === 'storico' && <AuthTable data={authStorico} type="storico" />}
+          {activeTab === 'nuovo' && (
+            <NuovoSocioForm
+              onSuccess={() => setActiveTab('soci')}
+            />
+          )}
         </div>
       </div>
     </>

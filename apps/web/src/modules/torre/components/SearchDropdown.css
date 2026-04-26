@@ -1,5 +1,6 @@
 /* ════════════════════════════════════════════
    SearchDropdown — campo di ricerca + lista autocomplete
+   Usa solo CSS variables da tokens.css — nessun colore hardcoded.
    ════════════════════════════════════════════
    Fix B: la lista usa min-width 240px così resta leggibile anche se
    l'input wrapper è stretto (es. campo "Posto" in 3-col grid).
@@ -12,13 +13,12 @@
   flex-direction: column;
   gap: 4px;
   min-width: 0;
-  /* IMPORTANT: NIENTE overflow:hidden qui, taglierebbe la lista */
 }
 
 .search-dropdown-label {
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--text2, #94a3b8);
+  color: var(--text2);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -26,10 +26,10 @@
 .search-dropdown-input {
   width: 100%;
   padding: 8px 12px;
-  background: var(--bg1, #0f172a);
-  border: 1px solid var(--border, #334155);
-  border-radius: var(--radius-md, 8px);
-  color: var(--text, #e2e8f0);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 8px);
+  color: var(--text);
   font-size: 0.9rem;
   font-family: inherit;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -37,8 +37,8 @@
 
 .search-dropdown-input:focus {
   outline: none;
-  border-color: var(--accent, #38bdf8);
-  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-light);
 }
 
 .search-dropdown-input:disabled {
@@ -47,7 +47,7 @@
 }
 
 .search-dropdown-input::placeholder {
-  color: var(--text3, #64748b);
+  color: var(--text3);
 }
 
 /* ── Lista suggerimenti ──
@@ -61,24 +61,18 @@
   margin-top: 4px;
   min-width: 240px;
   max-width: 360px;
-  background: var(--bg2, #1e293b);
-  border: 1px solid var(--border, #334155);
-  border-radius: var(--radius-md, 8px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 8px);
+  box-shadow: var(--shadow-lg);
   z-index: 1000;
   overflow: hidden;
   animation: searchDropIn 0.15s ease;
 }
 
 @keyframes searchDropIn {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .search-dropdown-item {
@@ -92,16 +86,16 @@
 
 .search-dropdown-item:hover,
 .search-dropdown-item.selected {
-  background: var(--accent-light, rgba(56, 189, 248, 0.12));
+  background: var(--accent-light);
 }
 
 .search-dropdown-item-label {
   font-size: 0.88rem;
   font-weight: 600;
-  color: var(--text, #e2e8f0);
+  color: var(--text);
 }
 
 .search-dropdown-item-sublabel {
   font-size: 0.75rem;
-  color: var(--text3, #94a3b8);
+  color: var(--text3);
 }
