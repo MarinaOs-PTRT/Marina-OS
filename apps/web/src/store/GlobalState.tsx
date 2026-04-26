@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, ReactNode } from 'react'
 import {
   Client, Boat, Berth, BerthStatus, Movement, Tariff, MaintenanceJob, Report,
   Receipt, Arrival, OwnershipTitle, Authorization, AuthType, SystemUser, SystemAlert,
-  MovementScenario
+  MovementScenario, RegistrazionePendente, MotivoPendenza
 } from '@shared/types'
 import {
   CLIENTI_DEMO, BARCHE_DEMO, POSTI_DEMO, MOVIMENTI_DEMO,
@@ -92,6 +92,9 @@ interface GlobalState {
   checkPagamentoSaldato: (nomeBarca: string) => boolean
   checkAutorizzazione: (postoId: string, nomeBarca: string) => { autorizzato: boolean; motivo?: string }
   getScenarioBarca: (nomeBarca: string, matricola: string) => MovementScenario | null
+
+  // Registrazioni Pendenti (M-RegPendente, 25 Apr 2026)
+  getRegistrazioniPendenti: () => RegistrazionePendente[]
 }
 
 const GlobalContext = createContext<GlobalState | undefined>(undefined)
@@ -280,6 +283,57 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     const validazione = validaStatoPosto(m.posto, STATI_ENTRATA, 'entrata')
     if (!validazione.valido) {
       return { ok: false, errore: validazione.errore }
+    }
+
+    // ════════════════════════════════════════════
+    // INVARIANTE DI SISTEMA (25 Apr 2026)
+    // Ogni entrata di scenario 'transito' o 'affittuario' DEVE produrre una
+    // Boat reale in barche[]. Senza questa garanzia la barca diventa
+    // "fantasma" (vive solo come stringa barcaOra sul berth) e non è più
+    // ricercabile da Torre per movimenti successivi.
+    // Per i SOCI invece la boat deve preesistere in anagrafica (gestita
+    // dalla Direzione via NuovoSocioForm), quindi non creiamo nulla.
+    // Vedi memoria: registrazione_pendente_pattern.md
+    // ════════════════════════════════════════════
+    if (m.scenario === 'transito' || m.scenario === 'affittuario') {
+      const nomeTrim = m.nome.trim()
+      const matricolaTrim = (m.matricola || '').trim()
+      const esistente = barche.find(b =>
+        (nomeTrim && b.nome.toLowerCase() === nomeTrim.toLowerCase()) ||
+        (matricolaTrim && matricolaTrim !== 'N/D' && b.matricola.toLowerCase() === matricolaTrim.toLowerCase())
+      )
+      if (!esistente && (nomeTrim || matricolaTrim)) {
+        // Crea Client scheletro
+        const baseIniz = nomeTrim || matricolaTrim || '??'
+        const iniziali = baseIniz.substring(0, 2).toUpperCase()
+        const labelTipo = m.scenario === 'affittuario' ? 'Affittuario' : 'Transito'
+        const nuovoClientId = Math.max(0, ...clienti.map(c => c.id)) + 1
+        const nuovoClient: Client = {
+          id: nuovoClientId,
+          tipo: 'pf',
+          nome: `${labelTipo} — ${nomeTrim || matricolaTrim}`,
+          iniziali
+        }
+        setClienti(prev => [...prev, nuovoClient])
+
+        // Crea Boat scheletro
+        const nuovoBoatId = Math.max(0, ...barche.map(b => b.id)) + 1
+        const nuovaBoat: Boat = {
+          id: nuovoBoatId,
+          clientId: nuovoClientId,
+          nome: nomeTrim || `Barca ${matricolaTrim}`,
+          matricola: matricolaTrim || 'N/D',
+          tipo: 'Altro',
+          tipologia: m.scenario,    // 'transito' | 'affittuario' — discriminator per Pendenti
+          lunghezza: 0,
+          larghezza: 0,
+          pescaggio: 0,
+          bandiera: 'N/D',
+          posto: m.posto,
+          registrazioneCompleta: false  // → finisce in Registrazioni Pendenti
+        }
+        setBarche(prev => [...prev, nuovaBoat])
+      }
     }
 
     // Verifica autorizzazione per posti di soci (senza mutare l'input)
@@ -740,6 +794,74 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     } : a))
   }
 
+  // ════════════════════════════════════════════
+  // REGISTRAZIONI PENDENTI (25 Apr 2026) — vista unificata
+  // ════════════════════════════════════════════
+  /**
+   * Restituisce TUTTE le barche con almeno un motivo di pendenza:
+   *   - 'anagrafica' → boat.registrazioneCompleta === false
+   *   - 'auth'       → esiste un'auth in stato 'pendente' per quel berth+barca
+   *   - 'pagamento'  → (riservato per future estensioni; oggi non popolato)
+   *
+   * Ordinata dalla più vecchia (rilevatoIl crescente) → l'operatore vede
+   * prima i casi che attendono da più tempo.
+   *
+   * Backend domani: questa funzione diventerà l'endpoint
+   *   GET /api/registrations/pending
+   * con la stessa shape di RegistrazionePendente[].
+   */
+  const getRegistrazioniPendenti = (): RegistrazionePendente[] => {
+    const out: RegistrazionePendente[] = []
+
+    // 1) Barche con anagrafica incompleta (transito o affittuario)
+    for (const boat of barche) {
+      if (boat.registrazioneCompleta === false) {
+        const tipo = boat.tipologia === 'affittuario' ? 'affittuario' : 'transito'
+        const motivi: MotivoPendenza[] = ['anagrafica']
+
+        // Cerca un'auth pendente per stesso berth/barca
+        const authPend = autorizzazioni.find(a =>
+          a.stato === 'pendente' &&
+          a.barca.toLowerCase() === boat.nome.toLowerCase() &&
+          (!boat.posto || a.berthId === boat.posto)
+        )
+        if (authPend) motivi.push('auth')
+
+        out.push({
+          boat,
+          client: clienti.find(c => c.id === boat.clientId),
+          berth: boat.posto ? posti.find(p => p.id === boat.posto) : undefined,
+          tipo,
+          motivi,
+          authPendente: authPend,
+          rilevatoIl: authPend?.creatoIl ?? new Date().toISOString()
+        })
+      }
+    }
+
+    // 2) Auth pendenti per barche che invece hanno anagrafica completa
+    //    (es. socio che richiede auth per nuovo affittuario su barca esistente).
+    //    Evita duplicati: già aggiunte nel ciclo 1 se la boat era incompleta.
+    for (const auth of autorizzazioni) {
+      if (auth.stato !== 'pendente') continue
+      const boat = barche.find(b => b.nome.toLowerCase() === auth.barca.toLowerCase())
+      if (!boat) continue
+      if (boat.registrazioneCompleta === false) continue // già nel ciclo 1
+      out.push({
+        boat,
+        client: clienti.find(c => c.id === boat.clientId),
+        berth: posti.find(p => p.id === auth.berthId),
+        tipo: boat.tipologia === 'affittuario' ? 'affittuario' : 'transito',
+        motivi: ['auth'],
+        authPendente: auth,
+        rilevatoIl: auth.creatoIl ?? new Date().toISOString()
+      })
+    }
+
+    // Ordina dalla più vecchia in cima
+    return out.sort((a, b) => a.rilevatoIl.localeCompare(b.rilevatoIl))
+  }
+
   return (
     <GlobalContext.Provider value={{
       clienti, barche, posti, movimenti, tariffe, manutenzioni,
@@ -751,7 +873,8 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
       completaAutorizzazionePendente, revocaAutorizzazione,
       registraEntrata, registraUscitaTemporanea, registraUscitaDefinitiva,
       registraSpostamento, registraCantiere, registraBunker, registraRientro,
-      isPostoOccupato, checkPagamentoSaldato, checkAutorizzazione, getScenarioBarca
+      isPostoOccupato, checkPagamentoSaldato, checkAutorizzazione, getScenarioBarca,
+      getRegistrazioniPendenti
     }}>
       {children}
     </GlobalContext.Provider>

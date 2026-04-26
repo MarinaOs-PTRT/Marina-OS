@@ -33,9 +33,27 @@ export const router = createBrowserRouter([
         path: 'torre',
         element: <TorrePage />
       },
+      // ── Completa Registrazione (M-RegPendente, 25 Apr 2026) ──
+      // Pagina unificata per completare anagrafica di transiti e affittuari
+      // pendenti. Per gli affittuari nasconde la sezione Cassa (non gestita
+      // dal sistema). Vedi memoria registrazione_pendente_pattern.md.
+      {
+        path: 'completa-registrazione',
+        element: <RegistrazioneTransitiPage />
+      },
+      {
+        path: 'completa-registrazione/:boatId',
+        element: <RegistrazioneTransitiPage />
+      },
+      // Redirect retrocompatibilità: il vecchio path /registrazione-transiti
+      // rimane funzionante come reindirizzamento al nuovo nome neutro.
       {
         path: 'registrazione-transiti',
-        element: <RegistrazioneTransitiPage />
+        element: <Navigate to="/completa-registrazione" replace />
+      },
+      {
+        path: 'registrazione-transiti/:boatId',
+        element: <Navigate to="/completa-registrazione" replace />
       },
       {
         path: 'registro',

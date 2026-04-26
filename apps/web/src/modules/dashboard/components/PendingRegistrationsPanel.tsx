@@ -3,24 +3,34 @@ import { Link } from 'react-router-dom'
 import { Card } from '../../../components/Card'
 import { Badge } from '../../../components/Badge'
 import { useGlobalState } from '../../../store/GlobalState'
+import { MotivoPendenza } from '@shared/types'
 
 /**
- * Widget Dashboard — lista dei transiti registrati al TEMPO 1 (Torre)
- * ma ancora privi di anagrafica completa / ricevuta.
+ * PendingRegistrationsPanel — "Registrazioni Pendenti".
  *
- * Criterio: `boat.registrazioneCompleta === false`.
+ * Vista unificata sostitutiva dei vecchi widget separati per transito e
+ * affittuario. Consuma getRegistrazioniPendenti() del GlobalState (SSOT).
  *
- * Il link "Completa" apre la pagina Registrazione Transiti in TEMPO 2,
- * dove Torre/Ufficio inserisce dati persona, dati barca e ricevuta.
- * Vedi memoria: transito_tempo1_tempo2.md
+ * Ogni card mostra:
+ *   - chip TIPO: Transito (verde mare) o Affittuario (giallo sole)
+ *   - chip MOTIVI: Anagrafica / Auth / Pagamento (uno o più, in arancione)
+ *   - link "Completa →" → /completa-registrazione/:boatId
+ *
+ * Vedi memorie: dashboard_layout.md, registrazione_pendente_pattern.md
  */
-export function PendingRegistrationsPanel() {
-  const { barche, posti, clienti } = useGlobalState()
 
-  const pendenti = barche.filter(b => b.registrazioneCompleta === false)
+const MOTIVO_LABEL: Record<MotivoPendenza, string> = {
+  anagrafica: 'Anagrafica',
+  auth: 'Autorizzazione',
+  pagamento: 'Pagamento',
+}
+
+export function PendingRegistrationsPanel() {
+  const { getRegistrazioniPendenti } = useGlobalState()
+  const pendenti = getRegistrazioniPendenti()
 
   return (
-    <Card title={`⏳ Transiti da completare (${pendenti.length})`}>
+    <Card title={`Registrazioni Pendenti (${pendenti.length})`}>
       {pendenti.length === 0 ? (
         <div style={{
           padding: 'var(--space-md)',
@@ -32,28 +42,62 @@ export function PendingRegistrationsPanel() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
-          {pendenti.map(b => {
-            const berth = b.posto ? posti.find(p => p.id === b.posto) : undefined
-            const cliente = clienti.find(c => c.id === b.clientId)
-            const isSkeleton = cliente?.nome.startsWith('Transito —')
+          {pendenti.map(p => {
+            const tipoColor = p.tipo === 'affittuario'
+              ? 'var(--color-text-warning)'
+              : 'var(--color-text-success)'
+            const tipoBg = p.tipo === 'affittuario'
+              ? 'var(--color-bg-warning)'
+              : 'var(--color-bg-success)'
+            const tipoLabel = p.tipo === 'affittuario' ? 'Affittuario' : 'Transito'
+
             return (
-              <div key={b.id} style={{
+              <div key={`${p.boat.id}-${p.authPendente?.id ?? 'noauth'}`} style={{
                 padding: 'var(--space-md)',
-                border: '1px solid var(--color-text-warning)',
+                border: '1px solid var(--border)',
+                borderLeft: `3px solid ${tipoColor}`,
+                borderTopLeftRadius: 0,
+                borderBottomLeftRadius: 0,
                 borderRadius: 'var(--radius)',
                 background: 'var(--bg3)'
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                  <strong>{b.nome}</strong>
-                  <Badge color="amber">In attesa</Badge>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <strong>{p.boat.nome}</strong>
+                  <span style={{
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                    padding: '2px 8px',
+                    borderRadius: 999,
+                    background: tipoBg,
+                    color: tipoColor,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em'
+                  }}>{tipoLabel}</span>
                 </div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text2)', marginBottom: 'var(--space-sm)' }}>
-                  Matricola: {b.matricola || 'N/D'}<br />
-                  Posto: {b.posto || '—'}{berth ? ` · ${berth.pontile}` : ''}<br />
-                  Anagrafica: {isSkeleton ? <em>da compilare</em> : 'parziale'}
+
+                <div style={{ fontSize: '0.82rem', color: 'var(--text2)', marginBottom: 'var(--space-sm)' }}>
+                  Matricola: {p.boat.matricola || 'N/D'}<br />
+                  Posto: {p.boat.posto || '—'}{p.berth ? ` · ${p.berth.pontile}` : ''}
                 </div>
+
+                {/* Chip per ogni motivo di pendenza */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 'var(--space-sm)' }}>
+                  {p.motivi.map(m => (
+                    <span key={m} style={{
+                      fontSize: '0.7rem',
+                      fontWeight: 600,
+                      padding: '2px 8px',
+                      borderRadius: 999,
+                      background: 'var(--color-bg-warning)',
+                      color: 'var(--color-text-warning)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em'
+                    }}>{MOTIVO_LABEL[m]}</span>
+                  ))}
+                </div>
+
                 <Link
-                  to="/registrazione-transiti"
+                  to={`/completa-registrazione/${p.boat.id}`}
                   className="btn btn-mode-entrata"
                   style={{ fontSize: '0.85rem', padding: '6px 12px' }}
                 >

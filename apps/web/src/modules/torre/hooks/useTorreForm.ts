@@ -270,50 +270,18 @@ export function useTorreForm() {
   }
 
   // ════════════════════════════════════════════
-  // INTERNAL — anagrafica scheletro per transiti (MEDIO 3-bis)
+  // ensureBoatExists — DEPRECATED (25 Apr 2026)
+  // La creazione di Client + Boat scheletro è stata spostata DENTRO
+  // registraEntrata del GlobalState come INVARIANTE di sistema (vale per
+  // transito E affittuario, non solo transito come prima). Vedi memoria
+  // registrazione_pendente_pattern.md.
+  //
+  // Questa funzione resta come no-op per non rompere call site esistenti
+  // negli action handler. Da rimuovere completamente nella prossima
+  // pulizia (insieme alle 5 chiamate ensureBoatExists() qui sotto).
   // ════════════════════════════════════════════
   const ensureBoatExists = (): void => {
-    if (tipologia !== 'transito') return
-    const nomeTrim = nome.trim()
-    const targaTrim = targa.trim()
-    if (!nomeTrim && !targaTrim) return
-
-    const esistente = barche.find(b =>
-      (nomeTrim && b.nome.toLowerCase() === nomeTrim.toLowerCase()) ||
-      (targaTrim && b.matricola.toLowerCase() === targaTrim.toLowerCase())
-    )
-    if (esistente) return
-
-    const baseIniz = nomeTrim || targaTrim || '??'
-    const iniziali = baseIniz.substring(0, 2).toUpperCase()
-
-    const nuovoClientId = Math.max(0, ...clienti.map(c => c.id)) + 1
-    const nuovoClient: Client = {
-      id: nuovoClientId,
-      tipo: 'pf',
-      nome: `Transito — ${nomeTrim || targaTrim}`,
-      iniziali
-    }
-    addCliente(nuovoClient)
-
-    const nuovoBoatId = Math.max(0, ...barche.map(b => b.id)) + 1
-    const lunVal = parseFloat(lunghezza) || 0
-    const pesVal = parseFloat(pescaggio) || 0
-    const nuovaBoat: Boat = {
-      id: nuovoBoatId,
-      clientId: nuovoClientId,
-      nome: nomeTrim || `Barca ${targaTrim}`,
-      matricola: targaTrim || 'N/D',
-      tipo: 'Altro',
-      tipologia: 'transito',
-      lunghezza: lunVal,
-      larghezza: 0,
-      pescaggio: pesVal,
-      bandiera: 'N/D',
-      posto: posto.trim() || undefined,
-      registrazioneCompleta: false
-    }
-    addBarca(nuovaBoat)
+    /* no-op — vedi commento sopra */
   }
 
   const buildMovement = (tipo: any, postoVal: string) => ({

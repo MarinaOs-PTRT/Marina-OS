@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
+import { useParams } from 'react-router-dom'
 import { TopBar } from '../../components/TopBar'
 import { Omnibar } from '../../components/Omnibar'
 import { useGlobalState } from '../../store/GlobalState'
@@ -25,7 +26,7 @@ type StatoAnagrafica = 'nessuna' | 'incompleta' | 'completa'
 
 export function RegistrazioneTransitiPage() {
   const {
-    barche, clienti, tariffe, ricevute,
+    barche, clienti, tariffe, ricevute, autorizzazioni,
     addCliente, updateBarca, addRicevuta
     // NON importiamo registraEntrata: il movimento è già stato registrato
     // al Tempo 1 dal QuickMovementPanel. Questa pagina completa
@@ -183,6 +184,35 @@ export function RegistrazioneTransitiPage() {
       setPPiva(''); setPRagione('')
     }
   }
+
+  // ════════════════════════════════════════════
+  // Pre-selezione da query param :boatId (25 Apr 2026)
+  // Quando l'utente arriva da Pendenti cliccando "Completa →" sulla
+  // Dashboard, l'URL è /completa-registrazione/:boatId. Carichiamo la
+  // boat corrispondente UNA SOLA VOLTA al mount usando lo stesso flusso
+  // di handleOmnibarSelect (per riusare tutta la pre-popolazione).
+  // ════════════════════════════════════════════
+  const { boatId } = useParams<{ boatId?: string }>()
+  const prefilledRef = useRef(false)
+  useEffect(() => {
+    if (prefilledRef.current) return
+    if (!boatId) return
+    const id = parseInt(boatId, 10)
+    if (!Number.isFinite(id)) return
+    const boat = barche.find(b => b.id === id)
+    if (!boat) return
+    handleOmnibarSelect('select', { original: boat })
+    prefilledRef.current = true
+  }, [boatId, barche])
+
+  // ════════════════════════════════════════════
+  // Tipo di registrazione (transito vs affittuario)
+  // L'affittuario non passa per la cassa interna — paga col canone fra
+  // beneficiario e socio proprietario, fuori dal nostro sistema.
+  // Quindi nella pagina nascondiamo l'intera sezione Cassa quando la
+  // boat selezionata è un affittuario.
+  // ════════════════════════════════════════════
+  const isAffittuario = selectedBoat?.tipologia === 'affittuario'
 
   // ════════════════════════════════════════════
   // Validazioni
@@ -535,8 +565,13 @@ export function RegistrazioneTransitiPage() {
             </div>
 
             {/* ═══════════════════════════════════════
-                COLONNA DESTRA — Cassa / Pagamento
+                COLONNA DESTRA — Cassa / Pagamento (TRANSITI)
+                Nascosta per affittuari: l'affittuario paga il canone
+                fra beneficiario e socio proprietario, fuori dal nostro
+                sistema. A noi basta l'autorizzazione.
+                Vedi memoria: registrazione_pendente_pattern.md
             ═══════════════════════════════════════ */}
+            {!isAffittuario && (
             <div className="reg-panel reg-panel-cassa">
               <div className="reg-panel-header">
                 <h2>💶 Cassa</h2>
@@ -671,6 +706,84 @@ export function RegistrazioneTransitiPage() {
                 </button>
               </div>
             </div>
+            )}
+
+            {/* ═══════════════════════════════════════
+                COLONNA DESTRA — Autorizzazione (AFFITTUARI)
+                Per gli affittuari non c'è cassa interna: il canone è
+                regolato fuori sistema fra beneficiario e proprietario
+                del posto. Questa colonna mostra solo lo stato dell'
+                autorizzazione e ricorda all'operatore che il completamento
+                anagrafico è sufficiente per chiudere la pendenza.
+            ═══════════════════════════════════════ */}
+            {isAffittuario && (
+            <div className="reg-panel reg-panel-cassa">
+              <div className="reg-panel-header">
+                <h2>📜 Autorizzazione</h2>
+              </div>
+
+              <div className="reg-info-banner">
+                ℹ️ Per gli <strong>affittuari</strong> il canone è regolato
+                direttamente fra beneficiario e socio proprietario del
+                posto. <br />Il sistema non gestisce pagamenti — è
+                sufficiente che l'autorizzazione del proprietario sia
+                presente e che l'anagrafica sia completa.
+              </div>
+
+              <div className="reg-subsection-label" style={{ marginTop: 'var(--space-lg)' }}>
+                Stato autorizzazione
+              </div>
+              <div style={{
+                padding: 'var(--space-md)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)',
+                background: 'var(--bg3)',
+                fontSize: '0.88rem'
+              }}>
+                {(() => {
+                  // Cerca un'auth (pendente o attiva) per questo posto + barca
+                  const auth = (autorizzazioni || []).find((a: any) =>
+                    a.berthId === selectedPostoId &&
+                    a.barca?.toLowerCase() === bNome.toLowerCase()
+                  )
+                  if (!auth) {
+                    return (
+                      <span style={{ color: 'var(--color-text-warning)' }}>
+                        ⚠ Nessuna autorizzazione collegata. Verifica che la
+                        Direzione abbia compilato il documento prima di
+                        chiudere la registrazione.
+                      </span>
+                    )
+                  }
+                  if (auth.stato === 'pendente') {
+                    return (
+                      <span style={{ color: 'var(--color-text-warning)' }}>
+                        ⏳ Autorizzazione in attesa di compilazione dalla
+                        Direzione (Soci e Assegnazioni → tab Pendenti).
+                      </span>
+                    )
+                  }
+                  return (
+                    <span style={{ color: 'var(--color-text-success)' }}>
+                      ✓ Autorizzazione <strong>{auth.tipo}</strong> attiva
+                      — beneficiario: <strong>{auth.beneficiario}</strong>
+                      {auth.dal && auth.al ? <> · dal {auth.dal} al {auth.al}</> : null}
+                    </span>
+                  )
+                })()}
+              </div>
+
+              <div className="reg-actions" style={{ marginTop: 'var(--space-lg)' }}>
+                <div />
+                <button
+                  className="btn btn-mode-entrata"
+                  onClick={handleSalvaAnagrafica}
+                >
+                  ✅ Conferma Registrazione
+                </button>
+              </div>
+            </div>
+            )}
           </div>
         </div>
         )}

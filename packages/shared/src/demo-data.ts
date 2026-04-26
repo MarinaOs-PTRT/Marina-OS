@@ -44,7 +44,101 @@ export const CLIENTI_DEMO: Client[] = [
     tel: '+39 338 9900112', email: 'flandi@email.com', indirizzo: 'Via Cassia 118, Roma',
     docTipo: 'Passaporto', docNum: 'ZC4490012',
     posto: 'C 25', pontile: 'Pontile Charlie', catPosto: 'Cat. III', dimMax: 'max 12m × 4,0m', azioni: '340'
-  }
+  },
+
+  // ── SOCI FRANGIFLUTTI (id 8-24, 25 Apr 2026) ──
+  // 17 soci uno per ogni posto FF (FF100-FF113 + FF1-FF3).
+  // 15 hanno una barca ormeggiata (vedi BARCHE_DEMO id 9-23).
+  // 2 soci NON hanno barca (FF103 e FF110 → stato socio_assente_lungo) per
+  // testare spostamenti e arrivi affittuario su posti liberi-ma-titolati.
+  // Vedi memoria: ff_test_setup.md
+
+  // Frangiflutti Nord (FF100-FF113) — yacht grandi
+  { id: 8,  tipo: 'so', nome: 'Roberto Marchetti', iniziali: 'RM', naz: 'Italiana', cf: 'MRCRRT60H10H501A',
+    tel: '+39 335 1100201', email: 'r.marchetti@email.it', indirizzo: 'Via Veneto 15, Roma',
+    docTipo: 'Carta d\'identità', docNum: 'GH1100201',
+    posto: 'FF100', pontile: 'Frangiflutti Nord', catPosto: 'Cat. VII', dimMax: 'max 30m × 8,0m', azioni: '950' },
+
+  { id: 9,  tipo: 'so', nome: 'Elena Vitali', iniziali: 'EV', naz: 'Italiana', cf: 'VTLLNE72L55H501B',
+    tel: '+39 333 1100202', email: 'e.vitali@studio.it', indirizzo: 'Via Salaria 88, Roma',
+    docTipo: 'Carta d\'identità', docNum: 'GH1100202',
+    posto: 'FF101', pontile: 'Frangiflutti Nord', catPosto: 'Cat. VI', dimMax: 'max 22m × 6,5m', azioni: '780' },
+
+  { id: 10, tipo: 'so', nome: 'Davide Russo', iniziali: 'DR', naz: 'Italiana', cf: 'RSSDVD68P15H501C',
+    tel: '+39 347 1100203', email: 'd.russo@yacht.it', indirizzo: 'Lungomare 12, Anzio',
+    docTipo: 'Passaporto', docNum: 'YD1100203',
+    posto: 'FF102', pontile: 'Frangiflutti Nord', catPosto: 'Cat. V', dimMax: 'max 18m × 5,0m', azioni: '650' },
+
+  { id: 11, tipo: 'so', nome: 'Carla Bruno', iniziali: 'CB', naz: 'Italiana', cf: 'BRNCRL75D55F839D',
+    tel: '+39 320 1100204', email: 'carla.bruno@email.com', indirizzo: 'Via dei Bagni 4, Civitavecchia',
+    docTipo: 'Carta d\'identità', docNum: 'GH1100204',
+    posto: 'FF103', pontile: 'Frangiflutti Nord', catPosto: 'Cat. V', dimMax: 'max 18m × 5,0m', azioni: '650' },
+
+  { id: 12, tipo: 'so', nome: 'Maurizio De Santis', iniziali: 'MD', naz: 'Italiana', cf: 'DSNMRZ58S20H501E',
+    tel: '+39 338 1100205', email: 'm.desantis@studio.it', indirizzo: 'Piazza Navona 7, Roma',
+    docTipo: 'Carta d\'identità', docNum: 'GH1100205',
+    posto: 'FF104', pontile: 'Frangiflutti Nord', catPosto: 'Cat. VII', dimMax: 'max 30m × 8,0m', azioni: '950' },
+
+  { id: 13, tipo: 'az', nome: 'Mediterranea Yachts SRL', iniziali: 'MY', naz: 'Italiana', piva: 'IT07712340567',
+    ragione: 'Mediterranea Yachts SRL', sede: 'Via del Porto 22, Civitavecchia', tel: '+39 0766 552201', email: 'info@medyachts.it',
+    posto: 'FF105', pontile: 'Frangiflutti Nord', catPosto: 'Cat. VI', dimMax: 'max 22m × 6,5m', azioni: '780',
+    referenti: [ { nome: 'Giorgio Pellegrini', ruolo: 'Amministratore', tel: '+39 347 1100206' } ] },
+
+  { id: 14, tipo: 'so', nome: 'Pietro Galli', iniziali: 'PG', naz: 'Italiana', cf: 'GLLPTR65T28F839F',
+    tel: '+39 329 1100207', email: 'p.galli@email.it', indirizzo: 'Via Roma 88, Civitavecchia',
+    docTipo: 'Carta d\'identità', docNum: 'GH1100207',
+    posto: 'FF106', pontile: 'Frangiflutti Nord', catPosto: 'Cat. V', dimMax: 'max 18m × 5,0m', azioni: '650' },
+
+  { id: 15, tipo: 'so', nome: 'Sofia Romano', iniziali: 'SR', naz: 'Italiana', cf: 'RMNSFO80M55H501G',
+    tel: '+39 348 1100208', email: 's.romano@studio.it', indirizzo: 'Via Cola di Rienzo 33, Roma',
+    docTipo: 'Passaporto', docNum: 'YD1100208',
+    posto: 'FF107', pontile: 'Frangiflutti Nord', catPosto: 'Cat. VII', dimMax: 'max 30m × 8,0m', azioni: '950' },
+
+  { id: 16, tipo: 'so', nome: 'Alessandro Costa', iniziali: 'AC', naz: 'Italiana', cf: 'CSTLSN70R10H501H',
+    tel: '+39 333 1100209', email: 'a.costa@email.com', indirizzo: 'Via Tuscolana 250, Roma',
+    docTipo: 'Carta d\'identità', docNum: 'GH1100209',
+    posto: 'FF108', pontile: 'Frangiflutti Nord', catPosto: 'Cat. VI', dimMax: 'max 22m × 6,5m', azioni: '780' },
+
+  { id: 17, tipo: 'so', nome: 'Margherita Esposito', iniziali: 'ME', naz: 'Italiana', cf: 'SPSMGH78A65F839I',
+    tel: '+39 339 1100210', email: 'm.esposito@email.it', indirizzo: 'Via Montegrappa 3, Civitavecchia',
+    docTipo: 'Carta d\'identità', docNum: 'GH1100210',
+    posto: 'FF109', pontile: 'Frangiflutti Nord', catPosto: 'Cat. V', dimMax: 'max 18m × 5,0m', azioni: '650' },
+
+  { id: 18, tipo: 'so', nome: 'Tommaso Ricci', iniziali: 'TR', naz: 'Italiana', cf: 'RCCTMS62E15H501J',
+    tel: '+39 335 1100211', email: 't.ricci@yacht.it', indirizzo: 'Lungomare 22, Ostia',
+    docTipo: 'Passaporto', docNum: 'YD1100211',
+    posto: 'FF110', pontile: 'Frangiflutti Nord', catPosto: 'Cat. VII', dimMax: 'max 30m × 8,0m', azioni: '950' },
+
+  { id: 19, tipo: 'so', nome: 'Valentina Lombardi', iniziali: 'VL', naz: 'Italiana', cf: 'LMBVNT85B55H501K',
+    tel: '+39 320 1100212', email: 'v.lombardi@email.com', indirizzo: 'Via Nomentana 145, Roma',
+    docTipo: 'Carta d\'identità', docNum: 'GH1100212',
+    posto: 'FF111', pontile: 'Frangiflutti Nord', catPosto: 'Cat. VI', dimMax: 'max 22m × 6,5m', azioni: '780' },
+
+  { id: 20, tipo: 'so', nome: 'Federico Greco', iniziali: 'FG', naz: 'Italiana', cf: 'GRCFRC72H10F839L',
+    tel: '+39 347 1100213', email: 'f.greco@studio.it', indirizzo: 'Via Aurelia 220, Civitavecchia',
+    docTipo: 'Carta d\'identità', docNum: 'GH1100213',
+    posto: 'FF112', pontile: 'Frangiflutti Nord', catPosto: 'Cat. V', dimMax: 'max 18m × 5,0m', azioni: '650' },
+
+  { id: 21, tipo: 'so', nome: 'Beatrice Marini', iniziali: 'BM', naz: 'Italiana', cf: 'MRNBRC80T65H501M',
+    tel: '+39 338 1100214', email: 'b.marini@email.it', indirizzo: 'Via Trastevere 18, Roma',
+    docTipo: 'Carta d\'identità', docNum: 'GH1100214',
+    posto: 'FF113', pontile: 'Frangiflutti Nord', catPosto: 'Cat. VII', dimMax: 'max 30m × 8,0m', azioni: '950' },
+
+  // Frangiflutti Sud (FF1-FF3) — tender e gommoni
+  { id: 22, tipo: 'so', nome: 'Andrea Pellegrini', iniziali: 'AP', naz: 'Italiana', cf: 'PLLNDR74F20F839N',
+    tel: '+39 329 1100215', email: 'a.pellegrini@email.com', indirizzo: 'Via dei Bastioni 8, Civitavecchia',
+    docTipo: 'Carta d\'identità', docNum: 'GH1100215',
+    posto: 'FF1', pontile: 'Frangiflutti Sud', catPosto: 'Cat. I', dimMax: 'max 7m × 2,8m', azioni: '180' },
+
+  { id: 23, tipo: 'so', nome: 'Chiara Moretti', iniziali: 'CM', naz: 'Italiana', cf: 'MRTCHR82C45H501O',
+    tel: '+39 348 1100216', email: 'c.moretti@email.it', indirizzo: 'Via Appia 60, Roma',
+    docTipo: 'Carta d\'identità', docNum: 'GH1100216',
+    posto: 'FF2', pontile: 'Frangiflutti Sud', catPosto: 'Cat. I', dimMax: 'max 7m × 2,8m', azioni: '180' },
+
+  { id: 24, tipo: 'so', nome: 'Stefano Caputo', iniziali: 'SC', naz: 'Italiana', cf: 'CPTSFN66A10H501P',
+    tel: '+39 333 1100217', email: 's.caputo@email.com', indirizzo: 'Via Flaminia 90, Roma',
+    docTipo: 'Carta d\'identità', docNum: 'GH1100217',
+    posto: 'FF3', pontile: 'Frangiflutti Sud', catPosto: 'Cat. I', dimMax: 'max 7m × 2,8m', azioni: '180' }
 ]
 
 // ── BARCHE ──
@@ -58,7 +152,34 @@ export const BARCHE_DEMO: Boat[] = [
   { id: 5, clientId: 4, nome: 'M/Y Albatros', matricola: '247123456', tipo: 'Motore', lunghezza: 10.5, larghezza: 3.4, pescaggio: 1.2, posto: 'C 8', bandiera: 'Italia' },
   { id: 6, clientId: 5, nome: 'M/Y Perseo', matricola: '247667788', tipo: 'Motore', lunghezza: 11.5, larghezza: 3.8, pescaggio: 1.5, posto: 'D 12', bandiera: 'Italia' },
   { id: 7, clientId: 6, nome: 'S/V Mistral', matricola: 'IT-NA-1122', tipo: 'Vela', lunghezza: 11.0, larghezza: 3.6, pescaggio: 1.7, posto: 'D 7', bandiera: 'Italia' },
-  { id: 8, clientId: 7, nome: 'M/Y Rex', matricola: '247881234', tipo: 'Motore', lunghezza: 9.5, larghezza: 3.2, pescaggio: 1.3, posto: 'C 25', bandiera: 'Italia' }
+  { id: 8, clientId: 7, nome: 'M/Y Rex', matricola: '247881234', tipo: 'Motore', lunghezza: 9.5, larghezza: 3.2, pescaggio: 1.3, posto: 'C 25', bandiera: 'Italia' },
+
+  // ── BARCHE FRANGIFLUTTI (id 9-23, 25 Apr 2026) ──
+  // 15 barche su 17 posti FF. Mancano FF103 (id 11 Carla Bruno) e FF110
+  // (id 18 Tommaso Ricci) → quei 2 soci sono "assenti_lungo", posto vuoto
+  // disponibile per test di spostamento e accoglienza affittuario.
+  // Lunghezze sotto al lunMax del posto per coerenza.
+
+  // Frangiflutti Nord
+  { id: 9,  clientId: 8,  nome: 'M/Y Atlantica',     matricola: 'IT-RM-3001', tipo: 'Motore',     lunghezza: 28.0, larghezza: 7.5, pescaggio: 2.4, posto: 'FF100', bandiera: 'Italia' },
+  { id: 10, clientId: 9,  nome: 'M/Y Sirena',        matricola: 'IT-RM-3002', tipo: 'Motore',     lunghezza: 21.0, larghezza: 6.0, pescaggio: 2.0, posto: 'FF101', bandiera: 'Italia' },
+  { id: 11, clientId: 10, nome: 'S/V Borealis',      matricola: 'IT-RM-3003', tipo: 'Vela',       lunghezza: 17.5, larghezza: 4.8, pescaggio: 2.2, posto: 'FF102', bandiera: 'Italia' },
+  // FF103 vuoto — Carla Bruno assente lungo
+  { id: 12, clientId: 12, nome: 'M/Y Andromeda',     matricola: 'IT-RM-3005', tipo: 'Motore',     lunghezza: 29.0, larghezza: 7.8, pescaggio: 2.5, posto: 'FF104', bandiera: 'Italia' },
+  { id: 13, clientId: 13, nome: 'M/Y Mediterranea I',matricola: 'IT-RM-3006', tipo: 'Motore',     lunghezza: 21.5, larghezza: 6.2, pescaggio: 2.0, posto: 'FF105', bandiera: 'Italia' },
+  { id: 14, clientId: 14, nome: 'S/V Maestrale',     matricola: 'IT-RM-3007', tipo: 'Vela',       lunghezza: 17.8, larghezza: 4.9, pescaggio: 2.3, posto: 'FF106', bandiera: 'Italia' },
+  { id: 15, clientId: 15, nome: 'M/Y Stella di Mare',matricola: 'IT-RM-3008', tipo: 'Motore',     lunghezza: 28.5, larghezza: 7.6, pescaggio: 2.4, posto: 'FF107', bandiera: 'Italia' },
+  { id: 16, clientId: 16, nome: 'M/Y Costa Azzurra', matricola: 'IT-RM-3009', tipo: 'Motore',     lunghezza: 21.0, larghezza: 6.1, pescaggio: 2.0, posto: 'FF108', bandiera: 'Italia' },
+  { id: 17, clientId: 17, nome: 'Cat. Onda Blu',     matricola: 'IT-RM-3010', tipo: 'Catamarano', lunghezza: 17.0, larghezza: 8.5, pescaggio: 1.4, posto: 'FF109', bandiera: 'Italia' },
+  // FF110 vuoto — Tommaso Ricci assente lungo
+  { id: 18, clientId: 19, nome: 'M/Y Levante',       matricola: 'IT-RM-3012', tipo: 'Motore',     lunghezza: 21.5, larghezza: 6.3, pescaggio: 2.1, posto: 'FF111', bandiera: 'Italia' },
+  { id: 19, clientId: 20, nome: 'S/V Scirocco',      matricola: 'IT-RM-3013', tipo: 'Vela',       lunghezza: 17.5, larghezza: 4.8, pescaggio: 2.2, posto: 'FF112', bandiera: 'Italia' },
+  { id: 20, clientId: 21, nome: 'M/Y Cassiopea',     matricola: 'IT-RM-3014', tipo: 'Motore',     lunghezza: 29.0, larghezza: 7.8, pescaggio: 2.5, posto: 'FF113', bandiera: 'Italia' },
+
+  // Frangiflutti Sud
+  { id: 21, clientId: 22, nome: 'Tender Oasi',       matricola: 'IT-RM-3015', tipo: 'Gommone',    lunghezza: 6.5,  larghezza: 2.6, pescaggio: 0.6, posto: 'FF1',   bandiera: 'Italia' },
+  { id: 22, clientId: 23, nome: 'Tender Lampo',      matricola: 'IT-RM-3016', tipo: 'Gommone',    lunghezza: 6.0,  larghezza: 2.4, pescaggio: 0.5, posto: 'FF2',   bandiera: 'Italia' },
+  { id: 23, clientId: 24, nome: 'Tender Stella',     matricola: 'IT-RM-3017', tipo: 'Gommone',    lunghezza: 6.8,  larghezza: 2.7, pescaggio: 0.6, posto: 'FF3',   bandiera: 'Italia' }
 ]
 
 // ── POSTI BARCA (Berths) ──
@@ -101,6 +222,31 @@ const POSTI_OCCUPATI_OVERRIDE: Record<string, Partial<Berth>> = {
   'D 12': { stato: 'in_cantiere',           barcaOra: 'In cantiere (alaggio)', socioId: 5 },
   'TW3':  { stato: 'occupato_transito',     barcaOra: 'M/Y Neptune Dream' },
   'C 25': { stato: 'socio_assente',         barcaOra: undefined,           socioId: 7 },
+
+  // ── FRANGIFLUTTI (25 Apr 2026, setup test) ──
+  // 17 posti FF tutti assegnati a soci. 15 con barca presente, 2 vuoti
+  // (FF103, FF110) → stato socio_assente_lungo: il posto è titolato a un
+  // socio ma è fisicamente disponibile, ottimo per testare:
+  //   1. Spostamento di una barca da altro posto verso FF103/FF110.
+  //   2. Accoglienza di un nuovo affittuario su posto socio (richiede
+  //      l'autorizzazione formale del proprietario).
+  'FF100': { stato: 'occupato_socio',        barcaOra: 'M/Y Atlantica',     socioId: 8  },
+  'FF101': { stato: 'occupato_socio',        barcaOra: 'M/Y Sirena',        socioId: 9  },
+  'FF102': { stato: 'occupato_socio',        barcaOra: 'S/V Borealis',      socioId: 10 },
+  'FF103': { stato: 'socio_assente_lungo',   barcaOra: undefined,           socioId: 11 },
+  'FF104': { stato: 'occupato_socio',        barcaOra: 'M/Y Andromeda',     socioId: 12 },
+  'FF105': { stato: 'occupato_socio',        barcaOra: 'M/Y Mediterranea I',socioId: 13 },
+  'FF106': { stato: 'occupato_socio',        barcaOra: 'S/V Maestrale',     socioId: 14 },
+  'FF107': { stato: 'occupato_socio',        barcaOra: 'M/Y Stella di Mare',socioId: 15 },
+  'FF108': { stato: 'occupato_socio',        barcaOra: 'M/Y Costa Azzurra', socioId: 16 },
+  'FF109': { stato: 'occupato_socio',        barcaOra: 'Cat. Onda Blu',     socioId: 17 },
+  'FF110': { stato: 'socio_assente_lungo',   barcaOra: undefined,           socioId: 18 },
+  'FF111': { stato: 'occupato_socio',        barcaOra: 'M/Y Levante',       socioId: 19 },
+  'FF112': { stato: 'occupato_socio',        barcaOra: 'S/V Scirocco',      socioId: 20 },
+  'FF113': { stato: 'occupato_socio',        barcaOra: 'M/Y Cassiopea',     socioId: 21 },
+  'FF1':   { stato: 'occupato_socio',        barcaOra: 'Tender Oasi',       socioId: 22 },
+  'FF2':   { stato: 'occupato_socio',        barcaOra: 'Tender Lampo',      socioId: 23 },
+  'FF3':   { stato: 'occupato_socio',        barcaOra: 'Tender Stella',     socioId: 24 },
 }
 
 function applyOverride(b: Berth): Berth {
@@ -251,10 +397,39 @@ export const ARRIVI_DEMO: Arrival[] = [
 ]
 
 // -- TITOLI DI POSSESSO (M-07) --
+// Ogni socio (Client.tipo === 'so') deve avere QUI un OwnershipTitle che lo
+// lega al suo berthId. La SociPage ("Elenco Soci e Posti") usa TITOLI come
+// tabella di JOIN: senza titolo, anche se Client.posto è valorizzato, il
+// socio risulta "senza posto". Vedi memoria: ff_test_setup.md
 export const TITOLI_POSSESSO_DEMO: OwnershipTitle[] = [
-  { id: 1, clientId: 1, berthId: 'A 5', numero: 'PTRT-2015-0102', dataAcquisizione: '2015-04-10', azioni: 620, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 2, clientId: 5, berthId: 'D 12', numero: 'PTRT-2018-0554', dataAcquisizione: '2018-09-22', azioni: 480, catAzioni: 'B', canone: 'Scaduto', scadenzaCanone: '2026-01-31' },
-  { id: 3, clientId: 4, berthId: 'C 8', numero: 'PTRT-2020-0891', dataAcquisizione: '2020-02-15', azioni: 310, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' }
+  // Soci storici (id 1, 4, 5)
+  { id: 1, clientId: 1, berthId: 'A 5',  numero: 'PTRT-2015-0102', dataAcquisizione: '2015-04-10', azioni: 620, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 2, clientId: 5, berthId: 'D 12', numero: 'PTRT-2018-0554', dataAcquisizione: '2018-09-22', azioni: 480, catAzioni: 'B', canone: 'Scaduto',  scadenzaCanone: '2026-01-31' },
+  { id: 3, clientId: 4, berthId: 'C 8',  numero: 'PTRT-2020-0891', dataAcquisizione: '2020-02-15', azioni: 310, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+
+  // Titoli mancanti per soci storici già esistenti (id 6, 7)
+  { id: 4, clientId: 6, berthId: 'D 7',  numero: 'PTRT-2017-0345', dataAcquisizione: '2017-06-12', azioni: 480, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 5, clientId: 7, berthId: 'C 25', numero: 'PTRT-2019-0612', dataAcquisizione: '2019-11-03', azioni: 340, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+
+  // ── TITOLI FRANGIFLUTTI (id 6-22, 25 Apr 2026) ──
+  // Uno per ogni socio FF (clientId 8-24).
+  { id: 6,  clientId: 8,  berthId: 'FF100', numero: 'PTRT-2014-0078', dataAcquisizione: '2014-03-22', azioni: 950, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 7,  clientId: 9,  berthId: 'FF101', numero: 'PTRT-2016-0211', dataAcquisizione: '2016-05-14', azioni: 780, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 8,  clientId: 10, berthId: 'FF102', numero: 'PTRT-2018-0432', dataAcquisizione: '2018-07-08', azioni: 650, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 9,  clientId: 11, berthId: 'FF103', numero: 'PTRT-2019-0501', dataAcquisizione: '2019-04-19', azioni: 650, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 10, clientId: 12, berthId: 'FF104', numero: 'PTRT-2013-0044', dataAcquisizione: '2013-09-05', azioni: 950, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 11, clientId: 13, berthId: 'FF105', numero: 'PTRT-2017-0298', dataAcquisizione: '2017-02-28', azioni: 780, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 12, clientId: 14, berthId: 'FF106', numero: 'PTRT-2020-0678', dataAcquisizione: '2020-10-11', azioni: 650, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 13, clientId: 15, berthId: 'FF107', numero: 'PTRT-2015-0156', dataAcquisizione: '2015-12-01', azioni: 950, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 14, clientId: 16, berthId: 'FF108', numero: 'PTRT-2018-0388', dataAcquisizione: '2018-08-17', azioni: 780, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 15, clientId: 17, berthId: 'FF109', numero: 'PTRT-2021-0723', dataAcquisizione: '2021-05-04', azioni: 650, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 16, clientId: 18, berthId: 'FF110', numero: 'PTRT-2012-0021', dataAcquisizione: '2012-06-10', azioni: 950, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 17, clientId: 19, berthId: 'FF111', numero: 'PTRT-2019-0489', dataAcquisizione: '2019-03-15', azioni: 780, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 18, clientId: 20, berthId: 'FF112', numero: 'PTRT-2017-0322', dataAcquisizione: '2017-11-22', azioni: 650, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 19, clientId: 21, berthId: 'FF113', numero: 'PTRT-2016-0244', dataAcquisizione: '2016-07-30', azioni: 950, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 20, clientId: 22, berthId: 'FF1',   numero: 'PTRT-2020-0612', dataAcquisizione: '2020-04-08', azioni: 180, catAzioni: 'C', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 21, clientId: 23, berthId: 'FF2',   numero: 'PTRT-2019-0533', dataAcquisizione: '2019-09-25', azioni: 180, catAzioni: 'C', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 22, clientId: 24, berthId: 'FF3',   numero: 'PTRT-2021-0701', dataAcquisizione: '2021-02-14', azioni: 180, catAzioni: 'C', canone: 'Regolare', scadenzaCanone: '2027-01-31' }
 ]
 
 // -- AUTORIZZAZIONI (M-07) --

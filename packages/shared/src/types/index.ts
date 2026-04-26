@@ -141,6 +141,37 @@ export interface OwnershipTitle {
   scadenzaCanone: string
 }
 
+// ════════════════════════════════════════════
+// REGISTRAZIONE PENDENTE (25 Apr 2026)
+// ════════════════════════════════════════════
+// Vista unificata di una "barca entrata in porto la cui registrazione
+// non è ancora completa". Tre motivi possibili (anagrafica incompleta,
+// autorizzazione pendente, pagamento mancante) → una sola UI di
+// completamento (CompletaRegistrazionePage).
+//
+// Backend domani: GET /api/registrations/pending restituisce un array
+// di RegistrazionePendente con la stessa shape. Frontend non cambia.
+//
+// Vedi memoria: registrazione_pendente_pattern.md
+export type MotivoPendenza = 'anagrafica' | 'auth' | 'pagamento'
+
+export interface RegistrazionePendente {
+  boat: Boat
+  client?: Client
+  berth?: Berth
+  // Discriminator: deriva da boat.tipologia, qui esposto piatto per
+  // facilitare filtri e badge UI.
+  tipo: 'transito' | 'affittuario'
+  // Lista non vuota di motivi per cui la registrazione è pendente.
+  // Una stessa barca può avere più motivi simultanei (es. affittuario
+  // con anagrafica incompleta E auth pendente).
+  motivi: MotivoPendenza[]
+  // Auth pendente collegata, se presente (popolata solo se motivi include 'auth').
+  authPendente?: Authorization
+  // Timestamp ISO della rilevazione (per ordinamento "più vecchi in cima").
+  rilevatoIl: string
+}
+
 export interface Authorization {
   id: number
   socioId: number
