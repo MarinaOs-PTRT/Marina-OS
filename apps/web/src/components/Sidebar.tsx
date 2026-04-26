@@ -61,7 +61,7 @@ export function Sidebar() {
               <div className="sidebar-group-label">{ROLE_LABELS[role] || role}</div>
               {items.map(item => {
                 const active = location.pathname === item.path ||
-                  (item.path !== '/' && location.pathname.startsWith(item.path + '/'))
+                  (location.pathname.startsWith(item.path + '/'))
                 return (
                   <Link
                     key={item.path}

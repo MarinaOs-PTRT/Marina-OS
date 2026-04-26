@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+﻿import React, { useState, useMemo } from 'react'
 import { TopBar } from '../../components/TopBar'
 import { SociTable } from './components/SociTable'
 import { AuthTable } from './components/AuthTable'
@@ -11,16 +11,16 @@ import './SociPage.css'
 type ActiveTab = 'soci' | 'pendenti' | 'attive' | 'storico' | 'nuovo'
 
 export function SociPage() {
-  // SSOT: tutte le scritture passano per il Context (non c'è più stato locale).
+  // SSOT: tutte le scritture passano per il Context (non c'Ã¨ piÃ¹ stato locale).
   // Le autorizzazioni 'pendente' create da registraEntrata({pendente:true})
-  // appaiono qui automaticamente perché leggiamo dal Context.
+  // appaiono qui automaticamente perchÃ© leggiamo dal Context.
   const {
     clienti, posti, titoli, autorizzazioni,
     addAutorizzazione, completaAutorizzazionePendente, revocaAutorizzazione
   } = useGlobalState()
   const [activeTab, setActiveTab] = useState<ActiveTab>('soci')
   const [showForm, setShowForm] = useState(false)
-  // editingAuth: l'autorizzazione pendente attualmente in modalità "Completa".
+  // editingAuth: l'autorizzazione pendente attualmente in modalitÃ  "Completa".
   // Quando valorizzato, AuthForm si apre in edit-mode con i campi pre-popolati.
   const [editingAuth, setEditingAuth] = useState<Authorization | null>(null)
 
@@ -57,7 +57,7 @@ export function SociPage() {
 
   const authPendenti = autorizzazioni.filter(a => a.stato === 'pendente')
   const authAttive = autorizzazioni.filter(a => a.stato === 'attiva')
-  // Storico = ciò che è "chiuso" (scaduta o revocata). Le pendenti sono
+  // Storico = ciÃ² che Ã¨ "chiuso" (scaduta o revocata). Le pendenti sono
   // lavoro da fare e hanno la loro tab dedicata.
   const authStorico = autorizzazioni.filter(a => a.stato === 'scaduta' || a.stato === 'revocata')
 
@@ -76,7 +76,7 @@ export function SociPage() {
   /** Submit del form: due rami in base al modo (create vs edit) */
   const handleAuthSubmit = (auth: Omit<Authorization, 'id'>) => {
     if (editingAuth) {
-      // Modalità EDIT: completiamo una pendente esistente.
+      // ModalitÃ  EDIT: completiamo una pendente esistente.
       const res = completaAutorizzazionePendente(editingAuth.id, {
         tipo: auth.tipo,
         beneficiario: auth.beneficiario,
@@ -96,7 +96,7 @@ export function SociPage() {
       setShowForm(false)
       setActiveTab('attive')
     } else {
-      // Modalità CREATE: nuova autorizzazione dalla Direzione.
+      // ModalitÃ  CREATE: nuova autorizzazione dalla Direzione.
       addAutorizzazione(auth)
       setShowForm(false)
       setActiveTab('attive')
@@ -123,26 +123,26 @@ export function SociPage() {
               className={`soci-tab ${activeTab === 'soci' ? 'active' : ''}`}
               onClick={() => setActiveTab('soci')}
             >
-              👤 Elenco Soci e Posti ({sociAggregati.length})
+              ðŸ‘¤ Elenco Soci e Posti ({sociAggregati.length})
             </button>
             <button
               className={`soci-tab ${activeTab === 'pendenti' ? 'active' : ''}`}
               onClick={() => setActiveTab('pendenti')}
               style={authPendenti.length > 0 ? { color: 'var(--color-text-warning)', fontWeight: 600 } : undefined}
             >
-              ⏳ Da Compilare ({authPendenti.length})
+              â³ Da Compilare ({authPendenti.length})
             </button>
             <button
               className={`soci-tab ${activeTab === 'attive' ? 'active' : ''}`}
               onClick={() => setActiveTab('attive')}
             >
-              ✅ Autorizzazioni Attive ({authAttive.length})
+              âœ… Autorizzazioni Attive ({authAttive.length})
             </button>
             <button
               className={`soci-tab ${activeTab === 'storico' ? 'active' : ''}`}
               onClick={() => setActiveTab('storico')}
             >
-              📜 Storico ({authStorico.length})
+              ðŸ“œ Storico ({authStorico.length})
             </button>
             <button
               className={`soci-tab ${activeTab === 'nuovo' ? 'active' : ''}`}
@@ -153,7 +153,7 @@ export function SociPage() {
             </button>
           </div>
 
-          {(activeTab === 'attive' || activeTab === 'storico') && activeTab !== 'nuovo' && !editingAuth && (
+          {(activeTab === 'attive' || activeTab === 'storico') && !editingAuth && (
             <button className="btn btn-mode-entrata" onClick={() => setShowForm(!showForm)}>
               {showForm ? 'Chiudi' : '+ Nuova Autorizzazione'}
             </button>
@@ -189,3 +189,4 @@ export function SociPage() {
     </>
   )
 }
+

@@ -35,7 +35,7 @@ export function RegistroPage() {
         }
         return true
       })
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .sort((a, b) => new Date(`${b.data || ''}T${b.ora || '00:00'}`).getTime() - new Date(`${a.data || ''}T${a.ora || '00:00'}`).getTime())
   }, [movimenti, filterType, filterScenario, searchQuery])
 
   // KPI Calculation

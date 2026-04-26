@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react'
+﻿import React, { useEffect, useMemo, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useGlobalState } from '../../store/GlobalState'
 import { BERTH_STATUS_LABELS, BERTH_STATUS_HEX } from '@shared/constants'
@@ -7,18 +7,18 @@ import { SearchDropdown } from './components/SearchDropdown'
 import './TorrePage.css'
 
 /**
- * TorrePage — Pagina dedicata alla Registrazione Movimenti.
+ * TorrePage â€” Pagina dedicata alla Registrazione Movimenti.
  *
  * Pattern Oracle Hospitality: il sidebar QuickMovementPanel resta come quick
- * action, ma le operazioni complete avvengono qui in 3 colonne con più aria.
+ * action, ma le operazioni complete avvengono qui in 3 colonne con piÃ¹ aria.
  *
  * Layout (full-width):
- *   ┌──────────────────────────┬──────────────────────────┬──────────────────────────┐
- *   │ Col 1 — RICERCA          │ Col 2 — TIPOLOGIA & POSTO│ Col 3 — ANTEPRIMA & AZIONI│
- *   │   3 SearchDropdown       │   3 bottoni tipologia    │   Riepilogo movimento     │
- *   │   Box dati cliente       │   Spostamento (toggle)   │   Errori/Warning          │
- *   │   Box dati barca         │   Posto + Posti suggeriti│   Pulsanti azione         │
- *   └──────────────────────────┴──────────────────────────┴──────────────────────────┘
+ *   â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+ *   â”‚ Col 1 â€” RICERCA          â”‚ Col 2 â€” TIPOLOGIA & POSTOâ”‚ Col 3 â€” ANTEPRIMA & AZIONIâ”‚
+ *   â”‚   3 SearchDropdown       â”‚   3 bottoni tipologia    â”‚   Riepilogo movimento     â”‚
+ *   â”‚   Box dati cliente       â”‚   Spostamento (toggle)   â”‚   Errori/Warning          â”‚
+ *   â”‚   Box dati barca         â”‚   Posto + Posti suggeritiâ”‚   Pulsanti azione         â”‚
+ *   â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
  *   Footer KPI sempre visibile.
  *
  * Tutta la business logic vive in useTorreForm (SSOT). Qui solo presentazione.
@@ -29,8 +29,8 @@ export function TorrePage() {
 
   // Pre-popolazione dal query param ?posto=XXX (es. arrivo dal drawer
   // della Dashboard mappa-centrica). Si esegue UNA SOLA VOLTA al mount,
-  // così l'utente può poi modificare liberamente il campo.
-  // Vedi memoria: dashboard_layout.md (Strada A — mappa = telecomando).
+  // cosÃ¬ l'utente puÃ² poi modificare liberamente il campo.
+  // Vedi memoria: dashboard_layout.md (Strada A â€” mappa = telecomando).
   const [searchParams] = useSearchParams()
   const prefilledRef = useRef(false)
   useEffect(() => {
@@ -53,15 +53,15 @@ export function TorrePage() {
     return { liberi, occupati, movimentiOggi }
   }, [posti, movimenti])
 
-  // ──────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Anteprima movimento (riepilogo per Col 3)
-  // ──────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const isMovimento = f.panelMode === 'movimento'
   const azioneScelta: string =
     isMovimento
       ? (f.tipologia === 'socio' ? 'Movimento socio' :
          f.tipologia === 'transito' ? 'Movimento transito' :
-         f.tipologia === 'affittuario' ? 'Movimento affittuario' : '—')
+         f.tipologia === 'affittuario' ? 'Movimento affittuario' : 'â€”')
       : 'Spostamento posto barca'
 
   const ready =
@@ -71,7 +71,7 @@ export function TorrePage() {
 
   return (
     <div className="torre-page">
-      {/* ── HEADER ── */}
+      {/* â”€â”€ HEADER â”€â”€ */}
       <div className="torre-header">
         <div className="torre-header-title">
           <h1>Registrazione Movimenti</h1>
@@ -82,12 +82,12 @@ export function TorrePage() {
         </div>
       </div>
 
-      {/* ── 3 COLONNE ── */}
+      {/* â”€â”€ 3 COLONNE â”€â”€ */}
       <div className="torre-grid">
 
-        {/* ════════════════════════════════════════════
-            COL 1 — RICERCA (Nome / Matricola / Posto + dati cliente/barca)
-            ════════════════════════════════════════════ */}
+        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+            COL 1 â€” RICERCA (Nome / Matricola / Posto + dati cliente/barca)
+            â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
         <section className="torre-col">
           <h2 className="torre-col-title">Ricerca imbarcazione</h2>
 
@@ -123,11 +123,11 @@ export function TorrePage() {
             <div className="torre-info-box">
               <div className="torre-info-box-title">Cliente</div>
               <div className="torre-info-row"><span>Nome</span><strong>{f.clienteCollegato.nome}</strong></div>
-              <div className="torre-info-row"><span>Tipo</span><strong>{f.clienteCollegato.tipo === 'pf' ? 'Persona Fisica' : f.clienteCollegato.tipo === 'pg' ? 'Azienda' : 'Socio'}</strong></div>
+              <div className="torre-info-row"><span>Tipo</span><strong>{f.clienteCollegato.tipo === 'pf' ? 'Persona Fisica' : f.clienteCollegato.tipo === 'az' ? 'Azienda' : 'Socio'}</strong></div>
             </div>
           )}
 
-          {/* Dati dimensionali — sempre modificabili */}
+          {/* Dati dimensionali â€” sempre modificabili */}
           <div className="torre-dim-grid">
             <div className="torre-field">
               <label>Lunghezza (m)</label>
@@ -140,13 +140,13 @@ export function TorrePage() {
           </div>
         </section>
 
-        {/* ════════════════════════════════════════════
-            COL 2 — TIPOLOGIA & POSTO (scelta movimento + assist)
-            ════════════════════════════════════════════ */}
+        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+            COL 2 â€” TIPOLOGIA & POSTO (scelta movimento + assist)
+            â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
         <section className="torre-col">
           <h2 className="torre-col-title">Tipologia movimento</h2>
 
-          {/* ── Selettore Movimento / Spostamento ── */}
+          {/* â”€â”€ Selettore Movimento / Spostamento â”€â”€ */}
           <div className="torre-mode-selector">
             <button
               type="button"
@@ -164,7 +164,7 @@ export function TorrePage() {
             </button>
           </div>
 
-          {/* ── TIPOLOGIA (sempre visibile) ── */}
+          {/* â”€â”€ TIPOLOGIA (sempre visibile) â”€â”€ */}
           <div className="torre-tipologia">
             <label className="torre-section-label">Profilo cliente</label>
             <div className="torre-tipologia-row">
@@ -192,7 +192,7 @@ export function TorrePage() {
             )}
           </div>
 
-          {/* ── MOVIMENTO: posti suggeriti per transito ── */}
+          {/* â”€â”€ MOVIMENTO: posti suggeriti per transito â”€â”€ */}
           {f.panelMode === 'movimento' && f.tipologia === 'transito' && f.suggestedBerths.length > 0 && (
             <div className="torre-section">
               <label className="torre-section-label">Posti compatibili ({f.suggestedBerths.length})</label>
@@ -212,10 +212,10 @@ export function TorrePage() {
             </div>
           )}
 
-          {/* ── SPOSTAMENTO: origine → destinazione ── */}
+          {/* â”€â”€ SPOSTAMENTO: origine â†’ destinazione â”€â”€ */}
           {f.panelMode === 'spostamento' && (
             <div className="torre-section">
-              <label className="torre-section-label">Origine → Destinazione</label>
+              <label className="torre-section-label">Origine â†’ Destinazione</label>
               <div className="torre-spostamento-grid">
                 <SearchDropdown
                   id="torre-origine"
@@ -225,7 +225,7 @@ export function TorrePage() {
                   suggestions={f.origineSuggestions}
                   onSelect={s => { if (s.berth) f.setPostoOrigine(s.berth.id) }}
                 />
-                <div className="torre-arrow">→</div>
+                <div className="torre-arrow">â†’</div>
                 <SearchDropdown
                   id="torre-destinazione"
                   placeholder="Posto di destinazione"
@@ -243,35 +243,35 @@ export function TorrePage() {
                   style={{ background: BERTH_STATUS_HEX[f.destinazioneBerth.stato] || '#cbd5e1' }}
                 >
                   {BERTH_STATUS_LABELS[f.destinazioneBerth.stato] || f.destinazioneBerth.stato}
-                  {f.destinazioneBerth.barcaOra && ` · ${f.destinazioneBerth.barcaOra}`}
+                  {f.destinazioneBerth.barcaOra && ` Â· ${f.destinazioneBerth.barcaOra}`}
                 </div>
               )}
 
-              {/* ── CONTROLLO AUTORIZZAZIONE live (spostamento) ── */}
+              {/* â”€â”€ CONTROLLO AUTORIZZAZIONE live (spostamento) â”€â”€ */}
               {f.authDestinazioneInfo.controllato && (
                 f.authDestinazioneInfo.autorizzato ? (
                   <div className="torre-auth-ok">
                     <div className="torre-auth-ok-header">
-                      <span className="torre-auth-ok-icon">✓</span>
+                      <span className="torre-auth-ok-icon">âœ“</span>
                       <span>Autorizzazione valida</span>
                     </div>
                     {f.authDestinazioneInfo.auth && (
                       <div className="torre-auth-ok-details">
                         <span><strong>Beneficiario:</strong> {f.authDestinazioneInfo.auth.beneficiario}</span>
                         <span><strong>Tipo:</strong> {f.authDestinazioneInfo.auth.tipo}</span>
-                        <span><strong>Periodo:</strong> {f.authDestinazioneInfo.auth.dal} → {f.authDestinazioneInfo.auth.al}</span>
+                        <span><strong>Periodo:</strong> {f.authDestinazioneInfo.auth.dal} â†’ {f.authDestinazioneInfo.auth.al}</span>
                       </div>
                     )}
                   </div>
                 ) : (
                   <div className="torre-auth-missing">
                     <div className="torre-auth-missing-header">
-                      <span className="torre-auth-missing-icon">⚠</span>
+                      <span className="torre-auth-missing-icon">âš </span>
                       <span>Autorizzazione non trovata</span>
                     </div>
                     <p className="torre-auth-missing-desc">{f.authDestinazioneInfo.motivo}</p>
                     <p className="torre-auth-missing-hint">
-                      Confermando lo spostamento, il sistema ti chiederà di procedere come pendente
+                      Confermando lo spostamento, il sistema ti chiederÃ  di procedere come pendente
                       o di annullare l'operazione.
                     </p>
                   </div>
@@ -289,9 +289,9 @@ export function TorrePage() {
           )}
         </section>
 
-        {/* ════════════════════════════════════════════
-            COL 3 — ANTEPRIMA & AZIONI (riepilogo + bottoni)
-            ════════════════════════════════════════════ */}
+        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+            COL 3 â€” ANTEPRIMA & AZIONI (riepilogo + bottoni)
+            â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
         <section className="torre-col">
           <h2 className="torre-col-title">Anteprima e conferma</h2>
 
@@ -302,26 +302,26 @@ export function TorrePage() {
             </div>
             <div className="torre-summary-row">
               <span>Imbarcazione</span>
-              <strong>{f.nome || f.targa || '—'}</strong>
+              <strong>{f.nome || f.targa || 'â€”'}</strong>
             </div>
             <div className="torre-summary-row">
               <span>Profilo</span>
-              <strong>{f.tipologia ? f.tipologia.charAt(0).toUpperCase() + f.tipologia.slice(1) : '—'}</strong>
+              <strong>{f.tipologia ? f.tipologia.charAt(0).toUpperCase() + f.tipologia.slice(1) : 'â€”'}</strong>
             </div>
             {isMovimento ? (
               <div className="torre-summary-row">
                 <span>Posto</span>
-                <strong>{f.posto || '—'}</strong>
+                <strong>{f.posto || 'â€”'}</strong>
               </div>
             ) : (
               <>
                 <div className="torre-summary-row">
                   <span>Da</span>
-                  <strong>{f.postoOrigine || '—'}</strong>
+                  <strong>{f.postoOrigine || 'â€”'}</strong>
                 </div>
                 <div className="torre-summary-row">
                   <span>A</span>
-                  <strong>{f.postoDestinazione || '—'}</strong>
+                  <strong>{f.postoDestinazione || 'â€”'}</strong>
                 </div>
               </>
             )}
@@ -332,7 +332,7 @@ export function TorrePage() {
             <div className="torre-error">{f.errorMessage}</div>
           )}
 
-          {/* ── AZIONI ── */}
+          {/* â”€â”€ AZIONI â”€â”€ */}
           {isMovimento ? (
             <div className="torre-actions">
               <button type="button" className="torre-btn primary entrata" onClick={f.handleEntrata} disabled={!ready}>
@@ -366,7 +366,7 @@ export function TorrePage() {
         </section>
       </div>
 
-      {/* ── FOOTER KPI ── */}
+      {/* â”€â”€ FOOTER KPI â”€â”€ */}
       <div className="torre-footer">
         <div className="torre-kpi"><span>Posti totali</span><strong>{posti.length}</strong></div>
         <div className="torre-kpi"><span>Occupati</span><strong>{kpis.occupati}</strong></div>
@@ -374,9 +374,9 @@ export function TorrePage() {
         <div className="torre-kpi"><span>Movimenti oggi</span><strong>{kpis.movimentiOggi}</strong></div>
       </div>
 
-      {/* ════════════════════════════════════════════
-          MODALI — confirm popup, warning, auth missing
-          ════════════════════════════════════════════ */}
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+          MODALI â€” confirm popup, warning, auth missing
+          â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
 
       {f.showConfirmPopup && (
         <div className="modal-overlay" onClick={() => f.setShowConfirmPopup(false)}>
@@ -409,9 +409,9 @@ export function TorrePage() {
             <h3 className="modal-title">Autorizzazione non trovata</h3>
             <p className="modal-message">{f.authMissingModal.motivo}</p>
             <p className="modal-message-sub">
-              L'autorizzazione è un documento formale gestito dalla Direzione.
+              L'autorizzazione Ã¨ un documento formale gestito dalla Direzione.
               Puoi registrare comunque l'ingresso come <strong>"In attesa di Autorizzazione"</strong>:
-              la Direzione riceverà una notifica per compilare il documento.
+              la Direzione riceverÃ  una notifica per compilare il documento.
             </p>
             <div className="modal-actions">
               <button
@@ -429,3 +429,4 @@ export function TorrePage() {
     </div>
   )
 }
+
