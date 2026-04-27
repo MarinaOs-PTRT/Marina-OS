@@ -30,6 +30,10 @@ interface GlobalState {
   updatePosto: (id: string, updates: Partial<Berth>) => void
   addArrivo: (a: Arrival) => void
   resolveArrivo: (id: number) => void
+  /** Aggiorna lo stato di un arrivo esistente. Generica → vale per
+   *  'arrivato', 'annullato', 'in_ritardo', ecc. Sostituisce gli hack
+   *  che chiamavano addArrivo per "annullare" (creando duplicati). */
+  updateArrivoStato: (id: number, stato: Arrival['stato']) => void
   markNotifica: (id: number, stato: 'letta' | 'risolta') => void
 
   // Azioni Logica Operativa
@@ -687,6 +691,13 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     setArrivi(prev => prev.map(a => a.id === id ? { ...a, stato: 'arrivato' } : a))
   }
 
+  /** Aggiorna lo stato di un arrivo esistente (vale per qualsiasi stato).
+   *  Aggiunto 25 Apr 2026 dopo aver scoperto che ArriviPage chiamava
+   *  addArrivo per "annullare" → creava duplicati ad ogni click. */
+  const updateArrivoStato = (id: number, stato: Arrival['stato']) => {
+    setArrivi(prev => prev.map(a => a.id === id ? { ...a, stato } : a))
+  }
+
   const markNotifica = (id: number, stato: 'letta' | 'risolta') => {
     setNotifiche(prev => prev.map(n => n.id === id ? { ...n, stato } : n))
   }
@@ -866,7 +877,7 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     <GlobalContext.Provider value={{
       clienti, barche, posti, movimenti, tariffe, manutenzioni,
       segnalazioni, ricevute, arrivi, titoli, autorizzazioni, utenti, notifiche,
-      updatePosto, addArrivo, resolveArrivo, markNotifica,
+      updatePosto, addArrivo, resolveArrivo, updateArrivoStato, markNotifica,
       addCliente, addBarca, updateBarca, addRicevuta,
       registraNuovoSocio,
       addAutorizzazione, updateAutorizzazione,

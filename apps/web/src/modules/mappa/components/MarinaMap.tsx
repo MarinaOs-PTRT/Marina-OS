@@ -93,7 +93,7 @@ export const MarinaMap = React.memo(function MarinaMap({ berths, onBerthSelect }
         height: '100%',
         overflow: 'hidden',
         position: 'relative',
-        background: 'var(--bg4)'
+        background: 'var(--bg5)'
       }}
     >
       <TransformWrapper

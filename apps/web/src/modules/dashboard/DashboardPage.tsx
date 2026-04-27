@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { Berth } from '@shared/types'
+import { Berth, BerthStatus } from '@shared/types'
+import { BERTH_STATUS_HEX, BERTH_STATUS_LABELS } from '@shared/constants'
 import { TopBar } from '../../components/TopBar'
 import { MarinaMap } from '../mappa/components/MarinaMap'
 import { BerthDetailDrawer } from '../mappa/components/BerthDetailDrawer'
@@ -8,6 +9,18 @@ import { ArrivalsPanel } from './components/ArrivalsPanel'
 import { PendingRegistrationsPanel } from './components/PendingRegistrationsPanel'
 import { PlanciaPanel } from './components/PlanciaPanel'
 import './DashboardPage.css'
+
+// Stati mostrati nella legenda rapida sopra la mappa.
+// Ordine logico operativo per Torre: prima libero, poi i presenti,
+// poi gli assenti/bloccati. Stessa scelta di MappaPage per coerenza UX.
+const LEGENDA_STATI: BerthStatus[] = [
+  'libero',
+  'occupato_socio',
+  'occupato_transito',
+  'occupato_affittuario',
+  'socio_assente',
+  'in_cantiere',
+]
 
 /**
  * DashboardPage — Centrale operativa mappa-centrica.
@@ -52,7 +65,24 @@ export function DashboardPage() {
         <section className="dashboard-top">
 
           <div className="dashboard-map-wrap">
-            <MarinaMap berths={posti} onBerthSelect={setSelectedBerth} />
+            {/* Header mappa: titolo + legenda compatta (chip stato berth) */}
+            <div className="dashboard-map-header">
+              <span className="dashboard-map-title">Mappa porto</span>
+              <div className="dashboard-map-legend">
+                {LEGENDA_STATI.map(stato => (
+                  <span key={stato} className="dashboard-map-legend-item">
+                    <span
+                      className="dashboard-map-legend-dot"
+                      style={{ background: BERTH_STATUS_HEX[stato] }}
+                    />
+                    {BERTH_STATUS_LABELS[stato]}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="dashboard-map-canvas">
+              <MarinaMap berths={posti} onBerthSelect={setSelectedBerth} />
+            </div>
           </div>
 
           <PlanciaPanel />

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useGlobalState } from '../../../store/GlobalState'
-import { Berth, Boat, Client, MovementScenario } from '@shared/types'
+import { Berth, Boat, Client, Movement, MovementScenario } from '@shared/types'
 import { BERTH_STATUS_LABELS } from '@shared/constants'
 
 /**
@@ -15,6 +15,22 @@ export type SearchSuggestion = {
 }
 
 export type PanelMode = 'movimento' | 'spostamento'
+
+/**
+ * Normalizza un id berth o una query digitata dall'utente per matching:
+ * - lowercase
+ * - rimuove TUTTI gli spazi e underscore
+ *
+ * Motivo (25 Apr 2026): gli id dei posti hanno formati diversi nei dati
+ * demo — pontili A/B/C/D usano "X N" con spazio (es. "D 32"), pontili
+ * FF/TW usano forma compatta (es. "FF103", "TW3"). L'operatore Torre
+ * non deve dover sapere quale formato usare: digiti "d32", "D32", "D 32"
+ * o "d_32" e il sistema deve trovare lo stesso berth. Stessa logica
+ * usata già da MarinaMap per matchare gli ID dell'SVG.
+ */
+function normalizeBerthId(s: string): string {
+  return s.toLowerCase().replace(/[\s_]+/g, '')
+}
 
 /**
  * useTorreForm — Single Source of Truth della logica del form Torre.
@@ -37,7 +53,7 @@ export type PanelMode = 'movimento' | 'spostamento'
  */
 export function useTorreForm() {
   const {
-    posti, barche, clienti, autorizzazioni,
+    posti, barche, clienti, movimenti, autorizzazioni,
     registraEntrata, registraUscitaTemporanea, registraUscitaDefinitiva,
     registraSpostamento, registraCantiere, registraBunker, registraRientro,
     isPostoOccupato, checkPagamentoSaldato, checkAutorizzazione, getScenarioBarca,
@@ -100,9 +116,9 @@ export function useTorreForm() {
 
   const postoSuggestions = useMemo<SearchSuggestion[]>(() => {
     if (posto.trim().length < 1) return []
-    const q = posto.toLowerCase()
+    const q = normalizeBerthId(posto)
     return posti
-      .filter(p => p.id.toLowerCase().includes(q))
+      .filter(p => normalizeBerthId(p.id).includes(q))
       .slice(0, 5)
       .map(p => {
         const stato = BERTH_STATUS_LABELS[p.stato] || p.stato
@@ -117,9 +133,9 @@ export function useTorreForm() {
   // resta in registraSpostamento del GlobalState.
   const origineSuggestions = useMemo<SearchSuggestion[]>(() => {
     if (postoOrigine.trim().length < 1) return []
-    const q = postoOrigine.toLowerCase()
+    const q = normalizeBerthId(postoOrigine)
     return posti
-      .filter(p => p.id.toLowerCase().includes(q) && p.stato !== 'libero')
+      .filter(p => normalizeBerthId(p.id).includes(q) && p.stato !== 'libero')
       .slice(0, 5)
       .map(p => {
         const stato = BERTH_STATUS_LABELS[p.stato] || p.stato
@@ -129,9 +145,9 @@ export function useTorreForm() {
 
   const destinazioneSuggestions = useMemo<SearchSuggestion[]>(() => {
     if (postoDestinazione.trim().length < 1) return []
-    const q = postoDestinazione.toLowerCase()
+    const q = normalizeBerthId(postoDestinazione)
     return posti
-      .filter(p => p.id.toLowerCase().includes(q) && p.stato === 'libero')
+      .filter(p => normalizeBerthId(p.id).includes(q) && p.stato === 'libero')
       .slice(0, 5)
       .map(p => {
         const stato = BERTH_STATUS_LABELS[p.stato] || p.stato
@@ -140,10 +156,11 @@ export function useTorreForm() {
   }, [postoDestinazione, posti])
 
   // Badge live: il berth corrispondente al testo digitato in destinazione.
+  // Match esatto via normalizeBerthId: "d32" == "D 32" == "d 32" == "D32".
   const destinazioneBerth = useMemo<Berth | undefined>(() => {
-    const q = postoDestinazione.trim().toLowerCase()
+    const q = normalizeBerthId(postoDestinazione)
     if (!q) return undefined
-    return posti.find(p => p.id.toLowerCase() === q)
+    return posti.find(p => normalizeBerthId(p.id) === q)
   }, [postoDestinazione, posti])
 
   // Controllo autorizzazione live per il posto di destinazione (spostamento).
@@ -237,6 +254,61 @@ export function useTorreForm() {
   }, [nome, targa, barche, clienti])
 
   // ════════════════════════════════════════════
+  // boatExistsInRegistry — la barca digitata esiste in anagrafica?
+  // ════════════════════════════════════════════
+  // Usato dalla TorrePage per disabilitare il bottone "Socio" quando
+  // l'utente sta inserendo una barca SCONOSCIUTA: lo status di socio
+  // implica un titolo di possesso (PTRT, azioni, contratto), va creato
+  // SOLO da Direzione → Soci e Assegnazioni → Nuovo Socio. Non si può
+  // creare un socio al volo dalla Torre. Vedi memoria:
+  // registrazione_pendente_pattern.md (regola "anagrafica socio
+  // mai-da-Torre", 25 Apr 2026).
+  //
+  // Restituisce true se la barca digitata corrisponde per nome o
+  // matricola a un record in `barche`. Quando entrambi i campi sono
+  // vuoti restituisce true (non vogliamo bloccare l'utente prima ancora
+  // che cominci a digitare).
+  const boatExistsInRegistry = useMemo<boolean>(() => {
+    const n = nome.trim()
+    const m = targa.trim()
+    if (!n && !m) return true
+    return barche.some(b =>
+      (n && b.nome.toLowerCase() === n.toLowerCase()) ||
+      (m && b.matricola.toLowerCase() === m.toLowerCase())
+    )
+  }, [nome, targa, barche])
+
+  // ════════════════════════════════════════════
+  // ultimoMovimento — il movimento più recente per la barca corrente
+  // ════════════════════════════════════════════
+  // Cerca in `movimenti` l'ultimo record (in assoluto, qualsiasi tipo)
+  // che corrisponde per nome o matricola alla barca digitata. Usato dalla
+  // TorrePage per mostrare un box "Ultimo movimento" e dare all'operatore
+  // un colpo d'occhio sullo storico recente. Se la barca non è in
+  // anagrafica o non ci sono movimenti, restituisce undefined.
+  //
+  // Ordinamento: per `data` (YYYY-MM-DD) + `ora` (HH:MM) concatenati, in
+  // ordine decrescente. Movement non ha un timestamp ISO esplicito, quindi
+  // costruiamo la chiave di ordinamento al volo. Movimenti senza `data`
+  // vengono trattati come "oggi" (assumiamo entry di sessione corrente).
+  const ultimoMovimento = useMemo<Movement | undefined>(() => {
+    const n = nome.trim().toLowerCase()
+    const m = targa.trim().toLowerCase()
+    if (!n && !m) return undefined
+    const oggi = new Date().toISOString().split('T')[0]
+    const candidati = movimenti.filter(mv =>
+      (n && mv.nome.toLowerCase() === n) ||
+      (m && mv.matricola && mv.matricola.toLowerCase() === m)
+    )
+    if (candidati.length === 0) return undefined
+    return [...candidati].sort((a, b) => {
+      const ka = `${a.data || oggi}T${a.ora || '00:00'}`
+      const kb = `${b.data || oggi}T${b.ora || '00:00'}`
+      return kb.localeCompare(ka)
+    })[0]
+  }, [nome, targa, movimenti])
+
+  // ════════════════════════════════════════════
   // AUTOFILL — selezione da dropdown
   // ════════════════════════════════════════════
 
@@ -284,12 +356,30 @@ export function useTorreForm() {
     /* no-op — vedi commento sopra */
   }
 
+  /**
+   * Risolve un id berth digitato dall'utente nel suo formato canonico
+   * (case-insensitive + space-insensitive). Es: "d32" → "D 32".
+   * Se non trova match restituisce l'input originale (la validazione del
+   * GlobalState fallirà con un errore comprensibile per l'operatore).
+   * Aggiunto 25 Apr 2026 per evitare che digitazione veloce senza
+   * formattazione mandi a vuoto la registrazione.
+   */
+  const resolveBerthIdOrInput = (input: string): string => {
+    const q = normalizeBerthId(input)
+    if (!q) return input
+    const match = posti.find(p => normalizeBerthId(p.id) === q)
+    return match ? match.id : input
+  }
+
   const buildMovement = (tipo: any, postoVal: string) => ({
     id: Date.now(),
     ora: new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
     data: new Date().toISOString().split('T')[0],
     nome, matricola: targa || 'N/D', tipo,
-    posto: postoVal || '—',
+    // Normalizza il posto al suo id canonico se possibile.
+    // "Cantiere"/"Bunker" non sono berth → resolveBerthIdOrInput
+    // semplicemente li lascia invariati.
+    posto: resolveBerthIdOrInput(postoVal) || '—',
     scenario: (tipologia || 'transito') as MovementScenario,
     auth: true,
     pagamento: tipologia === 'socio' ? 'Titolo Attivo' : 'Da saldare',
@@ -417,7 +507,11 @@ export function useTorreForm() {
       return
     }
 
-    const result = registraSpostamento(buildMovement('spostamento', postoDestinazione), postoOrigine, postoDestinazione)
+    // Normalizza entrambi i posti via resolveBerthIdOrInput per accettare
+    // formati liberi tipo "d32" e tradurli in "D 32" canonico.
+    const orig = resolveBerthIdOrInput(postoOrigine)
+    const dest = resolveBerthIdOrInput(postoDestinazione)
+    const result = registraSpostamento(buildMovement('spostamento', dest), orig, dest)
     if (!result.ok) { setErrorMessage(result.errore || 'Errore durante lo spostamento.'); return }
     handleClear()
   }
@@ -483,6 +577,8 @@ export function useTorreForm() {
     dimensionWarnings,
     suggestedBerths,
     clienteCollegato,
+    boatExistsInRegistry,
+    ultimoMovimento,
     authDestinazioneInfo,
 
     // Autofill

@@ -2,13 +2,59 @@ import React from 'react'
 import { Movement } from '@shared/types'
 import { MOVEMENT_TYPE_LABELS, MOVEMENT_TYPE_CLASS, SCENARIO_LABELS } from '@shared/constants'
 import { Badge } from '../../../components/Badge'
+import { useGlobalState } from '../../../store/GlobalState'
 
 interface RegistroTableProps {
   movements: Movement[]
   onSelect: (mov: Movement) => void
 }
 
+/**
+ * Calcola lo stato di "completezza" della pratica per un movimento.
+ *
+ * Distinzione semantica importante (25 Apr 2026):
+ *  - `m.auth` = autorizzazione del proprietario del posto. Per transiti
+ *    è sempre true (non serve auth). Per affittuari richiede Authorization
+ *    formale firmata dalla Direzione.
+ *  - `boat.registrazioneCompleta` = anagrafica completata in Ufficio.
+ *    False per scheletri creati al volo dalla Torre, true dopo
+ *    completamento via /completa-registrazione.
+ *
+ * In tabella la cella "Aut." DEVE riflettere ENTRAMBI gli aspetti, non
+ * solo `m.auth`, altrimenti l'operatore vede "✓ OK" sotto un transito
+ * sconosciuto e crede di aver chiuso la pratica quando in realtà
+ * l'anagrafica è ancora vuota.
+ *
+ * Returns:
+ *  - 'attesa-auth'  → flag_attesa_auth=true (auth pendente in Direzione)
+ *  - 'incompleta'   → m.auth=true ma anagrafica boat incompleta
+ *  - 'ok'           → tutto a posto
+ *  - 'na'           → m.auth=false e nessuna delle altre condizioni
+ */
+function computeAuthStatus(
+  m: Movement,
+  isBoatIncompleta: boolean
+): 'attesa-auth' | 'incompleta' | 'ok' | 'na' {
+  if (m.flag_attesa_auth) return 'attesa-auth'
+  if (m.auth && isBoatIncompleta) return 'incompleta'
+  if (m.auth) return 'ok'
+  return 'na'
+}
+
 export function RegistroTable({ movements, onSelect }: RegistroTableProps) {
+  const { barche } = useGlobalState()
+
+  // Helper: matching case-insensitive su nome o matricola.
+  const isBoatIncompleta = (m: Movement): boolean => {
+    const n = m.nome.trim().toLowerCase()
+    const t = (m.matricola || '').trim().toLowerCase()
+    const boat = barche.find(b =>
+      (n && b.nome.toLowerCase() === n) ||
+      (t && t !== 'n/d' && b.matricola.toLowerCase() === t)
+    )
+    return !!boat && boat.registrazioneCompleta === false
+  }
+
   if (movements.length === 0) {
     return (
       <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text3)' }}>
@@ -60,16 +106,29 @@ export function RegistroTable({ movements, onSelect }: RegistroTableProps) {
                 <Badge color="gray">{SCENARIO_LABELS[m.scenario]}</Badge>
               </td>
               <td>
-                {m.flag_attesa_auth ? (
-                  <span
-                    style={{ color: 'var(--color-text-warning)', fontWeight: 'bold', fontSize: '0.8rem' }}
-                    title="In attesa di Autorizzazione — da compilare in Direzione"
-                  >⏳ In attesa</span>
-                ) : m.auth ? (
-                  <span style={{ color: 'var(--green)', fontWeight: 'bold' }}>✓ OK</span>
-                ) : (
-                  <span style={{ color: 'var(--text3)' }}>-</span>
-                )}
+                {(() => {
+                  const status = computeAuthStatus(m, isBoatIncompleta(m))
+                  if (status === 'attesa-auth') {
+                    return (
+                      <span
+                        style={{ color: 'var(--color-text-warning)', fontWeight: 'bold', fontSize: '0.8rem' }}
+                        title="In attesa di Autorizzazione — da compilare in Direzione"
+                      >In attesa auth</span>
+                    )
+                  }
+                  if (status === 'incompleta') {
+                    return (
+                      <span
+                        style={{ color: 'var(--color-text-warning)', fontWeight: 'bold', fontSize: '0.8rem' }}
+                        title="Anagrafica della barca non completata — completare in /completa-registrazione"
+                      >Attesa Registrazione</span>
+                    )
+                  }
+                  if (status === 'ok') {
+                    return <span style={{ color: 'var(--color-text-success)', fontWeight: 'bold' }}>OK</span>
+                  }
+                  return <span style={{ color: 'var(--text3)' }}>-</span>
+                })()}
               </td>
               <td>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

@@ -14,11 +14,14 @@
 /* ── FASCIA SUPERIORE ── */
 .dashboard-top {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(380px, 35%);
+  /* Rapporto mappa/plancia: 50/50 (25 Apr 2026, decisione finale Ale).
+     Storia: 65/35 → 55/45 → 50/50. La pagina ora è perfettamente
+     simmetrica: mappa e plancia hanno lo stesso peso visivo.
+     min-width 420px sulla plancia preserva la leggibilità di meteo +
+     consegne anche su laptop 13". */
+  grid-template-columns: minmax(0, 1fr) minmax(420px, 1fr);
   gap: 14px;
-  /* Altezza riservata alla fascia superiore.
-     Calcolata per stare comodamente in viewport 1080p anche col TopBar. */
-  min-height: 520px;
+  min-height: 380px;
 }
 
 @media (max-width: 1280px) {
@@ -33,7 +36,63 @@
   border-radius: 12px;
   overflow: hidden;
   position: relative;
-  min-height: 480px;
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── HEADER mappa: titolo + legenda ── */
+.dashboard-map-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg3);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.dashboard-map-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.dashboard-map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.dashboard-map-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+}
+
+.dashboard-map-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Area canvas mappa: occupa tutto lo spazio rimanente sotto l'header. */
+.dashboard-map-canvas {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
 }
 
 /* ── FASCIA INFERIORE ── */

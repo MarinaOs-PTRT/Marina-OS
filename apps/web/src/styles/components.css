@@ -74,6 +74,49 @@
   color: white;
 }
 
+/* ─── Bottoni semantici di azione (CTA "registra/conferma") ───
+   Regole estratte da QuickMovementPanel.css il 25 Apr 2026 e portate
+   nel CSS globale: queste classi vengono usate da molte pagine (Arrivi,
+   RegistrazioneTransiti, Soci, Notifiche...) e prima erano caricate
+   solo se QuickMovementPanel era montato → su /arrivi il bottone
+   "+ Nuovo Arrivo" risultava grigio scuro illeggibile.
+   Token semantici (--color-text-success ecc.) per coerenza coi temi. */
+.btn-mode-entrata {
+  background: var(--color-text-success);
+  color: #ffffff;
+  border: none;
+}
+.btn-mode-entrata:hover {
+  filter: brightness(1.08);
+}
+
+.btn-mode-uscita {
+  background: var(--color-text-info);
+  color: #ffffff;
+  border: none;
+}
+.btn-mode-uscita:hover {
+  filter: brightness(1.08);
+}
+
+.btn-mode-uscita-def {
+  background: var(--color-text-danger);
+  color: #ffffff;
+  border: none;
+}
+.btn-mode-uscita-def:hover {
+  filter: brightness(1.08);
+}
+
+.btn-mode-spostamento {
+  background: var(--accent);
+  color: #ffffff;
+  border: none;
+}
+.btn-mode-spostamento:hover {
+  filter: brightness(1.08);
+}
+
 /* === Pills / Badges === */
 .pill {
   display: inline-flex;

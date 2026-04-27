@@ -29,86 +29,101 @@
    ════════════════════════════════════════════════════════════════ */
 :root {
   /* ─── Background scale ─── */
-  --bg:  #FFFFFF;            /* sfondo principale (pagine)               */
-  --bg2: #F5F7FA;            /* card / pannelli                          */
-  --bg3: #EBEEF3;            /* input / blocchi annidati                 */
-  --bg4: #E1E6EE;            /* enfasi / hover su bg3                    */
+  --bg: #FFFFFF;
+  /* sfondo principale (pagine)               */
+  --bg2: #F5F7FA;
+  /* card / pannelli                          */
+  --bg3: #EBEEF3;
+  /* input / blocchi annidati                 */
+  --bg4: #E1E6EE;
+  /* enfasi / hover su bg3                    */
+  --bg5: #def1fa;
+  /* sfondo mappa                             */
 
   /* ─── Borders ─── */
-  --border:        #D5D9E0;  /* grigio acciaio — separatori standard     */
-  --border-strong: #B5BCC8;  /* per evidenza (focus su elementi neutri)  */
+  --border: #D5D9E0;
+  /* grigio acciaio — separatori standard     */
+  --border-strong: #B5BCC8;
+  /* per evidenza (focus su elementi neutri)  */
 
   /* ─── Testi ─── */
-  --text:  #1A4C7A;          /* blu porto — testo principale e titoli    */
-  --text2: #4A5C70;           /* corpo secondario, label                  */
-  --text3: #8A95A3;           /* hint, sublabel, metadati                 */
+  --text: #1A4C7A;
+  /* blu porto — testo principale e titoli    */
+  --text2: #4A5C70;
+  /* corpo secondario, label                  */
+  --text3: #8A95A3;
+  /* hint, sublabel, metadati                 */
 
   /* ─── Accent (azione interattiva) ─── */
-  --accent:        #3A7CA5;  /* blu acqua — CTA secondari, link, focus   */
-  --accent-light:  rgba(58, 124, 165, 0.12);
-  --accent-lighter:#2E6485;
+  --accent: #3A7CA5;
+  /* blu acqua — CTA secondari, link, focus   */
+  --accent-light: rgba(58, 124, 165, 0.12);
+  --accent-lighter: #2E6485;
 
   /* ─── Sidebar (sempre scura, anche in tema chiaro) ─── */
-  --sidebar-bg:           #1F3A52;     /* blu desaturato profondo        */
-  --sidebar-text:         #FFFFFF;
-  --sidebar-text-muted:   rgba(255, 255, 255, 0.65);
-  --sidebar-text-subtle:  rgba(255, 255, 255, 0.45);
-  --sidebar-active-bg:    #1A4C7A;     /* blu porto pieno per voce attiva */
-  --sidebar-hover-bg:     rgba(255, 255, 255, 0.06);
-  --sidebar-divider:      rgba(255, 255, 255, 0.08);
+  --sidebar-bg: #1F3A52;
+  /* blu desaturato profondo        */
+  --sidebar-text: #FFFFFF;
+  --sidebar-text-muted: rgba(255, 255, 255, 0.65);
+  --sidebar-text-subtle: rgba(255, 255, 255, 0.45);
+  --sidebar-active-bg: #1A4C7A;
+  /* blu porto pieno per voce attiva */
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.06);
+  --sidebar-divider: rgba(255, 255, 255, 0.08);
 
   /* ─── TopBar (legacy — coerente col tema) ─── */
-  --topbar-bg:     #FFFFFF;
+  --topbar-bg: #1F3A52;
   --topbar-border: var(--border);
 
   /* ─── Colori semantici (SSOT condiviso con BERTH_STATUS_HEX) ─── */
   /* INFO — Socio (blu porto) */
-  --color-text-info:    #1A4C7A;
-  --color-bg-info:      rgba(26, 76, 122, 0.10);
+  --color-text-info: #1A4C7A;
+  --color-bg-info: rgba(26, 76, 122, 0.10);
 
   /* SUCCESS — Libero / Ok / Completato (verde mare) */
   --color-text-success: #3FBF8A;
-  --color-bg-success:   rgba(63, 191, 138, 0.14);
+  --color-bg-success: rgba(63, 191, 138, 0.14);
 
   /* WARNING — Attenzione / In arrivo (giallo sole) */
-  --color-text-warning: #D49A0F;          /* deepened from #F5C542 for contrast */
-  --color-bg-warning:   rgba(245, 197, 66, 0.18);
+  --color-text-warning: #D49A0F;
+  /* deepened from #F5C542 for contrast */
+  --color-bg-warning: rgba(245, 197, 66, 0.18);
 
   /* DANGER — Problema / Manutenzione (rosso boetta) */
-  --color-text-danger:  #D9534F;
-  --color-bg-danger:    rgba(217, 83, 79, 0.12);
+  --color-text-danger: #D9534F;
+  --color-bg-danger: rgba(217, 83, 79, 0.12);
 
   /* ─── Pill backgrounds legacy (alias per retro-compatibilità) ─── */
-  --green:      var(--color-text-success);
-  --green-bg:   var(--color-bg-success);
+  --green: var(--color-text-success);
+  --green-bg: var(--color-bg-success);
   --green-text: #1F7A50;
-  --amber:      #F5C542;
-  --amber-bg:   var(--color-bg-warning);
+  --amber: #F5C542;
+  --amber-bg: var(--color-bg-warning);
   --amber-text: #8B6A0A;
-  --red:        var(--color-text-danger);
-  --red-bg:     var(--color-bg-danger);
-  --red-text:   #8C2A27;
-  --purple:     #7B5CA8;
-  --purple-bg:  rgba(123, 92, 168, 0.12);
-  --purple-text:#5A3F85;
-  --teal:       #14908A;
-  --teal-bg:    rgba(20, 144, 138, 0.12);
-  --teal-text:  #0E6663;
-  --blue:       var(--accent);
-  --blue-bg:    var(--accent-light);
-  --blue-text:  var(--text);
+  --red: var(--color-text-danger);
+  --red-bg: var(--color-bg-danger);
+  --red-text: #8C2A27;
+  --purple: #7B5CA8;
+  --purple-bg: rgba(123, 92, 168, 0.12);
+  --purple-text: #5A3F85;
+  --teal: #14908A;
+  --teal-bg: rgba(20, 144, 138, 0.12);
+  --teal-text: #0E6663;
+  --blue: var(--accent);
+  --blue-bg: var(--accent-light);
+  --blue-text: var(--text);
 
   /* ─── Tipografia ─── */
   --font-display: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-ui:      "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono:    "JetBrains Mono", "Courier New", monospace;
+  --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "Courier New", monospace;
 
   /* ─── Spacing ─── */
-  --space-xs:  4px;
-  --space-sm:  8px;
-  --space-md:  12px;
-  --space-lg:  16px;
-  --space-xl:  24px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
   --space-2xl: 32px;
 
   /* ─── Layout ─── */
@@ -117,13 +132,13 @@
 
   /* ─── Radii ─── */
   --radius-sm: 6px;
-  --radius:    8px;
+  --radius: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
 
   /* ─── Shadows (tema chiaro = ombre leggere e morbide) ─── */
   --shadow-sm: 0 1px 2px rgba(20, 30, 50, 0.05);
-  --shadow:    0 2px 8px rgba(20, 30, 50, 0.07);
+  --shadow: 0 2px 8px rgba(20, 30, 50, 0.07);
   --shadow-lg: 0 8px 24px rgba(20, 30, 50, 0.10);
 }
 
@@ -135,71 +150,80 @@
 [data-theme="dark"],
 [data-theme="dark-blue"] {
   /* ─── Background scale (scala blu notte) ─── */
-  --bg:  #0A0E14;            /* sfondo principale, blu notte profondo    */
-  --bg2: #11161F;            /* card / pannelli (Linear-ish)             */
-  --bg3: #181F2A;            /* input / blocchi annidati                 */
-  --bg4: #1F2734;            /* hover/enfasi su bg3                      */
+  --bg: #0A0E14;
+  /* sfondo principale, blu notte profondo    */
+  --bg2: #11161F;
+  /* card / pannelli (Linear-ish)             */
+  --bg3: #181F2A;
+  /* input / blocchi annidati                 */
+  --bg4: #1F2734;
+  /* hover/enfasi su bg3                      */
+  --bg5: #1F2734;
+  /* hover/enfasi su bg3                      */
 
   /* ─── Borders (alpha bianco, stile Linear) ─── */
-  --border:        rgba(255, 255, 255, 0.08);
+  --border: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.16);
 
   /* ─── Testi ─── */
-  --text:  #E6EDF3;          /* bianco soft, non puro                    */
+  --text: #E6EDF3;
+  /* bianco soft, non puro                    */
   --text2: #9CA8B5;
   --text3: #5C6773;
 
   /* ─── Accent — VERDE ACQUA (firma del tema scuro) ─── */
-  --accent:        #22D3B7;
-  --accent-light:  rgba(34, 211, 183, 0.14);
-  --accent-lighter:#1EBA9F;
+  --accent: #22D3B7;
+  --accent-light: rgba(34, 211, 183, 0.14);
+  --accent-lighter: #1EBA9F;
 
   /* ─── Sidebar (resta consistente cross-tema) ─── */
-  --sidebar-bg:           #0F1722;       /* leggermente più scuro del bg */
-  --sidebar-text:         #E6EDF3;
-  --sidebar-text-muted:   rgba(230, 237, 243, 0.62);
-  --sidebar-text-subtle:  rgba(230, 237, 243, 0.40);
-  --sidebar-active-bg:    rgba(34, 211, 183, 0.16); /* verde acqua tenue */
-  --sidebar-hover-bg:     rgba(255, 255, 255, 0.05);
-  --sidebar-divider:      rgba(255, 255, 255, 0.08);
+  --sidebar-bg: #0F1722;
+  /* leggermente più scuro del bg */
+  --sidebar-text: #E6EDF3;
+  --sidebar-text-muted: rgba(230, 237, 243, 0.62);
+  --sidebar-text-subtle: rgba(230, 237, 243, 0.40);
+  --sidebar-active-bg: rgba(34, 211, 183, 0.16);
+  /* verde acqua tenue */
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.05);
+  --sidebar-divider: rgba(255, 255, 255, 0.08);
 
   /* ─── TopBar ─── */
-  --topbar-bg:     var(--bg2);
+  --topbar-bg: var(--bg2);
   --topbar-border: var(--border);
 
   /* ─── Colori semantici (versione scuro — più luminosi su scuro) ─── */
-  --color-text-info:    #60A5FA;
-  --color-bg-info:      rgba(96, 165, 250, 0.16);
+  --color-text-info: #60A5FA;
+  --color-bg-info: rgba(96, 165, 250, 0.16);
   --color-text-success: #2DD4A4;
-  --color-bg-success:   rgba(45, 212, 164, 0.16);
+  --color-bg-success: rgba(45, 212, 164, 0.16);
   --color-text-warning: #F5C542;
-  --color-bg-warning:   rgba(245, 197, 66, 0.18);
-  --color-text-danger:  #F87171;
-  --color-bg-danger:    rgba(248, 113, 113, 0.16);
+  --color-bg-warning: rgba(245, 197, 66, 0.18);
+  --color-text-danger: #F87171;
+  --color-bg-danger: rgba(248, 113, 113, 0.16);
 
   /* ─── Pill backgrounds (alias retro-compat) ─── */
-  --green:      var(--color-text-success);
-  --green-bg:   var(--color-bg-success);
+  --green: var(--color-text-success);
+  --green-bg: var(--color-bg-success);
   --green-text: var(--color-text-success);
-  --amber:      var(--color-text-warning);
-  --amber-bg:   var(--color-bg-warning);
+  --amber: var(--color-text-warning);
+  --amber-bg: var(--color-bg-warning);
   --amber-text: var(--color-text-warning);
-  --red:        var(--color-text-danger);
-  --red-bg:     var(--color-bg-danger);
-  --red-text:   var(--color-text-danger);
-  --purple:     #C4B5FD;
-  --purple-bg:  rgba(196, 181, 253, 0.16);
-  --purple-text:#C4B5FD;
-  --teal:       #5EEAD4;
-  --teal-bg:    rgba(94, 234, 212, 0.14);
-  --teal-text:  #5EEAD4;
-  --blue:       var(--color-text-info);
-  --blue-bg:    var(--color-bg-info);
-  --blue-text:  var(--color-text-info);
+  --red: var(--color-text-danger);
+  --red-bg: var(--color-bg-danger);
+  --red-text: var(--color-text-danger);
+  --purple: #C4B5FD;
+  --purple-bg: rgba(196, 181, 253, 0.16);
+  --purple-text: #C4B5FD;
+  --teal: #5EEAD4;
+  --teal-bg: rgba(94, 234, 212, 0.14);
+  --teal-text: #5EEAD4;
+  --blue: var(--color-text-info);
+  --blue-bg: var(--color-bg-info);
+  --blue-text: var(--color-text-info);
 
   /* ─── Shadows (tema scuro = ombre più dense per stacco) ─── */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow:    0 4px 12px rgba(0, 0, 0, 0.55);
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.55);
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.70);
 }
 
@@ -209,37 +233,37 @@
    ════════════════════════════════════════════════════════════════ */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
-    --bg:  #0A0E14;
+    --bg: #0A0E14;
     --bg2: #11161F;
     --bg3: #181F2A;
     --bg4: #1F2734;
-    --border:        rgba(255, 255, 255, 0.08);
+    --border: rgba(255, 255, 255, 0.08);
     --border-strong: rgba(255, 255, 255, 0.16);
-    --text:  #E6EDF3;
+    --text: #E6EDF3;
     --text2: #9CA8B5;
     --text3: #5C6773;
-    --accent:        #22D3B7;
-    --accent-light:  rgba(34, 211, 183, 0.14);
-    --accent-lighter:#1EBA9F;
-    --sidebar-bg:           #0F1722;
-    --sidebar-text:         #E6EDF3;
-    --sidebar-text-muted:   rgba(230, 237, 243, 0.62);
-    --sidebar-text-subtle:  rgba(230, 237, 243, 0.40);
-    --sidebar-active-bg:    rgba(34, 211, 183, 0.16);
-    --sidebar-hover-bg:     rgba(255, 255, 255, 0.05);
-    --sidebar-divider:      rgba(255, 255, 255, 0.08);
-    --topbar-bg:     var(--bg2);
+    --accent: #22D3B7;
+    --accent-light: rgba(34, 211, 183, 0.14);
+    --accent-lighter: #1EBA9F;
+    --sidebar-bg: #0F1722;
+    --sidebar-text: #E6EDF3;
+    --sidebar-text-muted: rgba(230, 237, 243, 0.62);
+    --sidebar-text-subtle: rgba(230, 237, 243, 0.40);
+    --sidebar-active-bg: rgba(34, 211, 183, 0.16);
+    --sidebar-hover-bg: rgba(255, 255, 255, 0.05);
+    --sidebar-divider: rgba(255, 255, 255, 0.08);
+    --topbar-bg: var(--bg2);
     --topbar-border: var(--border);
-    --color-text-info:    #60A5FA;
-    --color-bg-info:      rgba(96, 165, 250, 0.16);
+    --color-text-info: #60A5FA;
+    --color-bg-info: rgba(96, 165, 250, 0.16);
     --color-text-success: #2DD4A4;
-    --color-bg-success:   rgba(45, 212, 164, 0.16);
+    --color-bg-success: rgba(45, 212, 164, 0.16);
     --color-text-warning: #F5C542;
-    --color-bg-warning:   rgba(245, 197, 66, 0.18);
-    --color-text-danger:  #F87171;
-    --color-bg-danger:    rgba(248, 113, 113, 0.16);
+    --color-bg-warning: rgba(245, 197, 66, 0.18);
+    --color-text-danger: #F87171;
+    --color-bg-danger: rgba(248, 113, 113, 0.16);
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-    --shadow:    0 4px 12px rgba(0, 0, 0, 0.55);
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.55);
     --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.70);
   }
 }
@@ -247,4 +271,6 @@
 /* ════════════════════════════════════════════════════════════════
    Numeri tabulari globali per coerenza in liste/contatori
    ════════════════════════════════════════════════════════════════ */
-.tabular-nums { font-variant-numeric: tabular-nums; }
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

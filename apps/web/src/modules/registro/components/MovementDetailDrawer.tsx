@@ -2,6 +2,7 @@ import React from 'react'
 import { Movement } from '@shared/types'
 import { Badge } from '../../../components/Badge'
 import { MOVEMENT_TYPE_LABELS, MOVEMENT_TYPE_CLASS, SCENARIO_LABELS } from '@shared/constants'
+import { useGlobalState } from '../../../store/GlobalState'
 import './MovementDetailDrawer.css'
 
 interface DrawerProps {
@@ -9,8 +10,24 @@ interface DrawerProps {
   onClose: () => void
 }
 
+/**
+ * Distinzione semantica (vedi RegistroTable.tsx, 25 Apr 2026):
+ *  - `m.auth`                       = autorizzazione del proprietario del posto.
+ *  - `boat.registrazioneCompleta`   = anagrafica completata in Ufficio.
+ * Entrambi devono essere a posto perché la pratica sia veramente "OK".
+ */
 export function MovementDetailDrawer({ movement, onClose }: DrawerProps) {
+  const { barche } = useGlobalState()
   if (!movement) return null
+
+  // Lookup boat per nome/matricola (case-insensitive) per verificare anagrafica.
+  const n = movement.nome.trim().toLowerCase()
+  const t = (movement.matricola || '').trim().toLowerCase()
+  const boat = barche.find(b =>
+    (n && b.nome.toLowerCase() === n) ||
+    (t && t !== 'n/d' && b.matricola.toLowerCase() === t)
+  )
+  const isBoatIncompleta = !!boat && boat.registrazioneCompleta === false
 
   return (
     <div className="drawer-overlay" onClick={onClose}>
@@ -81,16 +98,24 @@ export function MovementDetailDrawer({ movement, onClose }: DrawerProps) {
                 </div>
               </div>
               <div className="drawer-field full">
-                <div className="drawer-field-label">Autorizzazione</div>
+                <div className="drawer-field-label">Stato Pratica</div>
                 <div className="drawer-field-val">
                   {movement.flag_attesa_auth ? (
                     <span style={{ color: 'var(--color-text-warning)' }}>
-                      ⏳ In attesa di Autorizzazione — la Direzione deve compilare il documento
+                      In attesa di Autorizzazione — la Direzione deve compilare il documento
+                    </span>
+                  ) : movement.auth && isBoatIncompleta ? (
+                    <span style={{ color: 'var(--color-text-warning)' }}>
+                      Attesa Registrazione — completare in /completa-registrazione
                     </span>
                   ) : movement.auth ? (
-                    <span style={{ color: 'var(--green)' }}>✓ Autorizzato (Sistema Automatico)</span>
+                    <span style={{ color: 'var(--color-text-success)' }}>
+                      Autorizzato e anagrafica completa
+                    </span>
                   ) : (
-                    <span style={{ color: 'var(--amber)' }}>⚠ In attesa di verifica manuale</span>
+                    <span style={{ color: 'var(--color-text-warning)' }}>
+                      In attesa di verifica manuale
+                    </span>
                   )}
                 </div>
               </div>

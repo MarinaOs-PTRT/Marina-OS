@@ -7,14 +7,14 @@ import { SearchDropdown } from './components/SearchDropdown'
 import './TorrePage.css'
 
 /**
- * TorrePage â€” Pagina dedicata alla Registrazione Movimenti.
+ * TorrePage — Pagina dedicata alla Registrazione Movimenti.
  *
  * Pattern Oracle Hospitality: il sidebar QuickMovementPanel resta come quick
- * action, ma le operazioni complete avvengono qui in 3 colonne con piÃ¹ aria.
+ * action, ma le operazioni complete avvengono qui in 3 colonne con più aria.
  *
  * Layout (full-width):
  *   â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
- *   â”‚ Col 1 â€” RICERCA          â”‚ Col 2 â€” TIPOLOGIA & POSTOâ”‚ Col 3 â€” ANTEPRIMA & AZIONIâ”‚
+ *   â”‚ Col 1 — RICERCA          â”‚ Col 2 — TIPOLOGIA & POSTOâ”‚ Col 3 — ANTEPRIMA & AZIONIâ”‚
  *   â”‚   3 SearchDropdown       â”‚   3 bottoni tipologia    â”‚   Riepilogo movimento     â”‚
  *   â”‚   Box dati cliente       â”‚   Spostamento (toggle)   â”‚   Errori/Warning          â”‚
  *   â”‚   Box dati barca         â”‚   Posto + Posti suggeritiâ”‚   Pulsanti azione         â”‚
@@ -23,14 +23,51 @@ import './TorrePage.css'
  *
  * Tutta la business logic vive in useTorreForm (SSOT). Qui solo presentazione.
  */
+
+// ────────────────────────────────────────────────────────────
+// Helper per il box "Ultimo movimento": formato relativo se OGGI,
+// altrimenti data assoluta DD/MM/YYYY HH:MM. Decisione utente: la
+// percezione di freschezza serve solo per la giornata corrente, oltre
+// va meglio l'orientamento esatto (giorno/mese).
+// ────────────────────────────────────────────────────────────
+function formatMovimentoQuando(data: string | undefined, ora: string | undefined): string {
+  const oggi = new Date().toISOString().split('T')[0]
+  const dStr = data || oggi
+  const oStr = ora || '00:00'
+  if (dStr === oggi) {
+    // Calcola minuti relativi solo per oggi
+    const [h, m] = oStr.split(':').map(Number)
+    const eventoDate = new Date()
+    eventoDate.setHours(Number.isFinite(h) ? h : 0, Number.isFinite(m) ? m : 0, 0, 0)
+    const diffMin = Math.round((Date.now() - eventoDate.getTime()) / 60000)
+    if (diffMin < 1) return 'adesso'
+    if (diffMin < 60) return `${diffMin} min fa`
+    return `oggi ${oStr}`
+  }
+  // Altrimenti: data assoluta DD/MM/YYYY HH:MM
+  const [yyyy, mm, dd] = dStr.split('-')
+  if (!yyyy || !mm || !dd) return `${dStr} ${oStr}`
+  return `${dd}/${mm}/${yyyy} ${oStr}`
+}
+
+// Etichetta + colore semantico per ogni tipo di movimento.
+const MOV_TIPO_META: Record<string, { label: string; color: string; bg: string }> = {
+  entrata:           { label: 'Entrata',           color: 'var(--color-text-success)', bg: 'var(--color-bg-success)' },
+  uscita_temporanea: { label: 'Uscita temporanea', color: 'var(--color-text-info)',    bg: 'var(--color-bg-info)' },
+  uscita_definitiva: { label: 'Uscita definitiva', color: 'var(--color-text-danger)',  bg: 'var(--color-bg-danger)' },
+  spostamento:       { label: 'Spostamento',       color: 'var(--accent)',             bg: 'var(--accent-light)' },
+  cantiere:          { label: 'Cantiere',          color: 'var(--color-text-warning)', bg: 'var(--color-bg-warning)' },
+  bunker:            { label: 'Bunker',            color: 'var(--color-text-warning)', bg: 'var(--color-bg-warning)' },
+}
+
 export function TorrePage() {
   const { posti, movimenti } = useGlobalState()
   const f = useTorreForm()
 
   // Pre-popolazione dal query param ?posto=XXX (es. arrivo dal drawer
   // della Dashboard mappa-centrica). Si esegue UNA SOLA VOLTA al mount,
-  // cosÃ¬ l'utente puÃ² poi modificare liberamente il campo.
-  // Vedi memoria: dashboard_layout.md (Strada A â€” mappa = telecomando).
+  // così l'utente può poi modificare liberamente il campo.
+  // Vedi memoria: dashboard_layout.md (Strada A — mappa = telecomando).
   const [searchParams] = useSearchParams()
   const prefilledRef = useRef(false)
   useEffect(() => {
@@ -43,6 +80,28 @@ export function TorrePage() {
       prefilledRef.current = true
     }
   }, [searchParams, posti, f])
+
+  // ════════════════════════════════════════════
+  // Shortcut tastiera: DELETE → pulisci tutto
+  // ════════════════════════════════════════════
+  // Equivalente al click sul bottone "Pulisci tutto" in alto a destra.
+  // Funziona anche se il focus è dentro un campo input/textarea (utile:
+  // l'operatore Torre digita, vede di aver sbagliato barca, preme Delete
+  // e ricomincia senza dover prendere il mouse).
+  // L'azione si attiva SOLO con il tasto "Delete" (Canc) puro: non con
+  // Backspace, non con Ctrl/Alt/Meta+Delete. Così non interferisce con
+  // l'editing normale dei campi (Backspace cancella un carattere,
+  // Delete cancella tutto il form).
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'Delete') return
+      if (e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return
+      e.preventDefault()
+      f.handleClear()
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [f])
 
   // KPI calcolati inline (il GlobalState non espone un getKpis dedicato).
   const kpis = useMemo(() => {
@@ -61,7 +120,7 @@ export function TorrePage() {
     isMovimento
       ? (f.tipologia === 'socio' ? 'Movimento socio' :
          f.tipologia === 'transito' ? 'Movimento transito' :
-         f.tipologia === 'affittuario' ? 'Movimento affittuario' : 'â€”')
+         f.tipologia === 'affittuario' ? 'Movimento affittuario' : '—')
       : 'Spostamento posto barca'
 
   const ready =
@@ -78,7 +137,12 @@ export function TorrePage() {
           <span className="torre-header-sub">Operazioni complete con assistenza alla compilazione</span>
         </div>
         <div className="torre-header-actions">
-          <button type="button" className="btn-text" onClick={f.handleClear}>Pulisci tutto</button>
+          <button
+            type="button"
+            className="btn-text"
+            onClick={f.handleClear}
+            title="Scorciatoia: tasto Canc"
+          >Pulisci tutto <span style={{ opacity: 0.55, marginLeft: 6, fontSize: '0.78em' }}>(Canc)</span></button>
         </div>
       </div>
 
@@ -86,7 +150,7 @@ export function TorrePage() {
       <div className="torre-grid">
 
         {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-            COL 1 â€” RICERCA (Nome / Matricola / Posto + dati cliente/barca)
+            COL 1 — RICERCA (Nome / Matricola / Posto + dati cliente/barca)
             â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
         <section className="torre-col">
           <h2 className="torre-col-title">Ricerca imbarcazione</h2>
@@ -127,7 +191,54 @@ export function TorrePage() {
             </div>
           )}
 
-          {/* Dati dimensionali â€” sempre modificabili */}
+          {/* Box ULTIMO MOVIMENTO (se barca trovata e con storico).
+              Dà all'operatore Torre un colpo d'occhio sull'ultimo evento
+              registrato per la barca: tipo, quando, posti coinvolti,
+              operatore. L'ordinamento è per data+ora decrescente (vedi
+              hook useTorreForm.ultimoMovimento). */}
+          {f.ultimoMovimento && (() => {
+            const mv = f.ultimoMovimento
+            const meta = MOV_TIPO_META[mv.tipo] || { label: mv.tipo, color: 'var(--text2)', bg: 'var(--bg4)' }
+            const postoLabel = mv.tipo === 'spostamento' && mv.postoOrigine
+              ? `${mv.postoOrigine} → ${mv.posto}`
+              : mv.posto || '—'
+            return (
+              <div className="torre-info-box">
+                <div
+                  className="torre-info-box-title"
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}
+                >
+                  <span>Ultimo movimento</span>
+                  <span style={{
+                    fontSize: '0.66rem',
+                    fontWeight: 600,
+                    padding: '2px 8px',
+                    borderRadius: 999,
+                    background: meta.bg,
+                    color: meta.color,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em'
+                  }}>{meta.label}</span>
+                </div>
+                <div className="torre-info-row">
+                  <span>Quando</span>
+                  <strong className="tabular-nums">{formatMovimentoQuando(mv.data, mv.ora)}</strong>
+                </div>
+                <div className="torre-info-row">
+                  <span>Posto</span>
+                  <strong>{postoLabel}</strong>
+                </div>
+                {mv.operatore && (
+                  <div className="torre-info-row">
+                    <span>Operatore</span>
+                    <strong>{mv.operatore.nome}</strong>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+
+          {/* Dati dimensionali — sempre modificabili */}
           <div className="torre-dim-grid">
             <div className="torre-field">
               <label>Lunghezza (m)</label>
@@ -141,7 +252,7 @@ export function TorrePage() {
         </section>
 
         {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-            COL 2 â€” TIPOLOGIA & POSTO (scelta movimento + assist)
+            COL 2 — TIPOLOGIA & POSTO (scelta movimento + assist)
             â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
         <section className="torre-col">
           <h2 className="torre-col-title">Tipologia movimento</h2>
@@ -168,11 +279,31 @@ export function TorrePage() {
           <div className="torre-tipologia">
             <label className="torre-section-label">Profilo cliente</label>
             <div className="torre-tipologia-row">
+              {/*
+                LOCK SOCIO (25 Apr 2026) — il bottone Socio è disabilitato
+                quando la barca digitata NON esiste in anagrafica. Lo status
+                di socio implica un titolo formale: si crea SOLO da
+                Direzione → Soci e Assegnazioni → Nuovo Socio. La Torre può
+                solo riconoscere un socio già esistente, mai crearlo al volo.
+                Vedi memoria: registrazione_pendente_pattern.md
+              */}
               <button
                 type="button"
                 className={`torre-tipologia-btn ${f.tipologia === 'socio' ? 'active socio' : ''}`}
-                onClick={() => { if (!f.tipologiaLocked) f.setTipologia('socio') }}
-                disabled={f.tipologiaLocked && f.tipologia !== 'socio'}
+                onClick={() => {
+                  if (f.tipologiaLocked) return
+                  if (!f.boatExistsInRegistry) return
+                  f.setTipologia('socio')
+                }}
+                disabled={
+                  (f.tipologiaLocked && f.tipologia !== 'socio') ||
+                  !f.boatExistsInRegistry
+                }
+                title={
+                  !f.boatExistsInRegistry
+                    ? 'Solo per soci già registrati. Per creare un nuovo socio: Direzione → Soci e Assegnazioni → Nuovo Socio.'
+                    : undefined
+                }
               >Socio</button>
               <button
                 type="button"
@@ -187,6 +318,14 @@ export function TorrePage() {
                 disabled={f.tipologiaLocked && f.tipologia !== 'affittuario'}
               >Affittuario</button>
             </div>
+
+            {/* Hint contestuale: spiega perché Socio è disabilitato. */}
+            {!f.boatExistsInRegistry && (f.nome.trim() || f.targa.trim()) && (
+              <span className="torre-locked-hint">
+                Barca non in anagrafica — "Socio" disabilitato. Per registrare un nuovo
+                socio passare da Direzione → Soci e Assegnazioni → Nuovo Socio.
+              </span>
+            )}
             {f.tipologiaLocked && (
               <span className="torre-locked-hint">Profilo rilevato automaticamente dall'anagrafica</span>
             )}
@@ -212,10 +351,10 @@ export function TorrePage() {
             </div>
           )}
 
-          {/* â”€â”€ SPOSTAMENTO: origine â†’ destinazione â”€â”€ */}
+          {/* â”€â”€ SPOSTAMENTO: origine → destinazione â”€â”€ */}
           {f.panelMode === 'spostamento' && (
             <div className="torre-section">
-              <label className="torre-section-label">Origine â†’ Destinazione</label>
+              <label className="torre-section-label">Origine → Destinazione</label>
               <div className="torre-spostamento-grid">
                 <SearchDropdown
                   id="torre-origine"
@@ -225,7 +364,7 @@ export function TorrePage() {
                   suggestions={f.origineSuggestions}
                   onSelect={s => { if (s.berth) f.setPostoOrigine(s.berth.id) }}
                 />
-                <div className="torre-arrow">â†’</div>
+                <div className="torre-arrow">→</div>
                 <SearchDropdown
                   id="torre-destinazione"
                   placeholder="Posto di destinazione"
@@ -243,7 +382,7 @@ export function TorrePage() {
                   style={{ background: BERTH_STATUS_HEX[f.destinazioneBerth.stato] || '#cbd5e1' }}
                 >
                   {BERTH_STATUS_LABELS[f.destinazioneBerth.stato] || f.destinazioneBerth.stato}
-                  {f.destinazioneBerth.barcaOra && ` Â· ${f.destinazioneBerth.barcaOra}`}
+                  {f.destinazioneBerth.barcaOra && ` · ${f.destinazioneBerth.barcaOra}`}
                 </div>
               )}
 
@@ -252,26 +391,26 @@ export function TorrePage() {
                 f.authDestinazioneInfo.autorizzato ? (
                   <div className="torre-auth-ok">
                     <div className="torre-auth-ok-header">
-                      <span className="torre-auth-ok-icon">âœ“</span>
+                      <span className="torre-auth-ok-icon">✓</span>
                       <span>Autorizzazione valida</span>
                     </div>
                     {f.authDestinazioneInfo.auth && (
                       <div className="torre-auth-ok-details">
                         <span><strong>Beneficiario:</strong> {f.authDestinazioneInfo.auth.beneficiario}</span>
                         <span><strong>Tipo:</strong> {f.authDestinazioneInfo.auth.tipo}</span>
-                        <span><strong>Periodo:</strong> {f.authDestinazioneInfo.auth.dal} â†’ {f.authDestinazioneInfo.auth.al}</span>
+                        <span><strong>Periodo:</strong> {f.authDestinazioneInfo.auth.dal} → {f.authDestinazioneInfo.auth.al}</span>
                       </div>
                     )}
                   </div>
                 ) : (
                   <div className="torre-auth-missing">
                     <div className="torre-auth-missing-header">
-                      <span className="torre-auth-missing-icon">âš </span>
+                      <span className="torre-auth-missing-icon">⚠ </span>
                       <span>Autorizzazione non trovata</span>
                     </div>
                     <p className="torre-auth-missing-desc">{f.authDestinazioneInfo.motivo}</p>
                     <p className="torre-auth-missing-hint">
-                      Confermando lo spostamento, il sistema ti chiederÃ  di procedere come pendente
+                      Confermando lo spostamento, il sistema ti chiederà  di procedere come pendente
                       o di annullare l'operazione.
                     </p>
                   </div>
@@ -290,7 +429,7 @@ export function TorrePage() {
         </section>
 
         {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-            COL 3 â€” ANTEPRIMA & AZIONI (riepilogo + bottoni)
+            COL 3 — ANTEPRIMA & AZIONI (riepilogo + bottoni)
             â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
         <section className="torre-col">
           <h2 className="torre-col-title">Anteprima e conferma</h2>
@@ -302,26 +441,26 @@ export function TorrePage() {
             </div>
             <div className="torre-summary-row">
               <span>Imbarcazione</span>
-              <strong>{f.nome || f.targa || 'â€”'}</strong>
+              <strong>{f.nome || f.targa || '—'}</strong>
             </div>
             <div className="torre-summary-row">
               <span>Profilo</span>
-              <strong>{f.tipologia ? f.tipologia.charAt(0).toUpperCase() + f.tipologia.slice(1) : 'â€”'}</strong>
+              <strong>{f.tipologia ? f.tipologia.charAt(0).toUpperCase() + f.tipologia.slice(1) : '—'}</strong>
             </div>
             {isMovimento ? (
               <div className="torre-summary-row">
                 <span>Posto</span>
-                <strong>{f.posto || 'â€”'}</strong>
+                <strong>{f.posto || '—'}</strong>
               </div>
             ) : (
               <>
                 <div className="torre-summary-row">
                   <span>Da</span>
-                  <strong>{f.postoOrigine || 'â€”'}</strong>
+                  <strong>{f.postoOrigine || '—'}</strong>
                 </div>
                 <div className="torre-summary-row">
                   <span>A</span>
-                  <strong>{f.postoDestinazione || 'â€”'}</strong>
+                  <strong>{f.postoDestinazione || '—'}</strong>
                 </div>
               </>
             )}
@@ -375,7 +514,7 @@ export function TorrePage() {
       </div>
 
       {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-          MODALI â€” confirm popup, warning, auth missing
+          MODALI — confirm popup, warning, auth missing
           â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
 
       {f.showConfirmPopup && (

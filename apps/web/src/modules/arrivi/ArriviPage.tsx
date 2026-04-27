@@ -11,7 +11,7 @@ type FiltroData = 'oggi' | 'settimana' | 'tutti'
 type FiltroStato = 'tutti' | 'oggi' | 'atteso' | 'in_ritardo' | 'arrivato' | 'annullato'
 
 export function ArriviPage() {
-  const { arrivi, addArrivo, resolveArrivo } = useGlobalState()
+  const { arrivi, addArrivo, resolveArrivo, updateArrivoStato } = useGlobalState()
   const [filtroData, setFiltroData] = useState<FiltroData>('tutti')
   const [filtroStato, setFiltroStato] = useState<FiltroStato>('tutti')
   const [showForm, setShowForm] = useState(false)
@@ -46,10 +46,11 @@ export function ArriviPage() {
   }
 
   const handleAnnulla = (id: number) => {
-    // Usiamo un'azione diretta per 'annullato' (non presente nel GlobalState come azione nomerata, lo facciamo via addArrivo)
-    // Per ora gestiamo localmente solo l'annullamento, e lo integreremo nel GlobalState in futuro
-    const target = arrivi.find(a => a.id === id)
-    if (target) addArrivo({ ...target, stato: 'annullato' })
+    // 25 Apr 2026 — Bug fix: prima si chiamava addArrivo({ ...target, stato:
+    // 'annullato' }) che CREAVA UN NUOVO RECORD ad ogni click, duplicando
+    // l'arrivo nella lista. Ora aggiorniamo lo stato del record esistente
+    // tramite updateArrivoStato (API generica del GlobalState).
+    updateArrivoStato(id, 'annullato')
   }
 
   const handleNuovoArrivo = (arrivo: Omit<Arrival, 'id' | 'createdAt'>) => {
