@@ -491,23 +491,27 @@ export function TorrePage() {
             <div className="torre-error">{f.errorMessage}</div>
           )}
 
-          {/* â”€â”€ AZIONI â”€â”€ */}
+          {/* ── AZIONI (bottoni Torre v2 — 27 Apr 2026) ──
+              Riduzione consapevole da 7 → 4 bottoni:
+                Entrata        — apre Stay
+                Uscita         — chiude Stay (fonde Temp + Definitiva)
+                Cantiere       — chiude Stay + apre CantiereSession
+                Rientro Cantiere — chiude CantiereSession + apre Stay
+              Eliminati: Bunker (vezzo, in pratica era Uscita), Uscita
+              Definitiva (fossile vecchio sistema). Vedi memoria
+              bottoni_torre_v2.md. */}
           {isMovimento ? (
             <div className="torre-actions">
               <button type="button" className="torre-btn primary entrata" onClick={f.handleEntrata} disabled={!ready}>
                 Entrata
               </button>
-              <button type="button" className="torre-btn primary uscita" onClick={f.handleUscitaTemporanea} disabled={!ready}>
-                Uscita temporanea
+              <button type="button" className="torre-btn primary uscita" onClick={f.handleUscita} disabled={!ready}>
+                Uscita
               </button>
-              <button type="button" className="torre-btn primary uscita-def" onClick={f.handleUscitaDefinitiva} disabled={!ready}>
-                Uscita definitiva
-              </button>
-              <div className="torre-actions-divider">Zone speciali</div>
+              <div className="torre-actions-divider">Cantiere</div>
               <div className="torre-actions-secondary">
                 <button type="button" className="torre-btn secondary" onClick={f.handleCantiere} disabled={!ready}>Cantiere</button>
-                <button type="button" className="torre-btn secondary" onClick={f.handleBunker} disabled={!ready}>Bunker</button>
-                <button type="button" className="torre-btn secondary" onClick={f.handleRientro} disabled={!ready}>Rientro</button>
+                <button type="button" className="torre-btn secondary" onClick={f.handleRientro} disabled={!ready}>Rientro Cantiere</button>
               </div>
             </div>
           ) : (

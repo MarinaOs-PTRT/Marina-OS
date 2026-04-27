@@ -55,7 +55,7 @@ export function useTorreForm() {
   const {
     posti, barche, clienti, movimenti, autorizzazioni,
     registraEntrata, registraUscitaTemporanea, registraUscitaDefinitiva,
-    registraSpostamento, registraCantiere, registraBunker, registraRientro,
+    registraSpostamento, registraCantiere, registraRientro,
     isPostoOccupato, checkPagamentoSaldato, checkAutorizzazione, getScenarioBarca,
     addCliente, addBarca,
     // Modello v3 — query derivate
@@ -507,40 +507,43 @@ export function useTorreForm() {
     handleClear()
   }
 
-  const handleUscitaTemporanea = () => {
+  /**
+   * handleUscita — bottoni Torre v2 (27 Apr 2026).
+   *
+   * Sostituisce i vecchi handleUscitaTemporanea + handleUscitaDefinitiva.
+   * Nel modello v3 le due erano funzionalmente identiche (chiusura dello
+   * Stay aperto della barca); l'unica differenza era il `Movement.tipo`
+   * per audit storico. Decisione di prodotto (Ale, 27 Apr 2026): la
+   * distinzione è un fossile del vecchio sistema. Fondiamo in un solo
+   * bottone.
+   *
+   * Check mantenuto: avviso transito senza ricevuta saldata (utile per
+   * non far uscire una barca senza aver incassato).
+   * Check rimosso: "Vuoi rimuovere titolo al proprietario?" per i soci.
+   * Era una scorciatoia del vecchio sistema dove l'uscita socio coincideva
+   * con cambio amministrativo del titolo — oggi l'uscita è solo operativa,
+   * il titolo si gestisce dalla pagina Soci.
+   */
+  const handleUscita = () => {
     if (!validateBase()) return
-    if (!posto.trim()) { setErrorMessage('Inserisci il posto barca per l\'uscita temporanea.'); return }
-    const result = registraUscitaTemporanea(buildMovement('uscita_temporanea', posto))
-    if (!result.ok) { setErrorMessage(result.errore || 'Errore durante l\'uscita temporanea.'); return }
-    handleClear()
-  }
+    if (!posto.trim()) { setErrorMessage('Inserisci il posto barca per l\'uscita.'); return }
 
-  const handleUscitaDefinitiva = () => {
-    if (!validateBase()) return
-    if (tipologia === 'socio') {
-      setConfirmMessage('Vuoi rimuovere titolo al proprietario?')
-      setConfirmAction(() => () => {
-        const r = registraUscitaDefinitiva(buildMovement('uscita_definitiva', posto))
-        if (!r.ok) { setErrorMessage(r.errore || 'Errore durante l\'uscita definitiva.') }
-        else { handleClear() }
-        setShowConfirmPopup(false)
-      })
-      setShowConfirmPopup(true)
-      return
-    }
+    // Avviso transito senza ricevuta: l'operatore può comunque proseguire.
     if (tipologia === 'transito' && !checkPagamentoSaldato(nome)) {
-      setConfirmMessage('Non risulta emessa una ricevuta saldata per questa imbarcazione. Vuoi registrare comunque l\'uscita definitiva?')
+      setConfirmMessage('Non risulta emessa una ricevuta saldata per questa imbarcazione. Vuoi registrare comunque l\'uscita?')
       setConfirmAction(() => () => {
-        const r = registraUscitaDefinitiva(buildMovement('uscita_definitiva', posto))
-        if (!r.ok) { setErrorMessage(r.errore || 'Errore durante l\'uscita definitiva.') }
+        const r = registraUscitaDefinitiva(buildMovement('uscita', posto))
+        if (!r.ok) { setErrorMessage(r.errore || 'Errore durante l\'uscita.') }
         else { handleClear() }
         setShowConfirmPopup(false)
       })
       setShowConfirmPopup(true)
       return
     }
-    const result = registraUscitaDefinitiva(buildMovement('uscita_definitiva', posto))
-    if (!result.ok) { setErrorMessage(result.errore || 'Errore durante l\'uscita definitiva.'); return }
+
+    // Caso normale: chiudi lo Stay e basta.
+    const result = registraUscitaDefinitiva(buildMovement('uscita', posto))
+    if (!result.ok) { setErrorMessage(result.errore || 'Errore durante l\'uscita.'); return }
     handleClear()
   }
 
@@ -588,14 +591,10 @@ export function useTorreForm() {
     handleClear()
   }
 
-  const handleBunker = () => {
-    if (!validateBase()) return
-    if (!posto.trim()) { setErrorMessage('Inserisci il posto da cui parte la barca (verso il bunker).'); return }
-    ensureBoatExists()
-    const result = registraBunker(buildMovement('bunker', 'Bunker'), posto)
-    if (!result.ok) { setErrorMessage(result.errore || 'Errore durante la registrazione bunker.'); return }
-    handleClear()
-  }
+  // handleBunker rimosso (27 Apr 2026, bottoni Torre v2): nella pratica
+  // operativa il bunker è un'uscita breve che l'operatore registra come
+  // normale "Uscita" se la barca poi non rientra subito. Era un vezzo
+  // del vecchio sistema, eliminato per semplificazione.
 
   const handleRientro = () => {
     if (!validateBase()) return
@@ -648,15 +647,14 @@ export function useTorreForm() {
     fillFromBoat,
     fillFromBerth,
 
-    // Actions
+    // Actions (bottoni Torre v2 — 27 Apr 2026)
     handleClear,
     handleEntrata,
-    handleUscitaTemporanea,
-    handleUscitaDefinitiva,
+    handleUscita,         // sostituisce handleUscitaTemporanea + handleUscitaDefinitiva
     handleSpostamento,
     handleCantiere,
-    handleBunker,
-    handleRientro,
+    handleRientro,        // ora usato SOLO per "Rientro Cantiere" nella UI
+    // handleBunker rimosso: bunker non è più un'azione separata
   }
 }
 

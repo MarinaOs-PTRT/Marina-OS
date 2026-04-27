@@ -77,7 +77,6 @@ interface GlobalState {
   registraUscitaDefinitiva: (m: Movement) => { ok: boolean; errore?: string }
   registraSpostamento: (m: Movement, postoOrigine: string, postoDestinazione: string) => { ok: boolean; errore?: string }
   registraCantiere: (m: Movement, postoOrigine: string) => { ok: boolean; errore?: string }
-  registraBunker: (m: Movement, postoOrigine: string) => { ok: boolean; errore?: string }
   registraRientro: (m: Movement) => { ok: boolean; errore?: string }
 
   // CRUD
@@ -869,47 +868,10 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     return { ok: true }
   }
 
-  /** M-05b: Bunker (Distributore) — la barca va al bunker, il posto resta riservato */
-  const registraBunker = (m: Movement, postoOrigine: string): { ok: boolean; errore?: string } => {
-    if (!postoOrigine || postoOrigine === '—') {
-      return { ok: false, errore: 'Posto non specificato per il movimento bunker.' }
-    }
-
-    // Validazione: il posto deve essere occupato
-    const validazione = validaStatoPosto(postoOrigine, STATI_USCITA, 'bunker')
-    if (!validazione.valido) {
-      return { ok: false, errore: validazione.errore }
-    }
-
-    const mov: Movement = {
-      ...m,
-      tipo: 'bunker',
-      postoOrigine,
-      origine: postoOrigine,
-      destinazione: 'Bunker'
-    }
-    setMovimenti(prev => [mov, ...prev])
-
-    // Il posto diventa "assente" — riservato per la barca che è al bunker
-    // L'operatore poi deciderà dal bunker: rientro, uscita o spostamento
-    let nuovoStato: Berth['stato']
-    if (mov.scenario === 'socio') nuovoStato = 'socio_assente'
-    else if (mov.scenario === 'affittuario') nuovoStato = 'affittuario_assente'
-    else nuovoStato = 'transito_assente'
-
-    updateOrCreatePosto(postoOrigine, { stato: nuovoStato, barcaOra: `Al bunker: ${m.nome}` })
-
-    // ── Modello v3 ── Bunker = chiusura Stay corrente. La barca tornerà
-    // (di solito) con un Rientro, riapertura Stay sul vecchio berth.
-    const boat = barche.find(b =>
-      b.nome.toLowerCase() === mov.nome.toLowerCase() ||
-      (mov.matricola && b.matricola.toLowerCase() === mov.matricola.toLowerCase())
-    )
-    if (boat) chiudiStayDellaBarca(boat.id, mov.id)
-    else chiudiStayDelBerth(postoOrigine, mov.id)
-
-    return { ok: true }
-  }
+  // registraBunker rimosso (27 Apr 2026, bottoni Torre v2): nella pratica
+  // operativa il bunker è un'uscita breve (l'operatore aspetta che la
+  // barca finisca, e se esce davvero registra una normale "Uscita").
+  // Era un vezzo del vecchio sistema, eliminato per semplificazione.
 
   /** Rientro al posto — da stato *_assente a occupato_* */
   const registraRientro = (m: Movement): { ok: boolean; errore?: string } => {
@@ -1291,7 +1253,7 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
       addAutorizzazione, updateAutorizzazione,
       completaAutorizzazionePendente, revocaAutorizzazione,
       registraEntrata, registraUscitaTemporanea, registraUscitaDefinitiva,
-      registraSpostamento, registraCantiere, registraBunker, registraRientro,
+      registraSpostamento, registraCantiere, registraRientro,
       isPostoOccupato, checkPagamentoSaldato, checkAutorizzazione, getScenarioBarca,
       getRegistrazioniPendenti,
       // Modello v3 — query derivate
