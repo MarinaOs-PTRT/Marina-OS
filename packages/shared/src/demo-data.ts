@@ -1,4 +1,4 @@
-﻿import { Client, Boat, Berth, Movement, Tariff, MaintenanceJob, Report, Receipt, Arrival, OwnershipTitle, Authorization, SystemUser, UserRole, SystemAlert } from './types'
+﻿import { Client, Boat, Berth, Movement, Tariff, MaintenanceJob, Report, Receipt, Arrival, OwnershipTitle, Authorization, SystemUser, UserRole, SystemAlert, Stay, CantiereSession } from './types'
 
 // ── CLIENTI E SOCI ──
 export const CLIENTI_DEMO: Client[] = [
@@ -264,6 +264,7 @@ const POSTI_B: Berth[] = genBerths('B', 'Pontile Bravo', 36, (n) => {
     profondita: cat4 ? 3.5 : 3.0,
     categoria: cat4 ? 'Cat. IV' : 'Cat. III',
     stato: 'libero',
+    agibile: true,
   }
 })
 
@@ -274,7 +275,7 @@ const POSTI_A: Berth[] = genBerths('A', 'Pontile Alfa', 26, (n) => {
   const lun = mod === 0 ? 15.5 : mod === 1 ? 12.0 : 10.0
   const lar = mod === 0 ? 4.5  : mod === 1 ? 4.0  : 3.5
   const pro = mod === 0 ? 3.5  : mod === 1 ? 3.0  : 2.8
-  return { lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero' }
+  return { lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero', agibile: true }
 })
 
 // Pontile C (28 posti) — pontile più piccolo, 8-12m, Cat. I/II/III
@@ -284,7 +285,7 @@ const POSTI_C: Berth[] = genBerths('C', 'Pontile Charlie', 28, (n) => {
   const lun = mod === 0 ? 12.0 : mod === 1 ? 10.0 : 9.0
   const lar = mod === 0 ? 4.0  : mod === 1 ? 3.5  : 3.25
   const pro = mod === 0 ? 3.0  : mod === 1 ? 2.8  : 2.5
-  return { lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero' }
+  return { lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero', agibile: true }
 })
 
 // Pontile D (32 posti) — pontile grande, 12-18m, Cat. III/IV/V
@@ -294,7 +295,7 @@ const POSTI_D: Berth[] = genBerths('D', 'Pontile Delta', 32, (n) => {
   const lun = mod === 0 ? 18.0 : mod === 1 ? 15.5 : 12.0
   const lar = mod === 0 ? 5.0  : mod === 1 ? 4.5  : 4.0
   const pro = mod === 0 ? 4.0  : mod === 1 ? 3.5  : 3.0
-  return { lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero' }
+  return { lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero', agibile: true }
 })
 
 // Frangiflutti nord FF100-FF113 (14 posti) — transiti grandi 18-30m, Cat. V/VI/VII
@@ -304,7 +305,7 @@ const POSTI_FF_NORD: Berth[] = genBerths('FF', 'Frangiflutti Nord', 14, (n) => {
   const lun = mod === 0 ? 30.0 : mod === 1 ? 22.0 : 18.0
   const lar = mod === 0 ? 8.0  : mod === 1 ? 6.5  : 5.0
   const pro = mod === 0 ? 5.0  : mod === 1 ? 4.5  : 4.0
-  return { lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero' }
+  return { lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero', agibile: true }
 }, { idStyle: 'compact', startIndex: 100 })
 
 // Frangiflutti sud FF1-FF3 (3 posti) — piccoli, Cat. I (tender, gommoni)
@@ -314,6 +315,7 @@ const POSTI_FF_SUD: Berth[] = genBerths('FF', 'Frangiflutti Sud', 3, (_) => ({
   profondita: 1.8,
   categoria: 'Cat. I',
   stato: 'libero',
+  agibile: true,
 }), { idStyle: 'compact', startIndex: 1 })
 
 // Torre (TW1-TW10) — posti frontali per transiti grandi/yacht 20-40m
@@ -323,7 +325,7 @@ const POSTI_TW: Berth[] = genBerths('TW', 'Torre / Transito', 10, (n) => {
   const lun = mod === 0 ? 40.0 : mod === 1 ? 30.0 : 22.0
   const lar = mod === 0 ? 9.0  : mod === 1 ? 8.0  : 6.5
   const pro = mod === 0 ? 6.0  : mod === 1 ? 5.0  : 4.5
-  return { lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero' }
+  return { lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero', agibile: true }
 }, { idStyle: 'compact', startIndex: 1 })
 
 export const POSTI_DEMO: Berth[] = [
@@ -401,35 +403,40 @@ export const ARRIVI_DEMO: Arrival[] = [
 // lega al suo berthId. La SociPage ("Elenco Soci e Posti") usa TITOLI come
 // tabella di JOIN: senza titolo, anche se Client.posto è valorizzato, il
 // socio risulta "senza posto". Vedi memoria: ff_test_setup.md
+// Modello v3 (27 Apr 2026): boatId aggiunto. Undefined per i titoli senza
+// barca corrente (es. FF103 cliente 11, FF110 cliente 18 — soci che hanno
+// venduto/non hanno ancora la barca). attivo: true di default su tutti.
 export const TITOLI_POSSESSO_DEMO: OwnershipTitle[] = [
   // Soci storici (id 1, 4, 5)
-  { id: 1, clientId: 1, berthId: 'A 5',  numero: 'PTRT-2015-0102', dataAcquisizione: '2015-04-10', azioni: 620, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 2, clientId: 5, berthId: 'D 12', numero: 'PTRT-2018-0554', dataAcquisizione: '2018-09-22', azioni: 480, catAzioni: 'B', canone: 'Scaduto',  scadenzaCanone: '2026-01-31' },
-  { id: 3, clientId: 4, berthId: 'C 8',  numero: 'PTRT-2020-0891', dataAcquisizione: '2020-02-15', azioni: 310, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 1, clientId: 1, berthId: 'A 5',  boatId: 1, attivo: true, numero: 'PTRT-2015-0102', dataAcquisizione: '2015-04-10', azioni: 620, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 2, clientId: 5, berthId: 'D 12', boatId: 6, attivo: true, numero: 'PTRT-2018-0554', dataAcquisizione: '2018-09-22', azioni: 480, catAzioni: 'B', canone: 'Scaduto',  scadenzaCanone: '2026-01-31' },
+  { id: 3, clientId: 4, berthId: 'C 8',  boatId: 5, attivo: true, numero: 'PTRT-2020-0891', dataAcquisizione: '2020-02-15', azioni: 310, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
 
   // Titoli mancanti per soci storici già esistenti (id 6, 7)
-  { id: 4, clientId: 6, berthId: 'D 7',  numero: 'PTRT-2017-0345', dataAcquisizione: '2017-06-12', azioni: 480, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 5, clientId: 7, berthId: 'C 25', numero: 'PTRT-2019-0612', dataAcquisizione: '2019-11-03', azioni: 340, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 4, clientId: 6, berthId: 'D 7',  boatId: 7, attivo: true, numero: 'PTRT-2017-0345', dataAcquisizione: '2017-06-12', azioni: 480, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 5, clientId: 7, berthId: 'C 25', boatId: 8, attivo: true, numero: 'PTRT-2019-0612', dataAcquisizione: '2019-11-03', azioni: 340, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
 
   // ── TITOLI FRANGIFLUTTI (id 6-22, 25 Apr 2026) ──
   // Uno per ogni socio FF (clientId 8-24).
-  { id: 6,  clientId: 8,  berthId: 'FF100', numero: 'PTRT-2014-0078', dataAcquisizione: '2014-03-22', azioni: 950, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 7,  clientId: 9,  berthId: 'FF101', numero: 'PTRT-2016-0211', dataAcquisizione: '2016-05-14', azioni: 780, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 8,  clientId: 10, berthId: 'FF102', numero: 'PTRT-2018-0432', dataAcquisizione: '2018-07-08', azioni: 650, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 9,  clientId: 11, berthId: 'FF103', numero: 'PTRT-2019-0501', dataAcquisizione: '2019-04-19', azioni: 650, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 10, clientId: 12, berthId: 'FF104', numero: 'PTRT-2013-0044', dataAcquisizione: '2013-09-05', azioni: 950, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 11, clientId: 13, berthId: 'FF105', numero: 'PTRT-2017-0298', dataAcquisizione: '2017-02-28', azioni: 780, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 12, clientId: 14, berthId: 'FF106', numero: 'PTRT-2020-0678', dataAcquisizione: '2020-10-11', azioni: 650, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 13, clientId: 15, berthId: 'FF107', numero: 'PTRT-2015-0156', dataAcquisizione: '2015-12-01', azioni: 950, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 14, clientId: 16, berthId: 'FF108', numero: 'PTRT-2018-0388', dataAcquisizione: '2018-08-17', azioni: 780, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 15, clientId: 17, berthId: 'FF109', numero: 'PTRT-2021-0723', dataAcquisizione: '2021-05-04', azioni: 650, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 16, clientId: 18, berthId: 'FF110', numero: 'PTRT-2012-0021', dataAcquisizione: '2012-06-10', azioni: 950, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 17, clientId: 19, berthId: 'FF111', numero: 'PTRT-2019-0489', dataAcquisizione: '2019-03-15', azioni: 780, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 18, clientId: 20, berthId: 'FF112', numero: 'PTRT-2017-0322', dataAcquisizione: '2017-11-22', azioni: 650, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 19, clientId: 21, berthId: 'FF113', numero: 'PTRT-2016-0244', dataAcquisizione: '2016-07-30', azioni: 950, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 20, clientId: 22, berthId: 'FF1',   numero: 'PTRT-2020-0612', dataAcquisizione: '2020-04-08', azioni: 180, catAzioni: 'C', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 21, clientId: 23, berthId: 'FF2',   numero: 'PTRT-2019-0533', dataAcquisizione: '2019-09-25', azioni: 180, catAzioni: 'C', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 22, clientId: 24, berthId: 'FF3',   numero: 'PTRT-2021-0701', dataAcquisizione: '2021-02-14', azioni: 180, catAzioni: 'C', canone: 'Regolare', scadenzaCanone: '2027-01-31' }
+  { id: 6,  clientId: 8,  berthId: 'FF100', boatId: 9,  attivo: true, numero: 'PTRT-2014-0078', dataAcquisizione: '2014-03-22', azioni: 950, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 7,  clientId: 9,  berthId: 'FF101', boatId: 10, attivo: true, numero: 'PTRT-2016-0211', dataAcquisizione: '2016-05-14', azioni: 780, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 8,  clientId: 10, berthId: 'FF102', boatId: 11, attivo: true, numero: 'PTRT-2018-0432', dataAcquisizione: '2018-07-08', azioni: 650, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  // FF103: Carla Bruno senza barca (caso "socio senza barca / posto investimento")
+  { id: 9,  clientId: 11, berthId: 'FF103',             attivo: true, numero: 'PTRT-2019-0501', dataAcquisizione: '2019-04-19', azioni: 650, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 10, clientId: 12, berthId: 'FF104', boatId: 12, attivo: true, numero: 'PTRT-2013-0044', dataAcquisizione: '2013-09-05', azioni: 950, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 11, clientId: 13, berthId: 'FF105', boatId: 13, attivo: true, numero: 'PTRT-2017-0298', dataAcquisizione: '2017-02-28', azioni: 780, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 12, clientId: 14, berthId: 'FF106', boatId: 14, attivo: true, numero: 'PTRT-2020-0678', dataAcquisizione: '2020-10-11', azioni: 650, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 13, clientId: 15, berthId: 'FF107', boatId: 15, attivo: true, numero: 'PTRT-2015-0156', dataAcquisizione: '2015-12-01', azioni: 950, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 14, clientId: 16, berthId: 'FF108', boatId: 16, attivo: true, numero: 'PTRT-2018-0388', dataAcquisizione: '2018-08-17', azioni: 780, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 15, clientId: 17, berthId: 'FF109', boatId: 17, attivo: true, numero: 'PTRT-2021-0723', dataAcquisizione: '2021-05-04', azioni: 650, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  // FF110: Tommaso Ricci senza barca (caso "socio senza barca / posto investimento")
+  { id: 16, clientId: 18, berthId: 'FF110',             attivo: true, numero: 'PTRT-2012-0021', dataAcquisizione: '2012-06-10', azioni: 950, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 17, clientId: 19, berthId: 'FF111', boatId: 18, attivo: true, numero: 'PTRT-2019-0489', dataAcquisizione: '2019-03-15', azioni: 780, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 18, clientId: 20, berthId: 'FF112', boatId: 19, attivo: true, numero: 'PTRT-2017-0322', dataAcquisizione: '2017-11-22', azioni: 650, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 19, clientId: 21, berthId: 'FF113', boatId: 20, attivo: true, numero: 'PTRT-2016-0244', dataAcquisizione: '2016-07-30', azioni: 950, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 20, clientId: 22, berthId: 'FF1',   boatId: 21, attivo: true, numero: 'PTRT-2020-0612', dataAcquisizione: '2020-04-08', azioni: 180, catAzioni: 'C', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 21, clientId: 23, berthId: 'FF2',   boatId: 22, attivo: true, numero: 'PTRT-2019-0533', dataAcquisizione: '2019-09-25', azioni: 180, catAzioni: 'C', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 22, clientId: 24, berthId: 'FF3',   boatId: 23, attivo: true, numero: 'PTRT-2021-0701', dataAcquisizione: '2021-02-14', azioni: 180, catAzioni: 'C', canone: 'Regolare', scadenzaCanone: '2027-01-31' }
 ]
 
 // -- AUTORIZZAZIONI (M-07) --
@@ -455,6 +462,65 @@ export const NOTIFICHE_DEMO: SystemAlert[] = [
   { id: 3, titolo: 'Guasto Elettrico C 4', descrizione: 'Segnalato calo di tensione alla colonnina del posto C 4.', urgenza: 'alta', categoria: 'operativo', data: '2026-04-22 11:45', stato: 'nuova' },
   { id: 4, titolo: 'Backup di Sistema', descrizione: 'Il backup settimanale \u00e8 stato completato con successo.', urgenza: 'bassa', categoria: 'sistema', data: '2026-04-21 23:00', stato: 'letta' },
   { id: 5, titolo: 'Ospite in Arrivo', descrizione: 'Giacomo Neri \u00e8 autorizzato sul posto D 12 da oggi.', urgenza: 'bassa', categoria: 'operativo', data: '2026-04-20 08:00', stato: 'risolta' }
+]
+
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+// STAYS DEMO \u2014 modello v3 (27 Apr 2026)
+// Per ogni POSTI_OCCUPATI_OVERRIDE con barcaOra definita generiamo uno
+// Stay aperto (fine=undefined). Eccezione: D 12 \u00e8 in cantiere (vedi
+// CANTIERE_SESSIONS_DEMO sotto). I posti con stato 'socio_assente' o
+// 'socio_assente_lungo' (C 25, FF103, FF110) non hanno Stay: la barca
+// non \u00e8 fisicamente sul posto.
+//
+// Inizio: timestamp di esempio coerente (24-25 Apr 2026, qualche giorno fa).
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+export const STAYS_DEMO: Stay[] = [
+  // Soci storici presenti
+  { id: 1,  boatId: 1, berthId: 'A 5',  inizio: '2026-04-24T08:00:00', tipologia: 'socio' },
+  { id: 2,  boatId: 5, berthId: 'C 8',  inizio: '2026-04-23T10:30:00', tipologia: 'socio' },
+  // D 12 \u00e8 in cantiere \u2192 Stay NON presente, vedi CANTIERE_SESSIONS_DEMO
+  // C 25 (Rex, socio Francesca Landi) \u00e8 uscito in gita \u2192 Stay NON presente
+  // Affittuario su D 7 (auth attiva, Mistral)
+  { id: 3,  boatId: 7, berthId: 'D 7',  inizio: '2026-04-01T09:00:00', tipologia: 'affittuario', authId: 1 },
+  // Transito su B 10 (Tramontana)
+  { id: 4,  boatId: 2, berthId: 'B 10', inizio: '2026-04-21T14:00:00', tipologia: 'transito' },
+  // Transito su TW3 (Neptune Dream)
+  { id: 5,  boatId: 3, berthId: 'TW3',  inizio: '2026-04-20T07:30:00', tipologia: 'transito' },
+
+  // \u2500\u2500 Soci FRANGIFLUTTI presenti \u2500\u2500
+  { id: 10, boatId: 9,  berthId: 'FF100', inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
+  { id: 11, boatId: 10, berthId: 'FF101', inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
+  { id: 12, boatId: 11, berthId: 'FF102', inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
+  // FF103 vuoto (Carla Bruno senza barca)
+  { id: 13, boatId: 12, berthId: 'FF104', inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
+  { id: 14, boatId: 13, berthId: 'FF105', inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
+  { id: 15, boatId: 14, berthId: 'FF106', inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
+  { id: 16, boatId: 15, berthId: 'FF107', inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
+  { id: 17, boatId: 16, berthId: 'FF108', inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
+  { id: 18, boatId: 17, berthId: 'FF109', inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
+  // FF110 vuoto (Tommaso Ricci senza barca)
+  { id: 19, boatId: 18, berthId: 'FF111', inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
+  { id: 20, boatId: 19, berthId: 'FF112', inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
+  { id: 21, boatId: 20, berthId: 'FF113', inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
+  { id: 22, boatId: 21, berthId: 'FF1',   inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
+  { id: 23, boatId: 22, berthId: 'FF2',   inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
+  { id: 24, boatId: 23, berthId: 'FF3',   inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
+]
+
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+// CANTIERE SESSIONS DEMO \u2014 modello v3 (27 Apr 2026)
+// L'unica barca attualmente in cantiere \u00e8 M/Y Perseo (id 6) della socia
+// Anna Conti, posto originale D 12. La barca \u00e8 uscita 12 Apr 2026 e non
+// \u00e8 ancora rientrata.
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+export const CANTIERE_SESSIONS_DEMO: CantiereSession[] = [
+  {
+    id: 1,
+    boatId: 6,
+    berthOriginale: 'D 12',
+    inizio: '2026-04-12T16:00:00',
+    note: 'Alaggio per manutenzione scafo',
+  },
 ]
 
 

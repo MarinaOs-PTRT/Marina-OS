@@ -1,14 +1,14 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react'
 import {
-  Client, Boat, Berth, BerthStatus, Movement, Tariff, MaintenanceJob, Report,
+  Client, Boat, Berth, BerthStatus, BerthVisualState, Movement, Tariff, MaintenanceJob, Report,
   Receipt, Arrival, OwnershipTitle, Authorization, AuthType, SystemUser, SystemAlert,
-  MovementScenario, RegistrazionePendente, MotivoPendenza
+  MovementScenario, RegistrazionePendente, MotivoPendenza, Stay, CantiereSession, StayTipologia
 } from '@shared/types'
 import {
   CLIENTI_DEMO, BARCHE_DEMO, POSTI_DEMO, MOVIMENTI_DEMO,
   TARIFFE_DEMO, MANUTENZIONI_DEMO, SEGNALAZIONI_DEMO, RICEVUTE_DEMO,
   ARRIVI_DEMO, TITOLI_POSSESSO_DEMO, AUTORIZZAZIONI_DEMO,
-  UTENTI_SISTEMA_DEMO, NOTIFICHE_DEMO
+  UTENTI_SISTEMA_DEMO, NOTIFICHE_DEMO, STAYS_DEMO, CANTIERE_SESSIONS_DEMO
 } from '@shared/demo-data'
 
 interface GlobalState {
@@ -25,6 +25,34 @@ interface GlobalState {
   autorizzazioni: Authorization[]
   utenti: SystemUser[]
   notifiche: SystemAlert[]
+  // ── Modello v3 (27 Apr 2026) ──
+  // Stay = soggiorno barca su un posto (aperto se fine=undefined).
+  // CantiereSession = barca attualmente in cantiere esterno.
+  // Vedi MASTER_FILE_v3 §3 e memoria model_v3_stati.md
+  stays: Stay[]
+  cantieri: CantiereSession[]
+
+  // ── Query derivate (modello v3) ──
+  // Tutte le UI dovrebbero passare per queste query invece di leggere
+  // direttamente Berth.stato/Berth.barcaOra/Boat.posto (deprecated).
+  /** Lo Stay aperto sul berth (se c'è). */
+  stayApertoSulBerth: (berthId: string) => Stay | undefined
+  /** Lo Stay aperto della boat (se la boat è in porto). */
+  stayApertoDellaBarca: (boatId: number) => Stay | undefined
+  /** Boat che attualmente occupa il berth (se occupato). */
+  barcaSulPosto: (berthId: string) => Boat | undefined
+  /** Berth dove si trova attualmente la boat (se in porto). */
+  postoDellaBarca: (boatId: number) => string | undefined
+  /** True se la boat è in cantiere ora (CantiereSession aperta). */
+  inCantiere: (boatId: number) => boolean
+  /** CantiereSession aperta della boat. */
+  cantiereDellaBarca: (boatId: number) => CantiereSession | undefined
+  /** True se il berth è fisicamente utilizzabile (non in manutenzione). */
+  agibile: (berthId: string) => boolean
+  /** Stato visivo del berth — calcolato a runtime, mai memorizzato. */
+  getStatoVisivoBerth: (berthId: string) => BerthVisualState
+  /** OwnershipTitle attivo per il berth (se esiste). */
+  titoloAttivoDelBerth: (berthId: string) => OwnershipTitle | undefined
 
   // Azioni di Base
   updatePosto: (id: string, updates: Partial<Berth>) => void
@@ -35,6 +63,11 @@ interface GlobalState {
    *  che chiamavano addArrivo per "annullare" (creando duplicati). */
   updateArrivoStato: (id: number, stato: Arrival['stato']) => void
   markNotifica: (id: number, stato: 'letta' | 'risolta') => void
+  /** Cleanup: rimuove dall'array tutte le notifiche con stato='risolta'
+   *  e data più vecchia di `gg` giorni. Default 30. Chiamabile lazy
+   *  (es. al mount di /notifiche) — nessuno scheduler richiesto.
+   *  Ritorna il numero di notifiche purgate. */
+  purgeNotificheRisolte: (gg?: number) => number
 
   // Azioni Logica Operativa
   // opts.pendente=true: affittuario senza autorizzazione valida → crea auth placeholder
@@ -117,6 +150,9 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
   const [autorizzazioni, setAutorizzazioni] = useState<Authorization[]>(AUTORIZZAZIONI_DEMO)
   const [utenti, setUtenti] = useState<SystemUser[]>(UTENTI_SISTEMA_DEMO)
   const [notifiche, setNotifiche] = useState<SystemAlert[]>(NOTIFICHE_DEMO)
+  // ── Modello v3 (27 Apr 2026) ──
+  const [stays, setStays] = useState<Stay[]>(STAYS_DEMO)
+  const [cantieri, setCantieri] = useState<CantiereSession[]>(CANTIERE_SESSIONS_DEMO)
 
   // ════════════════════════════════════════════
   // HELPER INTERNI
@@ -138,12 +174,168 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
           larMax: 4.5,
           profondita: 3.0,
           categoria: 'Cat. III',
+          agibile: true,
           stato: 'libero',
           ...updates
         }
         return [...prev, newBerth]
       }
     })
+  }
+
+  // ════════════════════════════════════════════
+  // MODELLO v3 — QUERY DERIVATE E HELPER STAY/CANTIERE (27 Apr 2026)
+  // Tutte le UI dovrebbero passare da queste invece di leggere
+  // direttamente Berth.stato/Berth.barcaOra/Boat.posto.
+  // ════════════════════════════════════════════
+
+  /** Stay aperto sul berth (se c'è). Massimo 1 per invariante. */
+  const stayApertoSulBerth = (berthId: string): Stay | undefined =>
+    stays.find(s => s.berthId === berthId && !s.fine)
+
+  /** Stay aperto della boat (se la boat è in porto). Massimo 1 per invariante. */
+  const stayApertoDellaBarca = (boatId: number): Stay | undefined =>
+    stays.find(s => s.boatId === boatId && !s.fine)
+
+  /** Boat che attualmente occupa il berth. */
+  const barcaSulPosto = (berthId: string): Boat | undefined => {
+    const s = stayApertoSulBerth(berthId)
+    return s ? barche.find(b => b.id === s.boatId) : undefined
+  }
+
+  /** Berth dove si trova attualmente la boat. */
+  const postoDellaBarca = (boatId: number): string | undefined =>
+    stayApertoDellaBarca(boatId)?.berthId
+
+  /** True se la boat è attualmente in cantiere esterno. */
+  const inCantiere = (boatId: number): boolean =>
+    cantieri.some(c => c.boatId === boatId && !c.fine)
+
+  /** CantiereSession aperta della boat. */
+  const cantiereDellaBarca = (boatId: number): CantiereSession | undefined =>
+    cantieri.find(c => c.boatId === boatId && !c.fine)
+
+  /** True se il berth è fisicamente utilizzabile. Default true se il
+   *  campo `agibile` non è settato (compat con dati legacy). */
+  const agibile = (berthId: string): boolean => {
+    const b = posti.find(p => p.id === berthId)
+    if (!b) return false
+    return b.agibile !== false
+  }
+
+  /** OwnershipTitle attivo per il berth. */
+  const titoloAttivoDelBerth = (berthId: string): OwnershipTitle | undefined =>
+    titoli.find(t => t.berthId === berthId && t.attivo !== false)
+
+  /**
+   * Stato visivo del berth — calcolato a runtime dai 4 piani:
+   *   Berth.agibile + Stay aperto + CantiereSession + OwnershipTitle.
+   *
+   * Implementa la tabella di mapping del MASTER_FILE_v3 §3.3:
+   * vedi anche memoria model_v3_stati.md.
+   */
+  const getStatoVisivoBerth = (berthId: string): BerthVisualState => {
+    if (!agibile(berthId)) return 'fuori_servizio'
+    const stay = stayApertoSulBerth(berthId)
+    const titolo = titoloAttivoDelBerth(berthId)
+
+    if (!titolo) {
+      // Posto senza titolo (es. transito puro, area torre)
+      if (!stay) return 'libero'
+      if (stay.tipologia === 'bunker') return 'bunker'
+      return 'transito'
+    }
+
+    // Posto di un socio
+    if (!stay) {
+      // Nessuno fisicamente → cantiere o assenza
+      if (titolo.boatId !== undefined && inCantiere(titolo.boatId)) return 'socio_in_cantiere'
+      return 'socio_assente'
+    }
+    // Stay aperto: chi è? La barca del socio o un altro?
+    if (titolo.boatId !== undefined && stay.boatId === titolo.boatId) {
+      return 'socio_presente'
+    }
+    if (stay.tipologia === 'bunker') return 'bunker'
+    // Stay di un'altra barca su posto socio: affittuario/ospite/amico
+    return 'affittuario_su_socio'
+  }
+
+  /** Helper interno: apre uno Stay nuovo. Non valida invarianti — il
+   *  chiamante (le funzioni `registra*`) deve essersi già occupato della
+   *  validazione di stato del berth. */
+  const apriStay = (data: {
+    boatId: number
+    berthId: string
+    tipologia: StayTipologia
+    authId?: number
+    movementApriId?: number
+    note?: string
+  }): Stay => {
+    const newId = Math.max(0, ...stays.map(s => s.id)) + 1
+    const stay: Stay = {
+      id: newId,
+      boatId: data.boatId,
+      berthId: data.berthId,
+      inizio: new Date().toISOString(),
+      tipologia: data.tipologia,
+      authId: data.authId,
+      movementApriId: data.movementApriId,
+      note: data.note,
+    }
+    setStays(prev => [...prev, stay])
+    return stay
+  }
+
+  /** Helper interno: chiude lo Stay aperto della barca, se esiste. */
+  const chiudiStayDellaBarca = (boatId: number, movementChiudiId?: number) => {
+    const fine = new Date().toISOString()
+    setStays(prev => prev.map(s =>
+      s.boatId === boatId && !s.fine
+        ? { ...s, fine, movementChiudiId: movementChiudiId ?? s.movementChiudiId }
+        : s
+    ))
+  }
+
+  /** Helper interno: chiude qualsiasi Stay aperto sul berth (utile per
+   *  spostamento dell'AVENTE-DIRITTO). */
+  const chiudiStayDelBerth = (berthId: string, movementChiudiId?: number) => {
+    const fine = new Date().toISOString()
+    setStays(prev => prev.map(s =>
+      s.berthId === berthId && !s.fine
+        ? { ...s, fine, movementChiudiId: movementChiudiId ?? s.movementChiudiId }
+        : s
+    ))
+  }
+
+  /** Helper interno: apre una CantiereSession. */
+  const apriCantiere = (data: {
+    boatId: number
+    berthOriginale: string
+    movementInizioId?: number
+    note?: string
+  }): CantiereSession => {
+    const newId = Math.max(0, ...cantieri.map(c => c.id)) + 1
+    const cs: CantiereSession = {
+      id: newId,
+      boatId: data.boatId,
+      berthOriginale: data.berthOriginale,
+      inizio: new Date().toISOString(),
+      movementInizioId: data.movementInizioId,
+      note: data.note,
+    }
+    setCantieri(prev => [...prev, cs])
+    return cs
+  }
+
+  /** Helper interno: chiude la CantiereSession aperta della barca, se esiste. */
+  const chiudiCantiereDellaBarca = (boatId: number, movementFineId?: number) => {
+    const fine = new Date().toISOString()
+    setCantieri(prev => prev.map(c =>
+      c.boatId === boatId && !c.fine
+        ? { ...c, fine, movementFineId: movementFineId ?? c.movementFineId }
+        : c
+    ))
   }
 
   // ════════════════════════════════════════════
@@ -236,7 +428,7 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     if (!posto) {
       return { valido: false, errore: `Posto ${postoId} non trovato nel sistema.` }
     }
-    if (!statiAmmessi.includes(posto.stato)) {
+    if (!posto.stato || !statiAmmessi.includes(posto.stato)) {
       return {
         valido: false,
         errore: `Impossibile eseguire "${operazione}" sul posto ${postoId}: stato attuale "${posto.stato}" non compatibile.`
@@ -337,6 +529,44 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
           registrazioneCompleta: false  // → finisce in Registrazioni Pendenti
         }
         setBarche(prev => [...prev, nuovaBoat])
+
+        // ════════════════════════════════════════════
+        // NOTIFICA TRANSITO SENZA REGISTRAZIONE (27 Apr 2026)
+        // Per i TRANSITI emetti un alert amministrativo che la Direzione
+        // userà per completare l'anagrafica via /completa-registrazione/:boatId.
+        // Auto-risolto in updateBarca quando registrazioneCompleta passa
+        // a true (vedi blocco simmetrico più sotto).
+        //
+        // Per gli AFFITTUARI invece NON emettiamo qui: arriverà l'alert
+        // "Autorizzazione da compilare" più sotto (modalità pendente),
+        // che copre lo stesso flusso operativo. La Direzione completerà
+        // anagrafica + auth nella stessa sessione su /completa-registrazione.
+        // ════════════════════════════════════════════
+        if (m.scenario === 'transito') {
+          const nuovaNotificaId = Math.max(0, ...notifiche.map(n => n.id)) + 1
+          const alertAnagrafica: SystemAlert = {
+            id: nuovaNotificaId,
+            titolo: 'Anagrafica transito da completare',
+            descrizione: `Posto ${m.posto} — barca "${nuovaBoat.nome}" (${nuovaBoat.matricola}). Ingresso registrato dalla Torre (${m.operatore.nome}); l'anagrafica della barca è ancora vuota. Completare via "Registrazioni Pendenti".`,
+            urgenza: 'media',
+            categoria: 'amministrazione',
+            data: new Date().toISOString(),
+            stato: 'nuova',
+            relatedBoatId: nuovoBoatId,
+          }
+          setNotifiche(prev => [alertAnagrafica, ...prev])
+        }
+
+        // ── Modello v3 ── Apertura Stay per la barca-scheletro appena creata.
+        // Lo Stay viene creato qui perché poi (sotto) il lookup `boatPerStay`
+        // farebbe `barche.find(...)` su uno snapshot che non ha ancora
+        // ricevuto la nuova boat (setBarche è asincrono).
+        const tipologiaSkel: StayTipologia = m.scenario as StayTipologia
+        apriStay({
+          boatId: nuovoBoatId,
+          berthId: m.posto,
+          tipologia: tipologiaSkel,
+        })
       }
     }
 
@@ -401,6 +631,37 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
       : 'occupato_transito' as const
     updateOrCreatePosto(mov.posto, { stato: nuovoStato, barcaOra: mov.nome })
 
+    // ── Modello v3 ──
+    // Apre uno Stay sulla nuova posizione. Per fare questo devo trovare
+    // l'id boat: se è socio cerca per nome+matricola in barche[]; se è
+    // transito/affittuario appena creato, l'id è nuovoBoatId (catturato
+    // più sopra nello scope... → ricerco di nuovo per essere robusto).
+    const boatPerStay = barche.find(b =>
+      b.nome.toLowerCase() === mov.nome.toLowerCase() ||
+      (mov.matricola && b.matricola.toLowerCase() === (mov.matricola || '').toLowerCase())
+    )
+      // Caso: scheletro appena creato in questo stesso turno (non ancora in barche[]
+      // perché setBarche è asincrono): cerca via `barcheVoIle = [...barche, nuovaBoat]`
+      // non funziona perché nuovaBoat è dentro un if locale. Soluzione: gestiamo
+      // l'apertura Stay nel ramo che crea la boat, sotto.
+    if (boatPerStay) {
+      // Se la barca era in cantiere ed entra su un posto qualunque, chiudi la sessione cantiere
+      if (cantiereDellaBarca(boatPerStay.id)) {
+        chiudiCantiereDellaBarca(boatPerStay.id, mov.id)
+      }
+      // Chiudi eventuale Stay già aperto (rientro da assenza di gita su stesso/altro posto)
+      chiudiStayDellaBarca(boatPerStay.id, mov.id)
+      const tipologiaStay: StayTipologia = mov.scenario as StayTipologia
+      apriStay({
+        boatId: boatPerStay.id,
+        berthId: mov.posto,
+        tipologia: tipologiaStay,
+        movementApriId: mov.id,
+      })
+    }
+    // Se non trovato (caso scheletro appena creato), lo Stay viene aperto
+    // dentro al blocco di creazione boat (vedi più sopra, già patchato).
+
     return { ok: true }
   }
 
@@ -426,6 +687,18 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     else nuovoStato = 'transito_assente'
 
     updateOrCreatePosto(mov.posto, { stato: nuovoStato, barcaOra: mov.nome })
+
+    // ── Modello v3 ── Chiudi lo Stay aperto della barca.
+    // Per uscita_temporanea il modello v3 NON tiene traccia di "ha ancora
+    // diritto al posto": la differenza tra temporanea/definitiva esiste
+    // solo nel Movement.tipo (audit), non sullo Stay (che è chiuso comunque).
+    const boat = barche.find(b =>
+      b.nome.toLowerCase() === mov.nome.toLowerCase() ||
+      (mov.matricola && b.matricola.toLowerCase() === mov.matricola.toLowerCase())
+    )
+    if (boat) chiudiStayDellaBarca(boat.id, mov.id)
+    else chiudiStayDelBerth(mov.posto, mov.id)
+
     return { ok: true }
   }
 
@@ -463,6 +736,15 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
         updateOrCreatePosto(mov.posto, { stato: 'libero', barcaOra: undefined })
       }
     }
+
+    // ── Modello v3 ── Chiudi lo Stay aperto della barca / del berth.
+    const boat = barche.find(b =>
+      b.nome.toLowerCase() === mov.nome.toLowerCase() ||
+      (mov.matricola && b.matricola.toLowerCase() === mov.matricola.toLowerCase())
+    )
+    if (boat) chiudiStayDellaBarca(boat.id, mov.id)
+    else chiudiStayDelBerth(mov.posto, mov.id)
+
     return { ok: true }
   }
 
@@ -507,6 +789,27 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
       : 'occupato_transito' as const
     updateOrCreatePosto(postoDestinazione, { stato: nuovoStato, barcaOra: m.nome })
 
+    // ── Modello v3 ── Spostamento atomico: chiudi Stay vecchio, apri nuovo.
+    const boat = barche.find(b =>
+      b.nome.toLowerCase() === mov.nome.toLowerCase() ||
+      (mov.matricola && b.matricola.toLowerCase() === mov.matricola.toLowerCase())
+    )
+    if (boat) {
+      chiudiStayDellaBarca(boat.id, mov.id)
+      apriStay({
+        boatId: boat.id,
+        berthId: postoDestinazione,
+        tipologia: m.scenario as StayTipologia,
+        movementApriId: mov.id,
+      })
+    } else {
+      // Fallback: chiudi qualsiasi stay sul berth d'origine. Il nuovo Stay
+      // non viene aperto perché non sappiamo quale boatId usare. Edge case
+      // patologico — non dovrebbe accadere se i movimenti vengono creati
+      // dalla TorrePage che ricerca la boat prima.
+      chiudiStayDelBerth(postoOrigine, mov.id)
+    }
+
     return { ok: true }
   }
 
@@ -543,6 +846,23 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
       updateOrCreatePosto(postoOrigine, { stato: 'libero', barcaOra: undefined })
     }
 
+    // ── Modello v3 ── Chiudi Stay + apri CantiereSession.
+    const boat = barche.find(b =>
+      b.nome.toLowerCase() === mov.nome.toLowerCase() ||
+      (mov.matricola && b.matricola.toLowerCase() === mov.matricola.toLowerCase())
+    )
+    if (boat) {
+      chiudiStayDellaBarca(boat.id, mov.id)
+      apriCantiere({
+        boatId: boat.id,
+        berthOriginale: postoOrigine,
+        movementInizioId: mov.id,
+        note: m.note,
+      })
+    } else {
+      chiudiStayDelBerth(postoOrigine, mov.id)
+    }
+
     return { ok: true }
   }
 
@@ -575,6 +895,16 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     else nuovoStato = 'transito_assente'
 
     updateOrCreatePosto(postoOrigine, { stato: nuovoStato, barcaOra: `Al bunker: ${m.nome}` })
+
+    // ── Modello v3 ── Bunker = chiusura Stay corrente. La barca tornerà
+    // (di solito) con un Rientro, riapertura Stay sul vecchio berth.
+    const boat = barche.find(b =>
+      b.nome.toLowerCase() === mov.nome.toLowerCase() ||
+      (mov.matricola && b.matricola.toLowerCase() === mov.matricola.toLowerCase())
+    )
+    if (boat) chiudiStayDellaBarca(boat.id, mov.id)
+    else chiudiStayDelBerth(postoOrigine, mov.id)
+
     return { ok: true }
   }
 
@@ -599,6 +929,27 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
       : 'occupato_transito' as const
     updateOrCreatePosto(mov.posto, { stato: nuovoStato, barcaOra: mov.nome })
 
+    // ── Modello v3 ── Chiudi CantiereSession se presente, apri Stay nuovo.
+    const boat = barche.find(b =>
+      b.nome.toLowerCase() === mov.nome.toLowerCase() ||
+      (mov.matricola && b.matricola.toLowerCase() === mov.matricola.toLowerCase())
+    )
+    if (boat) {
+      if (cantiereDellaBarca(boat.id)) {
+        chiudiCantiereDellaBarca(boat.id, mov.id)
+      }
+      // Chiudi anche eventuale Stay residuo (es. rientro da bunker, lo Stay
+      // era stato chiuso ma per sicurezza... no, in realtà è già chiuso).
+      // Se c'è uno Stay aperto è un caso anomalo, lo chiudiamo per sicurezza.
+      chiudiStayDellaBarca(boat.id, mov.id)
+      apriStay({
+        boatId: boat.id,
+        berthId: mov.posto,
+        tipologia: mov.scenario as StayTipologia,
+        movementApriId: mov.id,
+      })
+    }
+
     return { ok: true }
   }
 
@@ -619,7 +970,28 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
   const addBarca = (b: Boat) => setBarche(prev => [...prev, b])
 
   const updateBarca = (id: number, updates: Partial<Boat>) => {
+    // ════════════════════════════════════════════
+    // AUTO-RISOLUZIONE NOTIFICA "Anagrafica transito" (27 Apr 2026)
+    // Se questo update porta la boat da registrazioneCompleta=false a true,
+    // chiudiamo automaticamente le notifiche `nuova`/`letta` con
+    // relatedBoatId === id. Pattern simmetrico a quello già implementato
+    // in completaAutorizzazionePendente per relatedAuthId.
+    // ════════════════════════════════════════════
+    const before = barche.find(b => b.id === id)
+    const transizioneCompletamento =
+      before &&
+      before.registrazioneCompleta === false &&
+      updates.registrazioneCompleta === true
+
     setBarche(prev => prev.map(b => b.id === id ? { ...b, ...updates } : b))
+
+    if (transizioneCompletamento) {
+      setNotifiche(prev => prev.map(n =>
+        n.relatedBoatId === id && n.stato !== 'risolta'
+          ? { ...n, stato: 'risolta' }
+          : n
+      ))
+    }
   }
 
   const addRicevuta = (r: Receipt) => setRicevute(prev => [...prev, r])
@@ -666,21 +1038,30 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     }
     setBarche(prev => [...prev, nuovaBarca])
 
-    // 3. Crea il titolo di possesso
+    // 3. Crea il titolo di possesso (modello v3: includi boatId + attivo)
     const nuovoTitoloId = Math.max(0, ...titoli.map(t => t.id)) + 1
     const nuovoTitolo: OwnershipTitle = {
       ...dati.titolo,
       id: nuovoTitoloId,
       clientId: nuovoClienteId,
+      boatId: nuovoBoatId,
+      attivo: true,
     }
     setTitoli(prev => [...prev, nuovoTitolo])
 
     // 4. Aggiorna il berth: assegna il socioId e imposta stato='socio_assente'
+    //    (NB: in modello v3 lo "stato visivo" deriverà dalla query
+    //    getStatoVisivoBerth, ma manteniamo socioId/stato per compat).
     updateOrCreatePosto(dati.titolo.berthId, {
       socioId: nuovoClienteId,
       stato: 'socio_assente',
       barcaOra: undefined,
     })
+
+    // ── Modello v3 ──
+    // NON apriamo uno Stay qui: il socio è "registrato" ma la sua barca
+    // potrebbe non essere fisicamente presente al momento. La prima Entrata
+    // dalla Torre aprirà uno Stay coerente.
 
     return { ok: true, clienteId: nuovoClienteId }
   }
@@ -700,6 +1081,29 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
 
   const markNotifica = (id: number, stato: 'letta' | 'risolta') => {
     setNotifiche(prev => prev.map(n => n.id === id ? { ...n, stato } : n))
+  }
+
+  // ════════════════════════════════════════════
+  // CLEANUP NOTIFICHE RISOLTE (27 Apr 2026)
+  // Le notifiche risolte non hanno valore operativo: dopo N giorni
+  // possono essere fisicamente rimosse. Implementazione lazy: chiamata
+  // al mount di /notifiche (no scheduler, no interval).
+  // Quando arriverà il backend, l'equivalente sarà un job notturno o
+  // un trigger su DB; il frontend non dovrà più chiamare nulla.
+  // ════════════════════════════════════════════
+  const purgeNotificheRisolte = (gg: number = 30): number => {
+    const sogliaMs = Date.now() - gg * 24 * 60 * 60 * 1000
+    let purgate = 0
+    setNotifiche(prev => prev.filter(n => {
+      if (n.stato !== 'risolta') return true
+      const dataMs = new Date(n.data).getTime()
+      // Date invalide → conservative: NON purgare (meglio tenere che perdere)
+      if (!Number.isFinite(dataMs)) return true
+      const daPurgare = dataMs < sogliaMs
+      if (daPurgare) purgate += 1
+      return !daPurgare
+    }))
+    return purgate
   }
 
   // ════════════════════════════════════════════
@@ -877,7 +1281,8 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     <GlobalContext.Provider value={{
       clienti, barche, posti, movimenti, tariffe, manutenzioni,
       segnalazioni, ricevute, arrivi, titoli, autorizzazioni, utenti, notifiche,
-      updatePosto, addArrivo, resolveArrivo, updateArrivoStato, markNotifica,
+      stays, cantieri,
+      updatePosto, addArrivo, resolveArrivo, updateArrivoStato, markNotifica, purgeNotificheRisolte,
       addCliente, addBarca, updateBarca, addRicevuta,
       registraNuovoSocio,
       addAutorizzazione, updateAutorizzazione,
@@ -885,7 +1290,11 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
       registraEntrata, registraUscitaTemporanea, registraUscitaDefinitiva,
       registraSpostamento, registraCantiere, registraBunker, registraRientro,
       isPostoOccupato, checkPagamentoSaldato, checkAutorizzazione, getScenarioBarca,
-      getRegistrazioniPendenti
+      getRegistrazioniPendenti,
+      // Modello v3 — query derivate
+      stayApertoSulBerth, stayApertoDellaBarca, barcaSulPosto, postoDellaBarca,
+      inCantiere, cantiereDellaBarca, agibile, getStatoVisivoBerth,
+      titoloAttivoDelBerth,
     }}>
       {children}
     </GlobalContext.Provider>

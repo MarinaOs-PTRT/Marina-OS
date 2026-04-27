@@ -33,6 +33,27 @@
   border-color: var(--accent);
 }
 
+/* ── Banner contatore risolte (27 Apr 2026) ──
+   Compare sopra la lista quando esistono notifiche risolte da
+   mostrare/nascondere. Tono dimesso (sfondo bg3, testo text2) per
+   non competere visivamente con le card delle notifiche attive. */
+.n-risolte-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: 10px 16px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 8px);
+  font-size: 0.85rem;
+}
+
+.n-risolte-text {
+  color: var(--text2);
+  flex: 1;
+}
+
 .n-list {
   display: flex;
   flex-direction: column;

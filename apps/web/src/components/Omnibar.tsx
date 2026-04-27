@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useGlobalState } from '../store/GlobalState'
-import { BERTH_STATUS_COLOR, BERTH_STATUS_LABELS } from '@shared/constants'
+// v3: BERTH_VISUAL_* non usato qui (lo stato è solo un dato passato avanti
+// nel field `status` della suggestion). Mantengo l'import commentato per
+// memoria — se in futuro vorremo colorare il chip nell'Omnibar, basterà
+// reimportare BERTH_VISUAL_HEX e usarlo con statoVisivo.
+// import { BERTH_VISUAL_HEX, BERTH_VISUAL_LABELS } from '@shared/constants'
 import { Boat, Berth } from '@shared/types'
 import './Omnibar.css'
 
@@ -21,7 +25,7 @@ interface OmnibarProps {
 }
 
 export function Omnibar({ onAction }: OmnibarProps) {
-  const { barche, posti } = useGlobalState()
+  const { barche, posti, getStatoVisivoBerth, postoDellaBarca } = useGlobalState()
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(0)
@@ -65,19 +69,22 @@ export function Omnibar({ onAction }: OmnibarProps) {
     const results: Suggestion[] = []
 
     // Search boats (by name or matricola)
-    // MEDIO 5: lo stato della barca è DERIVATO dal posto che occupa.
+    // v3 (27 Apr 2026): lo stato visivo della barca = stato visivo del berth
+    // su cui ha uno Stay aperto. Se non ha Stay → "fuori dal porto".
     barche.forEach(b => {
       if (b.nome.toLowerCase().includes(q) || b.matricola.toLowerCase().includes(q)) {
-        const berth = b.posto ? posti.find(p => p.id === b.posto) : undefined
-        const statoDerivato = berth?.stato
-        const isInside = statoDerivato === 'occupato_socio' || statoDerivato === 'occupato_transito' || statoDerivato === 'occupato_affittuario'
-        const needsReg = statoDerivato === 'occupato_transito' && !b.registrazioneCompleta
+        const berthCorrente = postoDellaBarca(b.id) || b.posto
+        const statoVisivo = berthCorrente ? getStatoVisivoBerth(berthCorrente) : 'libero'
+        const isInside = statoVisivo === 'socio_presente' || statoVisivo === 'transito' ||
+                         statoVisivo === 'affittuario_su_socio' || statoVisivo === 'socio_su_altro_posto' ||
+                         statoVisivo === 'bunker'
+        const needsReg = statoVisivo === 'transito' && !b.registrazioneCompleta
         results.push({
           type: 'boat',
           id: b.id,
           title: b.nome,
-          subtitle: `${b.matricola} · Posto: ${b.posto || 'Nessuno'}`,
-          status: statoDerivato || 'libero',
+          subtitle: `${b.matricola} · Posto: ${berthCorrente || 'Nessuno'}`,
+          status: statoVisivo,
           isInside,
           needsRegistration: needsReg,
           original: b
@@ -88,13 +95,16 @@ export function Omnibar({ onAction }: OmnibarProps) {
     // Search berths (by id)
     posti.forEach(p => {
       if (p.id.toLowerCase().includes(q)) {
-        const isInside = p.stato === 'occupato_socio' || p.stato === 'occupato_transito' || p.stato === 'occupato_affittuario'
+        const statoVisivo = getStatoVisivoBerth(p.id)
+        const isInside = statoVisivo === 'socio_presente' || statoVisivo === 'transito' ||
+                         statoVisivo === 'affittuario_su_socio' || statoVisivo === 'socio_su_altro_posto' ||
+                         statoVisivo === 'bunker'
         results.push({
           type: 'berth',
           id: p.id,
           title: `Posto ${p.id}`,
           subtitle: `${p.pontile} · ${p.categoria}`,
-          status: p.stato,
+          status: statoVisivo,
           isInside,
           needsRegistration: false,
           original: p

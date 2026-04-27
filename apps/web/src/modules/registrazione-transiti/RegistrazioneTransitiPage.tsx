@@ -4,22 +4,10 @@ import { TopBar } from '../../components/TopBar'
 import { Omnibar } from '../../components/Omnibar'
 import { useGlobalState } from '../../store/GlobalState'
 import { Boat, Client } from '@shared/types'
+// SSOT: getTariffaDaLunghezza vive in packages/shared/src/utils/tariffe.ts.
+// Vedi AUDIT_27APR2026.md §7.3 — debito DRY chiuso il 27 Apr 2026.
+import { getTariffaDaLunghezza } from '@shared/utils'
 import './RegistrazioneTransitiPage.css'
-
-/**
- * Ritorna la prima tariffa compatibile (lunghezza <= lunMax) dopo aver
- * ordinato in modo crescente per lunMax. Vedi Master File §4 — Calcolo Tariffe.
- *
- * Ritorna `null` se la lunghezza non è valida (0, NaN, negativa) o se
- * l'elenco tariffe è vuoto. Il chiamante DEVE gestire il caso null.
- */
-function getTariffaDaLunghezza(tariffe: any[], lunghezza: number) {
-  if (!Number.isFinite(lunghezza) || lunghezza <= 0) return null
-  if (!tariffe || tariffe.length === 0) return null
-  const sorted = [...tariffe].sort((a, b) => a.lunMax - b.lunMax)
-  for (const t of sorted) { if (lunghezza <= t.lunMax) return t }
-  return sorted[sorted.length - 1]
-}
 
 // ── Tipi interni ───────────────────────────────────────────
 type StatoAnagrafica = 'nessuna' | 'incompleta' | 'completa'
@@ -27,7 +15,9 @@ type StatoAnagrafica = 'nessuna' | 'incompleta' | 'completa'
 export function RegistrazioneTransitiPage() {
   const {
     barche, clienti, tariffe, ricevute, autorizzazioni,
-    addCliente, updateBarca, addRicevuta
+    addCliente, updateBarca, addRicevuta,
+    // v3: query derivate per leggere il modello nuovo
+    barcaSulPosto, postoDellaBarca,
     // NON importiamo registraEntrata: il movimento è già stato registrato
     // al Tempo 1 dal QuickMovementPanel. Questa pagina completa
     // anagrafica + ricevuta (Tempo 2).
@@ -132,14 +122,18 @@ export function RegistrazioneTransitiPage() {
 
     if (orig.nome && orig.matricola !== undefined) {
       boat = orig as Boat
-    } else if (orig.barcaOra) {
-      boat = barche.find(b => b.nome === orig.barcaOra || b.posto === orig.id)
+    } else if (orig.id) {
+      // v3: l'omnibar passa un Berth → cerca la barca via barcaSulPosto.
+      // Fallback: orig.barcaOra (campo deprecated) per retrocompatibilità.
+      boat = barcaSulPosto(orig.id)
+        || (orig.barcaOra ? barche.find(b => b.nome === orig.barcaOra) : undefined)
     }
 
     if (!boat) { setErroreOmnibar('Barca non trovata nel sistema.'); return }
 
     setSelectedBoat(boat)
-    setSelectedPostoId(boat.posto || '')
+    // v3: postoDellaBarca legge dallo Stay aperto.
+    setSelectedPostoId(postoDellaBarca(boat.id) || boat.posto || '')
     setSalvatoOk(false)
     setErroreAnagrafica('')
     setErroreCassa('')

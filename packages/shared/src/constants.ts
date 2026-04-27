@@ -65,6 +65,48 @@ export const BERTH_STATUS_HEX: Record<string, string> = {
 // di BERTH_STATUS_HEX — qualsiasi modifica va fatta SOLO in BERTH_STATUS_HEX.
 export const BERTH_STATUS_COLOR: Record<string, string> = BERTH_STATUS_HEX
 
+// ─────────────────────────────────────────────────────────────
+// MODELLO v3 (27 Apr 2026) — BERTH_VISUAL_*
+// Mapping per il nuovo BerthVisualState (vedi types/index.ts).
+// Sostituisce gradualmente BERTH_STATUS_LABELS/HEX nelle UI dopo
+// migrazione al nuovo modello.
+// ─────────────────────────────────────────────────────────────
+export const BERTH_VISUAL_LABELS: Record<string, string> = {
+  libero: 'Libero',
+  fuori_servizio: 'Fuori servizio',
+  socio_presente: 'Socio presente',
+  socio_assente: 'Socio assente',
+  socio_in_cantiere: 'Socio in cantiere',
+  socio_su_altro_posto: 'Socio temporaneo',
+  transito: 'Transito',
+  affittuario_su_socio: 'Affittuario / Ospite',
+  bunker: 'Al distributore',
+}
+
+export const BERTH_VISUAL_HEX: Record<string, string> = {
+  libero: '#86efac',           // Verde chiaro
+  fuori_servizio: '#737373',   // Grigio scuro — non utilizzabile
+  socio_presente: '#2E6CBC',   // Blu — socio
+  socio_assente: '#BA7517',    // Ambra — socio fuori
+  socio_in_cantiere: '#A32D2D',// Rosso — bloccato per cantiere
+  socio_su_altro_posto: '#0d9488', // Teal — barca socio fuori dal proprio posto
+  transito: '#0d9488',         // Teal — transito
+  affittuario_su_socio: '#7c3aed', // Viola — affittuario attivo
+  bunker: '#ca8a04',           // Giallo ocra — al bunker
+}
+
+export const BERTH_VISUAL_BADGE: Record<string, string> = {
+  libero: 'green',
+  fuori_servizio: 'gray',
+  socio_presente: 'accent',
+  socio_assente: 'amber',
+  socio_in_cantiere: 'red',
+  socio_su_altro_posto: 'teal',
+  transito: 'teal',
+  affittuario_su_socio: 'purple',
+  bunker: 'amber',
+}
+
 export const MOVEMENT_TYPE_LABELS: Record<string, string> = {
   entrata: '↑ Entrata',
   uscita: '↓ Uscita',

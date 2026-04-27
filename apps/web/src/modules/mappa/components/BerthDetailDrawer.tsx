@@ -3,29 +3,54 @@ import { Link } from 'react-router-dom'
 import { Berth } from '@shared/types'
 import { useGlobalState } from '../../../store/GlobalState'
 import { Badge } from '../../../components/Badge'
-import { BERTH_STATUS_LABELS } from '@shared/constants'
-
-const BERTH_STATUS_BADGE: Record<string, any> = {
-  libero: 'green',
-  occupato_socio: 'accent',
-  socio_assente: 'gray',
-  socio_assente_lungo: 'gray',
-  occupato_transito: 'teal',
-  transito_assente: 'gray',
-  occupato_affittuario: 'purple',
-  affittuario_assente: 'gray',
-  in_cantiere: 'red',
-}
+import { BERTH_VISUAL_LABELS, BERTH_VISUAL_BADGE } from '@shared/constants'
 
 interface BerthDetailDrawerProps {
   berth: Berth
   onClose: () => void
 }
 
+/**
+ * BerthDetailDrawer — modello v3 (27 Apr 2026).
+ *
+ * Legge dal nuovo modello stati via query derivate del GlobalState:
+ *  - getStatoVisivoBerth → stato visivo derivato
+ *  - barcaSulPosto       → barca attualmente sul berth (se occupato)
+ *  - titoloAttivoDelBerth → socio proprietario (se posto socio)
+ *  - cantiereDellaBarca  → info cantiere (se la barca del socio è fuori)
+ *
+ * NON legge più Berth.stato/Berth.barcaOra (campi deprecated).
+ */
 export function BerthDetailDrawer({ berth, onClose }: BerthDetailDrawerProps) {
-  const { clienti } = useGlobalState()
-  // Trovo il socio proprietario se presente
-  const socio = berth.socioId ? clienti.find(c => c.id === berth.socioId) : null
+  const {
+    clienti, barche,
+    getStatoVisivoBerth, barcaSulPosto, titoloAttivoDelBerth,
+    cantiereDellaBarca,
+  } = useGlobalState()
+
+  const visual = getStatoVisivoBerth(berth.id)
+  const occupante = barcaSulPosto(berth.id)
+  const titolo = titoloAttivoDelBerth(berth.id)
+  const socio = titolo ? clienti.find(c => c.id === titolo.clientId) : undefined
+
+  // Se è "socio_in_cantiere" dobbiamo trovare quanti giorni
+  const cantiereInfo = visual === 'socio_in_cantiere' && titolo?.boatId !== undefined
+    ? cantiereDellaBarca(titolo.boatId)
+    : undefined
+  const giorniInCantiere = cantiereInfo
+    ? Math.max(0, Math.floor((Date.now() - new Date(cantiereInfo.inizio).getTime()) / 86400000))
+    : 0
+
+  // Se l'occupante è una barca di socio MA il posto NON ha titolo per quella
+  // barca, è un socio "fuori posto" → mostra il suo posto fisso.
+  const occupanteCliente = occupante ? clienti.find(c => c.id === occupante.clientId) : undefined
+  const occupanteIsSocioFuoriPosto =
+    occupante &&
+    occupanteCliente?.tipo === 'so' &&
+    titolo?.boatId !== occupante.id
+  const postoFissoOccupante = occupanteIsSocioFuoriPosto
+    ? barche.find(b => b.id === occupante.id)?.posto || '—'
+    : undefined
 
   return (
     <div className="drawer-overlay" onClick={onClose}>
@@ -42,7 +67,7 @@ export function BerthDetailDrawer({ berth, onClose }: BerthDetailDrawerProps) {
             <div style={{ fontSize: '0.85rem', color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 'bold' }}>{berth.pontile}</div>
             <div style={{ fontWeight: 'bold' }}>{berth.id}</div>
           </div>
-          <Badge color={BERTH_STATUS_BADGE[berth.stato]}>{BERTH_STATUS_LABELS[berth.stato]}</Badge>
+          <Badge color={BERTH_VISUAL_BADGE[visual] as any}>{BERTH_VISUAL_LABELS[visual]}</Badge>
         </div>
 
         {/* Dimensioni */}
@@ -64,16 +89,57 @@ export function BerthDetailDrawer({ berth, onClose }: BerthDetailDrawerProps) {
           </div>
         </div>
 
-        {/* Info Imbarcazione / Stato */}
+        {/* Situazione Attuale — derivata dal modello v3 */}
         <div className="drawer-section">
           <h3>Situazione Attuale</h3>
           <div style={{ padding: '16px', background: 'var(--bg3)', borderRadius: 'var(--radius-sm)' }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 'bold' }}>Occupante</div>
-            <div style={{ fontWeight: 'bold', fontSize: '1.2rem', marginTop: '4px' }}>{berth.barcaOra || '-'}</div>
+            {visual === 'fuori_servizio' && (
+              <>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 'bold' }}>Posto fuori servizio</div>
+                {berth.notaAgibilita && (
+                  <div style={{ marginTop: '6px', fontSize: '0.9rem', color: 'var(--text2)' }}>{berth.notaAgibilita}</div>
+                )}
+              </>
+            )}
+            {visual === 'libero' && (
+              <div style={{ fontWeight: 'bold' }}>Posto libero — disponibile</div>
+            )}
+            {visual === 'socio_assente' && (
+              <>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 'bold' }}>Posto del socio</div>
+                <div style={{ fontWeight: 'bold', fontSize: '1.05rem', marginTop: '4px' }}>{socio?.nome ?? '—'}</div>
+                <div style={{ marginTop: '6px', color: 'var(--text2)', fontSize: '0.9rem' }}>Barca attualmente assente</div>
+              </>
+            )}
+            {visual === 'socio_in_cantiere' && (
+              <>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 'bold' }}>Posto del socio</div>
+                <div style={{ fontWeight: 'bold', fontSize: '1.05rem', marginTop: '4px' }}>{socio?.nome ?? '—'}</div>
+                <div style={{ marginTop: '6px', color: 'var(--color-text-warning)', fontSize: '0.9rem' }}>
+                  Barca in cantiere da {giorniInCantiere} {giorniInCantiere === 1 ? 'giorno' : 'giorni'}
+                </div>
+              </>
+            )}
+            {(visual === 'socio_presente' || visual === 'transito' || visual === 'affittuario_su_socio' || visual === 'bunker' || visual === 'socio_su_altro_posto') && occupante && (
+              <>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 'bold' }}>Occupante</div>
+                <div style={{ fontWeight: 'bold', fontSize: '1.2rem', marginTop: '4px' }}>{occupante.nome}</div>
+                <div style={{ marginTop: '4px', fontSize: '0.85rem', color: 'var(--text2)' }}>
+                  {occupanteCliente?.nome}
+                  {occupanteIsSocioFuoriPosto && postoFissoOccupante && (
+                    <> — socio temporaneo (posto fisso {postoFissoOccupante})</>
+                  )}
+                </div>
+              </>
+            )}
+            {/* Caso edge: visual richiede occupante ma occupante non trovato (raro) */}
+            {(visual === 'socio_presente' || visual === 'transito' || visual === 'affittuario_su_socio') && !occupante && (
+              <div style={{ color: 'var(--text3)' }}>Stato incoerente — nessuna barca trovata</div>
+            )}
           </div>
         </div>
 
-        {/* Info Socio */}
+        {/* Info Socio (proprietario amministrativo del posto) */}
         {socio && (
           <div className="drawer-section">
             <h3>Dati Proprietario (Socio)</h3>

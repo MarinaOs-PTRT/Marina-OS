@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useGlobalState } from '../../../store/GlobalState'
 import { Berth, Boat, Client, Movement, MovementScenario } from '@shared/types'
-import { BERTH_STATUS_LABELS } from '@shared/constants'
+import { BERTH_VISUAL_LABELS } from '@shared/constants'
 
 /**
  * Tipo per i suggerimenti dei campi di ricerca live (Nome / Matricola / Posto).
@@ -57,8 +57,19 @@ export function useTorreForm() {
     registraEntrata, registraUscitaTemporanea, registraUscitaDefinitiva,
     registraSpostamento, registraCantiere, registraBunker, registraRientro,
     isPostoOccupato, checkPagamentoSaldato, checkAutorizzazione, getScenarioBarca,
-    addCliente, addBarca
+    addCliente, addBarca,
+    // Modello v3 — query derivate
+    getStatoVisivoBerth, barcaSulPosto, postoDellaBarca,
   } = useGlobalState()
+
+  // ── Helper interni v3 ──
+  // Sublabel uniforme per i suggerimenti dei posti. Mostra stato visivo + barca.
+  const formatBerthSublabel = (p: Berth): string => {
+    const visual = getStatoVisivoBerth(p.id)
+    const stato = BERTH_VISUAL_LABELS[visual] || visual
+    const occupante = barcaSulPosto(p.id)
+    return `${p.pontile} · ${stato}${occupante ? ` · ${occupante.nome}` : ''}`
+  }
 
   // ════════════════════════════════════════════
   // STATE — campi del form
@@ -102,8 +113,13 @@ export function useTorreForm() {
     return barche
       .filter(b => b.nome.toLowerCase().includes(q))
       .slice(0, 5)
-      .map(b => ({ label: b.nome, sublabel: `${b.matricola} · Posto: ${b.posto || '—'}`, boat: b }))
-  }, [nome, barche])
+      .map(b => ({
+        label: b.nome,
+        // v3: postoDellaBarca legge dallo Stay aperto, fallback a b.posto.
+        sublabel: `${b.matricola} · Posto: ${postoDellaBarca(b.id) || b.posto || '—'}`,
+        boat: b,
+      }))
+  }, [nome, barche, postoDellaBarca])
 
   const targaSuggestions = useMemo<SearchSuggestion[]>(() => {
     if (targa.trim().length < 1) return []
@@ -111,7 +127,11 @@ export function useTorreForm() {
     return barche
       .filter(b => b.matricola.toLowerCase().includes(q))
       .slice(0, 5)
-      .map(b => ({ label: b.matricola, sublabel: `${b.nome} · Posto: ${b.posto || '—'}`, boat: b }))
+      .map(b => ({
+        label: b.matricola,
+        sublabel: `${b.nome} · Posto: ${postoDellaBarca(b.id) || b.posto || '—'}`,
+        boat: b,
+      }))
   }, [targa, barche])
 
   const postoSuggestions = useMemo<SearchSuggestion[]>(() => {
@@ -120,11 +140,8 @@ export function useTorreForm() {
     return posti
       .filter(p => normalizeBerthId(p.id).includes(q))
       .slice(0, 5)
-      .map(p => {
-        const stato = BERTH_STATUS_LABELS[p.stato] || p.stato
-        return { label: p.id, sublabel: `${p.pontile} · ${stato}${p.barcaOra ? ` · ${p.barcaOra}` : ''}`, berth: p }
-      })
-  }, [posto, posti])
+      .map(p => ({ label: p.id, sublabel: formatBerthSublabel(p), berth: p }))
+  }, [posto, posti, formatBerthSublabel])
 
   // Spostamento: suggerimenti filtrati per significato.
   // Origine = posti OCCUPATI (la barca da spostare deve esistere).
@@ -135,25 +152,25 @@ export function useTorreForm() {
     if (postoOrigine.trim().length < 1) return []
     const q = normalizeBerthId(postoOrigine)
     return posti
-      .filter(p => normalizeBerthId(p.id).includes(q) && p.stato !== 'libero')
+      // v3: occupato = c'è uno Stay aperto sul berth.
+      .filter(p => normalizeBerthId(p.id).includes(q) && !!barcaSulPosto(p.id))
       .slice(0, 5)
-      .map(p => {
-        const stato = BERTH_STATUS_LABELS[p.stato] || p.stato
-        return { label: p.id, sublabel: `${p.pontile} · ${stato}${p.barcaOra ? ` · ${p.barcaOra}` : ''}`, berth: p }
-      })
-  }, [postoOrigine, posti])
+      .map(p => ({ label: p.id, sublabel: formatBerthSublabel(p), berth: p }))
+  }, [postoOrigine, posti, barcaSulPosto, formatBerthSublabel])
 
   const destinazioneSuggestions = useMemo<SearchSuggestion[]>(() => {
     if (postoDestinazione.trim().length < 1) return []
     const q = normalizeBerthId(postoDestinazione)
     return posti
-      .filter(p => normalizeBerthId(p.id).includes(q) && p.stato === 'libero')
+      // v3: libero per destinazione = nessuno Stay + posto agibile.
+      .filter(p => normalizeBerthId(p.id).includes(q) && !barcaSulPosto(p.id) && getStatoVisivoBerth(p.id) !== 'fuori_servizio')
       .slice(0, 5)
       .map(p => {
-        const stato = BERTH_STATUS_LABELS[p.stato] || p.stato
+        const visual = getStatoVisivoBerth(p.id)
+        const stato = BERTH_VISUAL_LABELS[visual] || visual
         return { label: p.id, sublabel: `${p.pontile} · ${stato} · max ${p.lunMax}m`, berth: p }
       })
-  }, [postoDestinazione, posti])
+  }, [postoDestinazione, posti, barcaSulPosto, getStatoVisivoBerth])
 
   // Badge live: il berth corrispondente al testo digitato in destinazione.
   // Match esatto via normalizeBerthId: "d32" == "D 32" == "d 32" == "D32".
@@ -232,15 +249,17 @@ export function useTorreForm() {
   }, [destinazioneBerth, lunghezza, pescaggio])
 
   // Suggerimenti posti per transito: filtrati per dimensioni della barca.
+  // v3: libero = nessuno Stay aperto + posto agibile + nessun titolo socio
+  //     (preferiamo posti senza socio per i transiti, evita di sprecare auth).
   const suggestedBerths = useMemo(() => {
     if (tipologia !== 'transito') return []
-    let free = posti.filter(p => p.stato === 'libero')
+    let free = posti.filter(p => getStatoVisivoBerth(p.id) === 'libero')
     const lunVal = parseFloat(lunghezza)
     if (!isNaN(lunVal) && lunVal > 0) free = free.filter(p => p.lunMax >= lunVal)
     const pesVal = parseFloat(pescaggio)
     if (!isNaN(pesVal) && pesVal > 0) free = free.filter(p => p.profondita >= pesVal)
     return free
-  }, [posti, tipologia, lunghezza, pescaggio])
+  }, [posti, tipologia, lunghezza, pescaggio, getStatoVisivoBerth])
 
   // Cliente collegato alla barca corrente (per box "dati cliente" colonna 1).
   const clienteCollegato = useMemo<Client | undefined>(() => {
@@ -315,11 +334,13 @@ export function useTorreForm() {
   const fillFromBoat = (b: Boat) => {
     setNome(b.nome)
     setTarga(b.matricola.toUpperCase())
-    if (b.posto) setPosto(b.posto)
+    // v3: postoDellaBarca legge dallo Stay aperto; fallback a b.posto deprecated.
+    const postoCorrente = postoDellaBarca(b.id) || b.posto
+    if (postoCorrente) setPosto(postoCorrente)
     if (b.lunghezza) setLunghezza(String(b.lunghezza))
     if (b.pescaggio) setPescaggio(String(b.pescaggio))
     // M-03: pre-popola anche l'origine dello spostamento.
-    if (b.posto) setPostoOrigine(b.posto)
+    if (postoCorrente) setPostoOrigine(postoCorrente)
     // Auto-detect socio.
     const scenario = getScenarioBarca(b.nome, b.matricola)
     if (scenario === 'socio') {
@@ -333,10 +354,11 @@ export function useTorreForm() {
 
   const fillFromBerth = (p: Berth) => {
     setPosto(p.id)
-    if (p.stato !== 'libero') setPostoOrigine(p.id)
-    if (p.barcaOra && p.stato !== 'libero') {
-      const barca = barche.find(b => b.nome === p.barcaOra || b.posto === p.id)
-      if (barca) fillFromBoat(barca)
+    // v3: occupato = c'è uno Stay aperto sul berth.
+    const occupante = barcaSulPosto(p.id)
+    if (occupante) {
+      setPostoOrigine(p.id)
+      fillFromBoat(occupante)
     }
     setErrorMessage('')
   }

@@ -16,7 +16,9 @@ export function SociPage() {
   // appaiono qui automaticamente perchÃ© leggiamo dal Context.
   const {
     clienti, posti, titoli, autorizzazioni,
-    addAutorizzazione, completaAutorizzazionePendente, revocaAutorizzazione
+    addAutorizzazione, completaAutorizzazionePendente, revocaAutorizzazione,
+    // v3: query derivate per derivare lo stato visivo dei posti dei soci.
+    getStatoVisivoBerth,
   } = useGlobalState()
   const [activeTab, setActiveTab] = useState<ActiveTab>('soci')
   const [showForm, setShowForm] = useState(false)
@@ -24,7 +26,8 @@ export function SociPage() {
   // Quando valorizzato, AuthForm si apre in edit-mode con i campi pre-popolati.
   const [editingAuth, setEditingAuth] = useState<Authorization | null>(null)
 
-  // Calcola dati soci aggregati
+  // Calcola dati soci aggregati (modello v3: stato derivato da
+  // getStatoVisivoBerth invece di Berth.stato).
   const sociAggregati = useMemo(() => {
     return clienti.filter(c => c.tipo === 'so').map(socio => {
       const titolo = titoli.find(t => t.clientId === socio.id)
@@ -33,15 +36,18 @@ export function SociPage() {
 
       let statoPosto = 'Assente'
       let statoClass = 'pill-socio_assente'
-      if (posto?.stato === 'occupato_socio') {
-        statoPosto = 'Socio Presente'
-        statoClass = 'pill-occupato_socio'
-      } else if (posto?.stato === 'in_cantiere') {
-        statoPosto = 'In Cantiere'
-        statoClass = 'pill-in_cantiere'
-      } else if (posto?.stato === 'occupato_affittuario' || authAttiva) {
-        statoPosto = authAttiva ? `Autorizzato (${authAttiva.tipo})` : 'Affittuario Presente'
-        statoClass = 'pill-occupato_affittuario'
+      if (posto) {
+        const visual = getStatoVisivoBerth(posto.id)
+        if (visual === 'socio_presente') {
+          statoPosto = 'Socio Presente'
+          statoClass = 'pill-occupato_socio'
+        } else if (visual === 'socio_in_cantiere') {
+          statoPosto = 'In Cantiere'
+          statoClass = 'pill-in_cantiere'
+        } else if (visual === 'affittuario_su_socio' || authAttiva) {
+          statoPosto = authAttiva ? `Autorizzato (${authAttiva.tipo})` : 'Affittuario Presente'
+          statoClass = 'pill-occupato_affittuario'
+        }
       }
 
       return {
@@ -53,7 +59,7 @@ export function SociPage() {
         statoClass
       }
     })
-  }, [clienti, posti, titoli, autorizzazioni])
+  }, [clienti, posti, titoli, autorizzazioni, getStatoVisivoBerth])
 
   const authPendenti = autorizzazioni.filter(a => a.stato === 'pendente')
   const authAttive = autorizzazioni.filter(a => a.stato === 'attiva')

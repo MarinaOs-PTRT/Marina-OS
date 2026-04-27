@@ -1,7 +1,7 @@
 ﻿import React, { useEffect, useMemo, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useGlobalState } from '../../store/GlobalState'
-import { BERTH_STATUS_LABELS, BERTH_STATUS_HEX } from '@shared/constants'
+import { BERTH_VISUAL_LABELS, BERTH_VISUAL_HEX } from '@shared/constants'
 import { useTorreForm } from './hooks/useTorreForm'
 import { SearchDropdown } from './components/SearchDropdown'
 import './TorrePage.css'
@@ -61,7 +61,7 @@ const MOV_TIPO_META: Record<string, { label: string; color: string; bg: string }
 }
 
 export function TorrePage() {
-  const { posti, movimenti } = useGlobalState()
+  const { posti, movimenti, getStatoVisivoBerth, barcaSulPosto } = useGlobalState()
   const f = useTorreForm()
 
   // Pre-popolazione dal query param ?posto=XXX (es. arrivo dal drawer
@@ -104,13 +104,14 @@ export function TorrePage() {
   }, [f])
 
   // KPI calcolati inline (il GlobalState non espone un getKpis dedicato).
+  // v3: liberi = posti con visualState 'libero'.
   const kpis = useMemo(() => {
-    const liberi = posti.filter(p => p.stato === 'libero').length
+    const liberi = posti.filter(p => getStatoVisivoBerth(p.id) === 'libero').length
     const occupati = posti.length - liberi
     const oggi = new Date().toISOString().split('T')[0]
     const movimentiOggi = movimenti.filter(m => m.data === oggi).length
     return { liberi, occupati, movimentiOggi }
-  }, [posti, movimenti])
+  }, [posti, movimenti, getStatoVisivoBerth])
 
   // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Anteprima movimento (riepilogo per Col 3)
@@ -375,16 +376,20 @@ export function TorrePage() {
                 />
               </div>
 
-              {/* Badge live stato destinazione */}
-              {f.destinazioneBerth && (
-                <div
-                  className="torre-status-badge"
-                  style={{ background: BERTH_STATUS_HEX[f.destinazioneBerth.stato] || '#cbd5e1' }}
-                >
-                  {BERTH_STATUS_LABELS[f.destinazioneBerth.stato] || f.destinazioneBerth.stato}
-                  {f.destinazioneBerth.barcaOra && ` · ${f.destinazioneBerth.barcaOra}`}
-                </div>
-              )}
+              {/* Badge live stato destinazione (v3: derivato da getStatoVisivoBerth) */}
+              {f.destinazioneBerth && (() => {
+                const visual = getStatoVisivoBerth(f.destinazioneBerth.id)
+                const occupante = barcaSulPosto(f.destinazioneBerth.id)
+                return (
+                  <div
+                    className="torre-status-badge"
+                    style={{ background: BERTH_VISUAL_HEX[visual] || '#cbd5e1' }}
+                  >
+                    {BERTH_VISUAL_LABELS[visual] || visual}
+                    {occupante && ` · ${occupante.nome}`}
+                  </div>
+                )
+              })()}
 
               {/* â”€â”€ CONTROLLO AUTORIZZAZIONE live (spostamento) â”€â”€ */}
               {f.authDestinazioneInfo.controllato && (

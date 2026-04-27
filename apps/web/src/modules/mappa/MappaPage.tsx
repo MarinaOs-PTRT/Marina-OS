@@ -1,21 +1,21 @@
 import React, { useState } from 'react'
-import { Berth, BerthStatus } from '@shared/types'
-import { BERTH_STATUS_HEX, BERTH_STATUS_LABELS } from '@shared/constants'
+import { Berth, BerthVisualState } from '@shared/types'
+import { BERTH_VISUAL_HEX, BERTH_VISUAL_LABELS } from '@shared/constants'
 import { MarinaMap } from './components/MarinaMap'
 import { BerthDetailDrawer } from './components/BerthDetailDrawer'
 import { useGlobalState } from '../../store/GlobalState'
 
-// Stati mostrati nella legenda rapida in cima alla mappa.
+// Stati mostrati nella legenda rapida in cima alla mappa (modello v3).
 // Ordine logico operativo per Torre: prima il libero, poi i presenti,
-// poi gli assenti/bloccati. Gli altri stati (riservato, bunker, ecc.)
+// poi gli assenti/bloccati. Gli altri stati (bunker, fuori_servizio, ecc.)
 // appaiono comunque sulla mappa ma non ingombrano la legenda.
-const LEGENDA_STATI: BerthStatus[] = [
+const LEGENDA_STATI: BerthVisualState[] = [
   'libero',
-  'occupato_socio',
-  'occupato_transito',
-  'occupato_affittuario',
+  'socio_presente',
+  'transito',
+  'affittuario_su_socio',
   'socio_assente',
-  'in_cantiere',
+  'socio_in_cantiere',
 ]
 
 export function MappaPage() {
@@ -44,9 +44,9 @@ export function MappaPage() {
                 width: '12px',
                 height: '12px',
                 borderRadius: '50%',
-                background: BERTH_STATUS_HEX[stato]
+                background: BERTH_VISUAL_HEX[stato]
               }}></span>
-              {BERTH_STATUS_LABELS[stato]}
+              {BERTH_VISUAL_LABELS[stato]}
             </div>
           ))}
         </div>

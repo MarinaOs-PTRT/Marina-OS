@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { Berth, BerthStatus } from '@shared/types'
-import { BERTH_STATUS_HEX, BERTH_STATUS_LABELS } from '@shared/constants'
+import { Berth, BerthVisualState } from '@shared/types'
+import { BERTH_VISUAL_HEX, BERTH_VISUAL_LABELS } from '@shared/constants'
 import { TopBar } from '../../components/TopBar'
 import { MarinaMap } from '../mappa/components/MarinaMap'
 import { BerthDetailDrawer } from '../mappa/components/BerthDetailDrawer'
@@ -10,16 +10,16 @@ import { PendingRegistrationsPanel } from './components/PendingRegistrationsPane
 import { PlanciaPanel } from './components/PlanciaPanel'
 import './DashboardPage.css'
 
-// Stati mostrati nella legenda rapida sopra la mappa.
+// Stati mostrati nella legenda rapida sopra la mappa (modello v3).
 // Ordine logico operativo per Torre: prima libero, poi i presenti,
 // poi gli assenti/bloccati. Stessa scelta di MappaPage per coerenza UX.
-const LEGENDA_STATI: BerthStatus[] = [
+const LEGENDA_STATI: BerthVisualState[] = [
   'libero',
-  'occupato_socio',
-  'occupato_transito',
-  'occupato_affittuario',
+  'socio_presente',
+  'transito',
+  'affittuario_su_socio',
   'socio_assente',
-  'in_cantiere',
+  'socio_in_cantiere',
 ]
 
 /**
@@ -73,9 +73,9 @@ export function DashboardPage() {
                   <span key={stato} className="dashboard-map-legend-item">
                     <span
                       className="dashboard-map-legend-dot"
-                      style={{ background: BERTH_STATUS_HEX[stato] }}
+                      style={{ background: BERTH_VISUAL_HEX[stato] }}
                     />
-                    {BERTH_STATUS_LABELS[stato]}
+                    {BERTH_VISUAL_LABELS[stato]}
                   </span>
                 ))}
               </div>

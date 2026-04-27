@@ -1,6 +1,9 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { useGlobalState } from '../../../store/GlobalState'
 import { Tariff, Boat } from '@shared/types'
+// SSOT: getTariffaDaLunghezza vive in packages/shared/src/utils/tariffe.ts.
+// Vedi AUDIT_27APR2026.md §7.3 — debito DRY chiuso il 27 Apr 2026.
+import { getTariffaDaLunghezza } from '@shared/utils'
 
 interface CalcResult {
   categoria: string
@@ -9,14 +12,6 @@ interface CalcResult {
   subtotale: number
   extra: number
   totale: number
-}
-
-function getTariffaDaLunghezza(tariffe: any[], lunghezza: number) {
-  const sorted = [...tariffe].sort((a, b) => a.lunMax - b.lunMax)
-  for (const t of sorted) {
-    if (lunghezza <= t.lunMax) return t
-  }
-  return sorted[sorted.length - 1]
 }
 
 function calcola(tariffe: any[], lunghezza: number, dal: string, al: string, tariffaForzata: number, extra: number): CalcResult | null {
@@ -32,6 +27,7 @@ function calcola(tariffe: any[], lunghezza: number, dal: string, al: string, tar
     categoria = tariffe.find(t => t.prezzoGiorno === tariffaForzata)?.categoria || 'Personalizzata'
   } else {
     const t = getTariffaDaLunghezza(tariffe, lunghezza)
+    if (!t) return null  // lunghezza non valida o catalogo tariffe vuoto
     categoria = t.categoria
     tariffaGg = t.prezzoGiorno
   }

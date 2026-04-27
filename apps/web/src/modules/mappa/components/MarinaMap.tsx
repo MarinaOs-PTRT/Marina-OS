@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import { Berth } from '@shared/types'
-import { BERTH_STATUS_HEX } from '@shared/constants'
+import { BERTH_VISUAL_HEX } from '@shared/constants'
+import { useGlobalState } from '../../../store/GlobalState'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 // Vite syntax to import raw SVG string
 // @ts-ignore
@@ -11,10 +12,9 @@ interface MarinaMapProps {
   onBerthSelect: (berth: Berth) => void
 }
 
-// I colori di stato sono definiti in @shared/constants (BERTH_STATUS_HEX).
-// Single Source of Truth: la stessa mappa è usata da BoatList, Omnibar e
-// questo componente. Per cambiare un colore → modificare SOLO
-// packages/shared/src/constants.ts → BERTH_STATUS_HEX.
+// Modello v3 (27 Apr 2026): la colorazione dei posti deriva da
+// getStatoVisivoBerth (BerthVisualState) tramite BERTH_VISUAL_HEX.
+// Sostituisce il vecchio mapping basato su Berth.stato.
 
 const SvgContainer = React.memo(React.forwardRef<HTMLDivElement, {}>((props, ref) => (
   <div
@@ -29,6 +29,9 @@ const SvgContainer = React.memo(React.forwardRef<HTMLDivElement, {}>((props, ref
 
 export const MarinaMap = React.memo(function MarinaMap({ berths, onBerthSelect }: MarinaMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null)
+  // v3: stays/cantieri/titoli come dipendenze esplicite dell'effect, così
+  // la mappa si ridipinge quando un movimento cambia lo stato visivo dei posti.
+  const { getStatoVisivoBerth, stays, cantieri, titoli } = useGlobalState()
 
   useEffect(() => {
     if (!mapContainerRef.current) return
@@ -62,7 +65,8 @@ export const MarinaMap = React.memo(function MarinaMap({ berths, onBerthSelect }
 
       if (matchedEl) {
         // È un posto barca con elemento SVG! Applichiamo colore e interattività.
-        const color = BERTH_STATUS_HEX[berth.stato] || '#cbd5e1'
+        // v3: getStatoVisivoBerth deriva lo stato visivo dal modello nuovo.
+        const color = BERTH_VISUAL_HEX[getStatoVisivoBerth(berth.id)] || '#cbd5e1'
         matchedEl.setAttribute('style', `fill: ${color}; cursor: pointer; transition: opacity 0.2s; pointer-events: all;`)
 
         matchedEl.addEventListener('mouseenter', () => matchedEl!.setAttribute('opacity', '0.6'))
@@ -83,7 +87,7 @@ export const MarinaMap = React.memo(function MarinaMap({ berths, onBerthSelect }
         el.removeEventListener('click', handler)
       })
     }
-  }, [berths, onBerthSelect])
+  }, [berths, onBerthSelect, stays, cantieri, titoli, getStatoVisivoBerth])
 
   return (
     <div

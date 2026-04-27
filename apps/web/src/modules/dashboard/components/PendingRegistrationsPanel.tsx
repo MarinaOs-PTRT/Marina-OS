@@ -77,7 +77,10 @@ export function PendingRegistrationsPanel() {
 
                 <div style={{ fontSize: '0.82rem', color: 'var(--text2)', marginBottom: 'var(--space-sm)' }}>
                   Matricola: {p.boat.matricola || 'N/D'}<br />
-                  Posto: {p.boat.posto || '—'}{p.berth ? ` · ${p.berth.pontile}` : ''}
+                  {/* v3: usiamo p.berth.id come fonte autoritativa del posto.
+                      Boat.posto è deprecated (modello v2), può essere stale.
+                      Vedi memoria: model_v3_stati.md */}
+                  Posto: {p.berth?.id || p.boat.posto || '—'}{p.berth ? ` · ${p.berth.pontile}` : ''}
                 </div>
 
                 {/* Chip per ogni motivo di pendenza */}
