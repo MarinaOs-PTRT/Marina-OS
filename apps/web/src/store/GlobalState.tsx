@@ -75,7 +75,7 @@ interface GlobalState {
   registraEntrata: (m: Movement, opts?: { pendente?: boolean }) => { ok: boolean; errore?: string }
   registraUscitaTemporanea: (m: Movement) => { ok: boolean; errore?: string }
   registraUscitaDefinitiva: (m: Movement) => { ok: boolean; errore?: string }
-  registraSpostamento: (m: Movement, postoOrigine: string, postoDestinazione: string) => { ok: boolean; errore?: string }
+  registraSpostamento: (m: Movement, postoOrigine: string, postoDestinazione: string, opts?: { pendente?: boolean }) => { ok: boolean; errore?: string }
   registraCantiere: (m: Movement, postoOrigine: string) => { ok: boolean; errore?: string }
   registraRientro: (m: Movement) => { ok: boolean; errore?: string }
 
@@ -442,6 +442,16 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     if (!posto) {
       return { valido: false, errore: `Posto ${postoId} non trovato nel sistema.` }
     }
+    // ── Fix v3 #3 (27 Apr 2026, agibile bloccante) ──
+    // Berth.agibile=false significa che il posto è fisicamente fuori
+    // servizio (manutenzione, ristrutturazione). Bloccare ogni operazione
+    // a prescindere dallo stato di occupazione/assenza.
+    if (posto.agibile === false) {
+      return {
+        valido: false,
+        errore: `Posto ${postoId} fuori servizio${posto.notaAgibilita ? ` (${posto.notaAgibilita})` : ''}. Operazione "${operazione}" non consentita.`
+      }
+    }
     // v3 (27 Apr 2026): `posto.stato` ora è opzionale (deprecated, ma usato
     // ancora per la validazione del modello v2 nel ramo doppia-scrittura).
     // Estrazione esplicita per evitare problemi di narrowing di TypeScript
@@ -497,6 +507,34 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
       // Entrata senza posto assegnato — registra solo il movimento
       setMovimenti(prev => [m, ...prev])
       return { ok: true }
+    }
+
+    // ════════════════════════════════════════════
+    // DIFESA "GIÀ IN PORTO" (27 Apr 2026)
+    // Regola operativa (Ale): se la barca è già in porto, qualsiasi
+    // cambio di posto è semanticamente uno SPOSTAMENTO, non un'Entrata.
+    // L'UI disabilita già il bottone Entrata (vedi useTorreForm.barcaSelezionataInPorto)
+    // ma per difesa in profondità qui auto-trasformiamo in registraSpostamento
+    // se per qualche motivo arriva una richiesta inconsistente.
+    // Lookup per nome o matricola.
+    // ════════════════════════════════════════════
+    const boatGiàInPorto = barche.find(b => {
+      const nomeMatch = m.nome && b.nome.toLowerCase() === m.nome.toLowerCase()
+      const matrMatch = m.matricola && m.matricola !== 'N/D' &&
+        b.matricola.toLowerCase() === m.matricola.toLowerCase()
+      return nomeMatch || matrMatch
+    })
+    if (boatGiàInPorto) {
+      const stayCorrente = stayApertoDellaBarca(boatGiàInPorto.id)
+      if (stayCorrente && stayCorrente.berthId !== m.posto) {
+        // Auto-trasforma in spostamento. NB: il Movement avrà tipo='spostamento'
+        // anche se l'operatore aveva cliccato "Entrata" — questa è la verità.
+        return registraSpostamento(m, stayCorrente.berthId, m.posto)
+      }
+      if (stayCorrente && stayCorrente.berthId === m.posto) {
+        // Caso pleonastico: barca già lì. Nessuna azione, nessun errore.
+        return { ok: true }
+      }
     }
 
     // Validazione stato corrente del posto
@@ -772,8 +810,20 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     return { ok: true }
   }
 
-  /** M-03: Spostamento Interno */
-  const registraSpostamento = (m: Movement, postoOrigine: string, postoDestinazione: string): { ok: boolean; errore?: string } => {
+  /** M-03: Spostamento Interno
+   *
+   *  opts.pendente=true (27 Apr 2026):
+   *    L'operatore Torre ha confermato in modale bloccante lo spostamento
+   *    di una barca verso un posto socio SENZA autorizzazione valida.
+   *    Stesso pattern di registraEntrata({pendente:true}):
+   *      1. Movement con tipo='spostamento', flag_attesa_auth=true, auth=false
+   *      2. Authorization placeholder con stato='pendente' su berthDestinazione
+   *      3. SystemAlert per la Direzione (categoria='operativo', urgenza='media')
+   *    Lo spostamento avviene comunque: il berth destinazione diventa
+   *    occupato_*, e la barca lascia l'origine. La Direzione poi compila
+   *    il documento ufficiale.
+   */
+  const registraSpostamento = (m: Movement, postoOrigine: string, postoDestinazione: string, opts?: { pendente?: boolean }): { ok: boolean; errore?: string } => {
     // Validazione stato destinazione: deve essere accessibile
     const validDest = validaStatoPosto(postoDestinazione, STATI_ENTRATA, 'spostamento (destinazione)')
     if (!validDest.valido) {
@@ -787,10 +837,21 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     }
     const postoOrig = validOrig.posto!
 
-    // Verifica autorizzazione per il posto di destinazione
-    const authCheck = checkAutorizzazione(postoDestinazione, m.nome)
-    if (!authCheck.autorizzato) {
-      return { ok: false, errore: authCheck.motivo || 'Autorizzazione mancante per il posto di destinazione.' }
+    // Verifica autorizzazione per il posto di destinazione.
+    // Se l'operatore NON ha esplicitamente attivato la modalità pendente,
+    // l'auth mancante blocca l'operazione (comportamento storico).
+    // Se invece pendente=true, saltiamo questo blocco e proseguiamo
+    // creando placeholder + alert (vedi più sotto).
+    const isPendente = opts?.pendente === true
+    let authValida = m.auth
+    if (!isPendente) {
+      const authCheck = checkAutorizzazione(postoDestinazione, m.nome)
+      if (!authCheck.autorizzato) {
+        return { ok: false, errore: authCheck.motivo || 'Autorizzazione mancante per il posto di destinazione.' }
+      }
+    } else {
+      // Modalità pendente: forziamo auth=false + flag_attesa_auth=true sul movimento.
+      authValida = false
     }
 
     const mov: Movement = {
@@ -799,9 +860,47 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
       posto: postoDestinazione,
       postoOrigine,
       origine: postoOrigine,
-      destinazione: postoDestinazione
+      destinazione: postoDestinazione,
+      auth: isPendente ? false : authValida,
+      flag_attesa_auth: isPendente ? true : undefined,
     }
     setMovimenti(prev => [mov, ...prev])
+
+    // Modalità pendente: crea placeholder auth + SystemAlert per Direzione.
+    // Stesso pattern di registraEntrata.
+    if (isPendente) {
+      const postoDest = validDest.posto!
+      const nuovaAuthId = Math.max(0, ...autorizzazioni.map(a => a.id)) + 1
+      const authPendente: Authorization = {
+        id: nuovaAuthId,
+        socioId: postoDest.socioId ?? 0,
+        berthId: postoDestinazione,
+        tipo: 'affitto',
+        beneficiario: mov.nome,
+        barca: mov.nome,
+        matricola: mov.matricola,
+        tel: '',
+        stato: 'pendente',
+        creatoDaMovementId: mov.id,
+        creatoDa: mov.operatore.nome,
+        creatoIl: new Date().toISOString(),
+      }
+      setAutorizzazioni(prev => [...prev, authPendente])
+
+      const nuovaNotificaId = Math.max(0, ...notifiche.map(n => n.id)) + 1
+      const alert: SystemAlert = {
+        id: nuovaNotificaId,
+        titolo: 'Autorizzazione da compilare',
+        descrizione: `Spostamento di "${mov.nome}" (${mov.matricola}) da ${postoOrigine} a ${postoDestinazione} registrato in attesa di autorizzazione dal ${mov.operatore.nome}. Compilare il documento ufficiale.`,
+        urgenza: 'media',
+        categoria: 'operativo',
+        data: new Date().toISOString(),
+        stato: 'nuova',
+        relatedAuthId: nuovaAuthId,
+        relatedMovementId: mov.id,
+      }
+      setNotifiche(prev => [alert, ...prev])
+    }
 
     // Posto d'origine: se ha un socioId proprietario, torna a socio_assente; altrimenti libero
     const updatesOrigine = calcolaStatoOrigineDopoUscita(postoOrig, m.scenario)
@@ -814,16 +913,22 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     updateOrCreatePosto(postoDestinazione, { stato: nuovoStato, barcaOra: m.nome })
 
     // ── Modello v3 ── Spostamento atomico: chiudi Stay vecchio, apri nuovo.
+    // Fix v3 #4 (27 Apr 2026): preserva authId del vecchio Stay nel nuovo
+    // così l'audit trail dell'autorizzazione rimane coerente quando
+    // l'affittuario cambia posto a fine contratto/inizio nuovo contratto.
     const boat = barche.find(b =>
       b.nome.toLowerCase() === mov.nome.toLowerCase() ||
       (mov.matricola && b.matricola.toLowerCase() === mov.matricola.toLowerCase())
     )
     if (boat) {
+      const stayCorrente = stayApertoDellaBarca(boat.id)
+      const authIdEreditato = stayCorrente?.authId
       chiudiStayDellaBarca(boat.id, mov.id)
       apriStay({
         boatId: boat.id,
         berthId: postoDestinazione,
         tipologia: m.scenario as StayTipologia,
+        authId: authIdEreditato,
         movementApriId: mov.id,
       })
     } else {

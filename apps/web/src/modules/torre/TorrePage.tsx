@@ -239,6 +239,51 @@ export function TorrePage() {
             )
           })()}
 
+          {/* Badge "Già in porto" (27 Apr 2026, regola operativa Ale).
+              Se la barca selezionata ha uno Stay aperto, l'operatore deve
+              fare Spostamento/Uscita/Cantiere — NON una nuova Entrata.
+              Difesa in profondità: bottone Entrata disabilitato + alert
+              tooltip + auto-trasformazione lato data layer se ignorato. */}
+          {f.barcaSelezionataInPorto && (() => {
+            const { stay } = f.barcaSelezionataInPorto
+            const giorni = Math.max(0, Math.floor(
+              (Date.now() - new Date(stay.inizio).getTime()) / 86400000
+            ))
+            const giorniLabel = giorni === 0 ? 'oggi' : giorni === 1 ? '1 giorno' : `${giorni} giorni`
+            return (
+              <div
+                className="torre-info-box"
+                style={{
+                  borderColor: 'var(--color-text-warning, #BA7517)',
+                  background: 'var(--color-bg-warning, rgba(186, 117, 23, 0.08))',
+                }}
+              >
+                <div
+                  className="torre-info-box-title"
+                  style={{ color: 'var(--color-text-warning, #BA7517)' }}
+                >
+                  Già in porto
+                </div>
+                <div className="torre-info-row">
+                  <span>Posto attuale</span>
+                  <strong>{stay.berthId}</strong>
+                </div>
+                <div className="torre-info-row">
+                  <span>Da</span>
+                  <strong>{giorniLabel}</strong>
+                </div>
+                <div style={{
+                  marginTop: 6,
+                  fontSize: '0.78rem',
+                  color: 'var(--text2)',
+                  lineHeight: 1.4
+                }}>
+                  Per cambiare posto usa <strong>Spostamento</strong>. L'Entrata vale solo per il primo ingresso dal mare.
+                </div>
+              </div>
+            )
+          })()}
+
           {/* Dati dimensionali — sempre modificabili */}
           <div className="torre-dim-grid">
             <div className="torre-field">
@@ -502,7 +547,15 @@ export function TorrePage() {
               bottoni_torre_v2.md. */}
           {isMovimento ? (
             <div className="torre-actions">
-              <button type="button" className="torre-btn primary entrata" onClick={f.handleEntrata} disabled={!ready}>
+              <button
+                type="button"
+                className="torre-btn primary entrata"
+                onClick={f.handleEntrata}
+                disabled={!ready || !!f.barcaSelezionataInPorto}
+                title={f.barcaSelezionataInPorto
+                  ? `Barca già in porto su ${f.barcaSelezionataInPorto.stay.berthId}. Usa Spostamento per cambiare posto.`
+                  : undefined}
+              >
                 Entrata
               </button>
               <button type="button" className="torre-btn primary uscita" onClick={f.handleUscita} disabled={!ready}>

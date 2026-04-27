@@ -59,7 +59,7 @@ export function useTorreForm() {
     isPostoOccupato, checkPagamentoSaldato, checkAutorizzazione, getScenarioBarca,
     addCliente, addBarca,
     // Modello v3 — query derivate
-    getStatoVisivoBerth, barcaSulPosto, postoDellaBarca,
+    getStatoVisivoBerth, barcaSulPosto, postoDellaBarca, stayApertoDellaBarca,
   } = useGlobalState()
 
   // ── Helper interni v3 ──
@@ -314,6 +314,31 @@ export function useTorreForm() {
   }, [nome, targa, barche, clienti])
 
   // ════════════════════════════════════════════
+  // barcaSelezionataInPorto — la barca digitata ha già uno Stay aperto?
+  // ════════════════════════════════════════════
+  // Regola operativa (Ale, 27 Apr 2026): se la barca è già in porto,
+  // qualsiasi cambio di posto è semanticamente uno SPOSTAMENTO, non
+  // un'Entrata. L'Entrata vale solo per il primo ingresso fisico dal mare.
+  // Questo derivato espone allo TorrePage:
+  //   - Stay corrente (per badge informativo "Già in porto su X da N gg")
+  //   - flag per disabilitare il bottone "Entrata"
+  // L'operatore mantiene libertà di scegliere fra Spostamento, Uscita,
+  // Cantiere — solo Entrata è semanticamente impossibile.
+  // Difesa in profondità: registraEntrata in GlobalState auto-trasforma
+  // in spostamento se invocato su barca con Stay già aperto.
+  const barcaSelezionataInPorto = useMemo(() => {
+    if (!nome.trim() && !targa.trim()) return undefined
+    const b = barche.find(b =>
+      (nome.trim() && b.nome.toLowerCase() === nome.trim().toLowerCase()) ||
+      (targa.trim() && b.matricola.toLowerCase() === targa.trim().toLowerCase())
+    )
+    if (!b) return undefined
+    const stay = stayApertoDellaBarca(b.id)
+    if (!stay) return undefined
+    return { boat: b, stay }
+  }, [nome, targa, barche, stayApertoDellaBarca])
+
+  // ════════════════════════════════════════════
   // boatExistsInRegistry — la barca digitata esiste in anagrafica?
   // ════════════════════════════════════════════
   // Usato dalla TorrePage per disabilitare il bottone "Socio" quando
@@ -554,18 +579,30 @@ export function useTorreForm() {
       return
     }
 
+    // Normalizza entrambi i posti via resolveBerthIdOrInput per accettare
+    // formati liberi tipo "d32" e tradurli in "D 32" canonico.
+    const orig = resolveBerthIdOrInput(postoOrigine)
+    const dest = resolveBerthIdOrInput(postoDestinazione)
+
     // Controllo autorizzazione PRIMA di chiamare registraSpostamento.
-    // Se il posto di destinazione è di un socio e non c'è auth attiva, modale bloccante.
+    // Se il posto di destinazione è di un socio e non c'è auth attiva, modale
+    // bloccante (l'operatore deve confermare consapevolmente). Se procede,
+    // chiamiamo registraSpostamento con opts.pendente=true: il GlobalState
+    // crea Authorization placeholder + SystemAlert per la Direzione (stesso
+    // pattern di handleEntrata pendente). Vedi memoria gia_in_porto.md +
+    // pattern Registrazione Pendente.
     if (authDestinazioneInfo.controllato && !authDestinazioneInfo.autorizzato) {
       setAuthMissingModal({
         show: true,
         motivo: authDestinazioneInfo.motivo || 'Autorizzazione non trovata per questo posto di destinazione.',
         onProceed: () => {
-          // L'operatore sceglie consapevolmente di procedere — lo spostamento avviene
-          // ma il GlobalState tornerà errore perché registraSpostamento blocca senza auth.
-          // Per ora lo registriamo segnalando la pendenza (stesso pattern handleEntrata).
           setAuthMissingModal({ show: false, motivo: '', onProceed: () => { } })
-          setWarningMessage('Spostamento registrato come pendente. La Direzione sarà notificata per l\'autorizzazione.')
+          const result = registraSpostamento(buildMovement('spostamento', dest), orig, dest, { pendente: true })
+          if (!result.ok) {
+            setErrorMessage(result.errore || 'Errore durante lo spostamento pendente.')
+            return
+          }
+          setWarningMessage('Spostamento registrato come pendente. La Direzione è stata notificata per compilare l\'autorizzazione.')
           setShowWarning(true)
           handleClear()
         }
@@ -573,10 +610,7 @@ export function useTorreForm() {
       return
     }
 
-    // Normalizza entrambi i posti via resolveBerthIdOrInput per accettare
-    // formati liberi tipo "d32" e tradurli in "D 32" canonico.
-    const orig = resolveBerthIdOrInput(postoOrigine)
-    const dest = resolveBerthIdOrInput(postoDestinazione)
+    // Caso normale: auth presente o non richiesta.
     const result = registraSpostamento(buildMovement('spostamento', dest), orig, dest)
     if (!result.ok) { setErrorMessage(result.errore || 'Errore durante lo spostamento.'); return }
     handleClear()
@@ -640,6 +674,7 @@ export function useTorreForm() {
     suggestedBerths,
     clienteCollegato,
     boatExistsInRegistry,
+    barcaSelezionataInPorto,
     ultimoMovimento,
     authDestinazioneInfo,
 
