@@ -239,9 +239,26 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     const titolo = titoloAttivoDelBerth(berthId)
 
     if (!titolo) {
-      // Posto senza titolo (es. transito puro, area torre)
+      // Posto senza titolo socio (es. transito puro, area torre)
       if (!stay) return 'libero'
       if (stay.tipologia === 'bunker') return 'bunker'
+      // ── Fix v3 #1 (27 Apr 2026, derivato no-mutation) ──
+      // Se la barca è entrata come transito ma poi ha sottoscritto un
+      // contratto (autorizzazione attiva per la sua barca), lo stato
+      // visivo è 'affittuario_su_socio'. Lo Stay.tipologia rimane
+      // 'transito' (immutabile per audit) ma la coerenza visiva passa
+      // dalla query, non dalla mutazione. Match per nome+matricola della
+      // barca (Authorization è specifica per imbarcazione, vedi memoria).
+      const boat = barche.find(b => b.id === stay.boatId)
+      if (boat) {
+        const auth = autorizzazioni.find(a =>
+          a.berthId === berthId &&
+          a.stato === 'attiva' &&
+          a.barca.toLowerCase() === boat.nome.toLowerCase() &&
+          (!a.matricola || a.matricola.toLowerCase() === boat.matricola.toLowerCase())
+        )
+        if (auth) return 'affittuario_su_socio'
+      }
       return 'transito'
     }
 
@@ -455,7 +472,12 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
   // ════════════════════════════════════════════
 
   // Stati ammessi per ogni operazione
-  const STATI_ENTRATA: BerthStatus[] = ['libero', 'socio_assente', 'socio_assente_lungo', 'affittuario_assente', 'transito_assente']
+  // Fix v3 #2 (27 Apr 2026): aggiunto 'in_cantiere' a STATI_ENTRATA.
+  // Caso 18 della Fase 1: socio in cantiere → il suo posto è bloccato dal
+  // vecchio modello v2, ma operativamente DEVE poter accogliere un
+  // affittuario autorizzato. La validazione di authorization avviene
+  // separatamente in checkAutorizzazione.
+  const STATI_ENTRATA: BerthStatus[] = ['libero', 'socio_assente', 'socio_assente_lungo', 'affittuario_assente', 'transito_assente', 'in_cantiere']
   const STATI_USCITA: BerthStatus[] = ['occupato_socio', 'occupato_transito', 'occupato_affittuario']
 
   /** M-01: Protocollo di Entrata
