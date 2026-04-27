@@ -182,7 +182,7 @@ export const MODULE_NAV: NavItem[] = [
     label: 'Completa Registrazione',
     icon: '',
     role: 'torre',
-    allowedRoles: ['torre', 'direzione', 'ufficio'],
+    allowedRoles: ['torre', 'direzione', 'ufficio', 'ormeggiatore'],
   },
   {
     path: '/registro',
@@ -196,28 +196,28 @@ export const MODULE_NAV: NavItem[] = [
     label: 'Mappa Porto',
     icon: '',
     role: 'torre',
-    allowedRoles: ['torre', 'direzione', 'ormeggiatore'],
+    allowedRoles: ['direzione',],
   },
   {
     path: '/arrivi',
     label: 'Arrivi Previsti',
     icon: '',
     role: 'torre',
-    allowedRoles: ['torre', 'direzione'],
+    allowedRoles: ['torre', 'direzione', 'ormeggiatore'],
   },
   {
     path: '/manutenzioni',
     label: 'Manutenzioni',
     icon: '',
     role: 'torre',
-    allowedRoles: ['torre', 'direzione', 'manutenzione'],
+    allowedRoles: ['torre', 'direzione', 'manutenzione', 'ormeggiatore'],
   },
   {
     path: '/notifiche',
     label: 'Centro Notifiche',
     icon: '',
     role: 'torre',
-    allowedRoles: ['torre', 'direzione', 'ufficio', 'manutenzione'],
+    allowedRoles: ['torre', 'direzione', 'ufficio', 'manutenzione', 'ormeggiatore'],
   },
 
   // ── Gruppo Direzione ────────────────────────────────────────
@@ -240,7 +240,7 @@ export const MODULE_NAV: NavItem[] = [
     label: 'Tariffe e Fatturazione',
     icon: '',
     role: 'direzione',
-    allowedRoles: ['direzione', 'ufficio'],
+    allowedRoles: ['direzione', 'ufficio', 'ormeggiatore'],
   },
   {
     path: '/reportistica',
@@ -260,9 +260,9 @@ export const MODULE_NAV: NavItem[] = [
 
 // Label leggibili per ogni ruolo (usate in Sidebar footer, profilo utente, ecc.)
 export const RUOLO_LABELS: Record<string, string> = {
-  torre:        'Operatore Torre',
-  direzione:    'Direzione',
-  ufficio:      'Ufficio Amministrativo',
+  torre: 'Operatore Torre',
+  direzione: 'Direzione',
+  ufficio: 'Ufficio Amministrativo',
   manutenzione: 'Manutenzione',
   ormeggiatore: 'Ormeggiatore',
 }
