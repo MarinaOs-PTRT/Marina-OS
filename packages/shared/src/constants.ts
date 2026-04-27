@@ -133,18 +133,136 @@ export const SCENARIO_LABELS: Record<string, string> = {
   affittuario: 'Affittuario',
 }
 
-export const MODULE_NAV = [
-  { path: '/dashboard', label: 'Dashboard Torre', icon: '', role: 'torre' },
-  { path: '/torre', label: 'Registrazione Movimenti', icon: '⇅', role: 'torre' },
-  { path: '/completa-registrazione', label: 'Completa Registrazione', icon: '', role: 'torre' },
-  { path: '/registro', label: 'Movimenti Giornalieri', icon: '', role: 'torre' },
-  { path: '/mappa', label: 'Mappa Porto', icon: '', role: 'torre' },
-  { path: '/arrivi', label: 'Arrivi Previsti', icon: '', role: 'torre' },
-  { path: '/manutenzioni', label: 'Manutenzioni', icon: '', role: 'torre' },
-  { path: '/clienti', label: 'Anagrafica Clienti', icon: '👤', role: 'direzione' },
-  { path: '/soci', label: 'Soci e Assegnazioni', icon: '', role: 'direzione' },
-  { path: '/tariffe', label: 'Tariffe e Fatturazione', icon: '', role: 'direzione' },
-  { path: '/reportistica', label: 'Reportistica', icon: '', role: 'direzione' },
-  { path: '/utenti', label: 'Gestione Utenti', icon: '', role: 'direzione' },
-  { path: '/notifiche', label: 'Centro Notifiche', icon: ' ', role: 'torre' },
-] as const
+// ─────────────────────────────────────────────────────────────
+// MODULE_NAV — Voci di navigazione della Sidebar
+//
+// Campi:
+//   path         → rotta React Router
+//   label        → testo visualizzato nella Sidebar
+//   icon         → emoji/icona (opzionale)
+//   role         → gruppo visivo nella Sidebar ('torre' | 'direzione')
+//   allowedRoles → ruoli che possono vedere questa voce.
+//                  La Sidebar filtra per `allowedRoles.includes(utente.ruolo)`.
+//
+// Ruoli disponibili:
+//   'torre'        → Operatore Torre (accesso operativo rapido)
+//   'direzione'    → Accesso totale
+//   'ufficio'      → Amministrativo (clienti, soci, tariffe, registro)
+//   'manutenzione' → Solo modulo manutenzioni
+//   'ormeggiatore' → Operativo in banchina (dashboard, mappa, movimenti)
+// ─────────────────────────────────────────────────────────────
+export type NavRole = 'torre' | 'direzione' | 'ufficio' | 'manutenzione' | 'ormeggiatore'
+
+export interface NavItem {
+  path: string
+  label: string
+  icon: string
+  role: 'torre' | 'direzione'   // gruppo visivo nella Sidebar
+  allowedRoles: NavRole[]        // controllo accessi
+}
+
+export const MODULE_NAV: NavItem[] = [
+  // ── Gruppo Operativo ────────────────────────────────────────
+  {
+    path: '/dashboard',
+    label: 'Dashboard Torre',
+    icon: '',
+    role: 'torre',
+    allowedRoles: ['torre', 'direzione', 'ormeggiatore'],
+  },
+  {
+    path: '/torre',
+    label: 'Registrazione Movimenti',
+    icon: '⇅',
+    role: 'torre',
+    allowedRoles: ['torre', 'direzione', 'ormeggiatore'],
+  },
+  {
+    path: '/completa-registrazione',
+    label: 'Completa Registrazione',
+    icon: '',
+    role: 'torre',
+    allowedRoles: ['torre', 'direzione', 'ufficio'],
+  },
+  {
+    path: '/registro',
+    label: 'Movimenti Giornalieri',
+    icon: '',
+    role: 'torre',
+    allowedRoles: ['torre', 'direzione', 'ufficio'],
+  },
+  {
+    path: '/mappa',
+    label: 'Mappa Porto',
+    icon: '',
+    role: 'torre',
+    allowedRoles: ['torre', 'direzione', 'ormeggiatore'],
+  },
+  {
+    path: '/arrivi',
+    label: 'Arrivi Previsti',
+    icon: '',
+    role: 'torre',
+    allowedRoles: ['torre', 'direzione'],
+  },
+  {
+    path: '/manutenzioni',
+    label: 'Manutenzioni',
+    icon: '',
+    role: 'torre',
+    allowedRoles: ['torre', 'direzione', 'manutenzione'],
+  },
+  {
+    path: '/notifiche',
+    label: 'Centro Notifiche',
+    icon: '',
+    role: 'torre',
+    allowedRoles: ['torre', 'direzione', 'ufficio', 'manutenzione'],
+  },
+
+  // ── Gruppo Direzione ────────────────────────────────────────
+  {
+    path: '/clienti',
+    label: 'Anagrafica Clienti',
+    icon: '👤',
+    role: 'direzione',
+    allowedRoles: ['direzione', 'ufficio'],
+  },
+  {
+    path: '/soci',
+    label: 'Soci e Assegnazioni',
+    icon: '',
+    role: 'direzione',
+    allowedRoles: ['direzione', 'ufficio'],
+  },
+  {
+    path: '/tariffe',
+    label: 'Tariffe e Fatturazione',
+    icon: '',
+    role: 'direzione',
+    allowedRoles: ['direzione', 'ufficio'],
+  },
+  {
+    path: '/reportistica',
+    label: 'Reportistica',
+    icon: '',
+    role: 'direzione',
+    allowedRoles: ['direzione'],
+  },
+  {
+    path: '/utenti',
+    label: 'Gestione Utenti',
+    icon: '',
+    role: 'direzione',
+    allowedRoles: ['direzione'],
+  },
+]
+
+// Label leggibili per ogni ruolo (usate in Sidebar footer, profilo utente, ecc.)
+export const RUOLO_LABELS: Record<string, string> = {
+  torre:        'Operatore Torre',
+  direzione:    'Direzione',
+  ufficio:      'Ufficio Amministrativo',
+  manutenzione: 'Manutenzione',
+  ormeggiatore: 'Ormeggiatore',
+}

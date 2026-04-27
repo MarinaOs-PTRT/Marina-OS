@@ -1,0 +1,6 @@
+# Cartella public — asset statici serviti da Vite alla radice /
+# I file qui dentro sono accessibili via URL diretto (es. /marina-hero.jpg)
+# senza passare per l'import system di Vite.
+#
+# Contenuto previsto:
+#   marina-hero.jpg  → foto del porto per l'hero della LoginPage

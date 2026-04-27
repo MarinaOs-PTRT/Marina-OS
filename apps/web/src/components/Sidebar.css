@@ -162,6 +162,28 @@
   text-overflow: ellipsis;
 }
 
+/* ── Bottone logout ── */
+.sidebar-logout-btn {
+  background: none;
+  border: none;
+  color: var(--sidebar-text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-logout-btn:hover {
+  background: rgba(220, 80, 80, 0.15);
+  color: #f87171;
+}
+
 /* ── Custom scrollbar (discreta) ── */
 .sidebar-nav::-webkit-scrollbar {
   width: 6px;
