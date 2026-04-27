@@ -332,22 +332,37 @@ export function TorrePage() {
             )}
           </div>
 
-          {/* â”€â”€ MOVIMENTO: posti suggeriti per transito â”€â”€ */}
+          {/* ── MOVIMENTO: posti suggeriti per transito ──
+              Ordinati per lunMax crescente (Master File §4.2). Il primo
+              chip è il "più piccolo compatibile" → ha badge "Suggerito"
+              e viene auto-selezionato dall'hook (vedi useTorreForm). */}
           {f.panelMode === 'movimento' && f.tipologia === 'transito' && f.suggestedBerths.length > 0 && (
             <div className="torre-section">
               <label className="torre-section-label">Posti compatibili ({f.suggestedBerths.length})</label>
               <div className="torre-berths-grid">
-                {f.suggestedBerths.slice(0, 24).map(b => (
-                  <button
-                    type="button"
-                    key={b.id}
-                    className={`torre-berth-chip ${f.posto === b.id ? 'selected' : ''}`}
-                    onClick={() => f.setPosto(b.id)}
-                  >
-                    <span className="berth-chip-id">{b.id}</span>
-                    <span className="berth-chip-dim">{b.lunMax}m</span>
-                  </button>
-                ))}
+                {f.suggestedBerths.slice(0, 24).map((b, idx) => {
+                  const isSuggested = idx === 0
+                  const isSelected = f.posto === b.id
+                  return (
+                    <button
+                      type="button"
+                      key={b.id}
+                      className={[
+                        'torre-berth-chip',
+                        isSelected ? 'selected' : '',
+                        isSuggested ? 'is-suggested' : '',
+                      ].filter(Boolean).join(' ')}
+                      onClick={() => f.setPosto(b.id)}
+                      title={isSuggested ? 'Posto più piccolo compatibile (suggerito automaticamente)' : undefined}
+                    >
+                      {isSuggested && (
+                        <span className="berth-chip-suggest-badge">Suggerito</span>
+                      )}
+                      <span className="berth-chip-id">{b.id}</span>
+                      <span className="berth-chip-dim">{b.lunMax}m</span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
           )}

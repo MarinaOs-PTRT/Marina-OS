@@ -303,6 +303,41 @@
   color: rgba(255,255,255,0.75);
 }
 
+/* ── SUGGERITO (auto-selezione "posto più piccolo compatibile") ──
+   Master File §4.2: il primo chip è quello che il sistema propone
+   automaticamente per ottimizzare lo spazio. Stile distintivo non
+   invasivo: bordo verde + piccolo badge testuale in alto.
+   Quando è anche selected (caso normale dopo l'auto-pick), il bordo
+   verde resta visibile sull'angolo grazie al badge stesso. */
+.torre-berth-chip.is-suggested {
+  border-color: var(--green, #1D9E75);
+  position: relative;
+  padding-top: 16px;  /* spazio per il badge sopra */
+}
+
+.berth-chip-suggest-badge {
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--green, #1D9E75);
+  color: #ffffff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+/* Quando è suggerito MA non ancora selezionato dall'utente, evidenzia
+   leggermente lo sfondo per attirare l'occhio. */
+.torre-berth-chip.is-suggested:not(.selected) {
+  background: rgba(29, 158, 117, 0.08);
+}
+
 /* ── SPOSTAMENTO GRID (origine → destinazione) ── */
 .torre-spostamento-grid {
   display: grid;

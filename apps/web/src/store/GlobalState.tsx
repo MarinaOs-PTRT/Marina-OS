@@ -342,13 +342,11 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
   // HELPER DI VERIFICA (esposti nel context)
   // ════════════════════════════════════════════
 
-  /** Verifica se un posto è fisicamente occupato */
+  /** Verifica se un posto è fisicamente occupato.
+   *  v3 (27 Apr 2026): la verità è "esiste uno Stay aperto sul berth?".
+   *  Sostituisce la vecchia lettura di Berth.stato (deprecated). */
   const isPostoOccupato = (postoId: string): boolean => {
-    const posto = posti.find(p => p.id === postoId)
-    if (!posto) return false
-    return posto.stato === 'occupato_socio' || 
-           posto.stato === 'occupato_transito' || 
-           posto.stato === 'occupato_affittuario'
+    return !!stays.find(s => s.berthId === postoId && !s.fine)
   }
 
   /** Verifica se esiste una ricevuta saldata per una barca */
@@ -428,10 +426,15 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     if (!posto) {
       return { valido: false, errore: `Posto ${postoId} non trovato nel sistema.` }
     }
-    if (!posto.stato || !statiAmmessi.includes(posto.stato)) {
+    // v3 (27 Apr 2026): `posto.stato` ora è opzionale (deprecated, ma usato
+    // ancora per la validazione del modello v2 nel ramo doppia-scrittura).
+    // Estrazione esplicita per evitare problemi di narrowing di TypeScript
+    // con includes() in strict mode.
+    const statoCorrente = posto.stato
+    if (!statoCorrente || !statiAmmessi.includes(statoCorrente)) {
       return {
         valido: false,
-        errore: `Impossibile eseguire "${operazione}" sul posto ${postoId}: stato attuale "${posto.stato}" non compatibile.`
+        errore: `Impossibile eseguire "${operazione}" sul posto ${postoId}: stato attuale "${statoCorrente ?? 'sconosciuto'}" non compatibile.`
       }
     }
     return { valido: true, posto }

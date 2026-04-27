@@ -17,7 +17,7 @@ interface Props {
 }
 
 export function NuovoSocioForm({ onSuccess }: Props) {
-  const { posti, registraNuovoSocio } = useGlobalState()
+  const { posti, registraNuovoSocio, getStatoVisivoBerth } = useGlobalState()
   const [step, setStep] = useState<Step>('anagrafica')
   const [errore, setErrore] = useState('')
   const [salvato, setSalvato] = useState(false)
@@ -54,12 +54,14 @@ export function NuovoSocioForm({ onSuccess }: Props) {
   const [canone, setCanone] = useState('')
   const [scadenzaCanone, setScadenzaCanone] = useState('')
 
-  // Posti liberi disponibili (senza socioId)
+  // Posti liberi disponibili (senza socioId).
+  // v3 (27 Apr 2026): "libero" = stato visivo derivato. Per assegnare un
+  // posto a un nuovo socio: nessun titolo attivo + nessuno Stay aperto.
   const postiDisponibili = useMemo(() =>
     posti
-      .filter(p => !p.socioId && p.stato === 'libero')
+      .filter(p => !p.socioId && getStatoVisivoBerth(p.id) === 'libero')
       .sort((a, b) => a.id.localeCompare(b.id, 'it', { numeric: true })),
-    [posti]
+    [posti, getStatoVisivoBerth]
   )
 
   const postoSelezionato = useMemo(() =>

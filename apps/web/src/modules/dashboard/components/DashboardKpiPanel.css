@@ -1,0 +1,104 @@
+/* ════════════════════════════════════════════
+   DashboardKpiPanel — riga KPI live (M-04, 27 Apr 2026)
+   4 celle uguali in larghezza. Il KPI "In cantiere" è cliccabile e ha
+   stile active quando il pannello sottostante è aperto.
+   ════════════════════════════════════════════ */
+
+.kpi-panel {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.kpi-cell {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg, 12px);
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  /* Reset di default per quando .kpi-cell è un <button> */
+  text-align: left;
+  font-family: inherit;
+  cursor: default;
+  transition: border-color 0.15s, background 0.15s, transform 0.05s;
+}
+
+/* Quando è un button non cliccabile (disabled), nessun puntatore */
+.kpi-cell:disabled {
+  cursor: default;
+}
+
+.kpi-cell-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kpi-cell-chevron {
+  font-size: 0.65rem;
+  color: var(--text3);
+  line-height: 1;
+}
+
+.kpi-cell-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+  font-family: var(--font-display, inherit);
+  line-height: 1.1;
+}
+
+.kpi-cell-of {
+  font-size: 0.95rem;
+  color: var(--text3);
+  font-weight: 500;
+  margin-left: 2px;
+}
+
+/* Bordo colorato laterale che identifica la "famiglia" del KPI.
+   Tono dimesso così non sembra un alert. */
+.kpi-cell-accent { border-left: 3px solid var(--accent); }
+.kpi-cell-purple { border-left: 3px solid var(--purple, #7c3aed); }
+.kpi-cell-green  { border-left: 3px solid var(--green, #1D9E75); }
+.kpi-cell-warning { border-left: 3px solid var(--color-text-warning, #BA7517); }
+
+/* Stato cliccabile (solo per il KPI cantiere oggi) */
+.kpi-cell-clickable {
+  cursor: pointer;
+}
+
+.kpi-cell-clickable:hover {
+  border-color: var(--color-text-warning, #BA7517);
+  background: var(--bg3);
+}
+
+.kpi-cell-clickable:active {
+  transform: translateY(1px);
+}
+
+/* Stato attivo: il pannello sottostante è aperto. */
+.kpi-cell-active {
+  background: var(--color-bg-warning, rgba(186, 117, 23, 0.12));
+  border-color: var(--color-text-warning, #BA7517);
+  box-shadow: 0 1px 0 var(--color-text-warning, #BA7517) inset;
+}
+
+.kpi-cell-active .kpi-cell-chevron,
+.kpi-cell-active .kpi-cell-label {
+  color: var(--color-text-warning, #BA7517);
+}
+
+/* Responsive: su schermi stretti la riga diventa 2x2. */
+@media (max-width: 900px) {
+  .kpi-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -8,6 +8,8 @@ import { useGlobalState } from '../../store/GlobalState'
 import { ArrivalsPanel } from './components/ArrivalsPanel'
 import { PendingRegistrationsPanel } from './components/PendingRegistrationsPanel'
 import { PlanciaPanel } from './components/PlanciaPanel'
+import { DashboardKpiPanel } from './components/DashboardKpiPanel'
+import { CantierePanel } from './components/CantierePanel'
 import './DashboardPage.css'
 
 // Stati mostrati nella legenda rapida sopra la mappa (modello v3).
@@ -31,21 +33,28 @@ const LEGENDA_STATI: BerthVisualState[] = [
  * vivono qui: sono centralizzate sulla TorrePage (rotta /torre), unico punto
  * d'ingresso strutturato per i movimenti.
  *
- * Layout (desktop ≥ 1280px):
+ * Layout (desktop ≥ 1280px), aggiornato 27 Apr 2026 (M-04):
  *   ┌──────────────────────────────────────────────────────────────┐
- *   │ Header (titolo + data/ora). NIENTE pill — info ridondanti.   │
+ *   │ Header (titolo + data/ora).                                  │
+ *   ├──────────────────────────────────────────────────────────────┤
+ *   │ KPI: Transiti | Affittuari | Liberi | [In Cantiere]          │ ← cliccabile
+ *   ├──────────────────────────────────────────────────────────────┤
+ *   │ ▾ Pannello "Barche in Cantiere" (visibile solo se aperto)    │
  *   ├───────────────────────────────────────────┬──────────────────┤
- *   │  MAPPA (65%)                              │  PLANCIA (35%)   │
- *   │  click su posto → drawer                  │  meteo + cons.   │
+ *   │  MAPPA (50%)                              │  PLANCIA (50%)   │
  *   ├──────────────────────────┬────────────────┴──────────────────┤
  *   │  Arrivi previsti (50%)   │  Transiti pendenti (50%)          │
  *   └──────────────────────────┴───────────────────────────────────┘
  *
- * Vedi memoria: dashboard_layout.md, ui_ingressi.md
+ * Vedi memoria: dashboard_layout.md, ui_ingressi.md, cantiere_panel.md
  */
 export function DashboardPage() {
   const { posti } = useGlobalState()
   const [selectedBerth, setSelectedBerth] = useState<Berth | null>(null)
+  // M-04: il pannello cantiere è chiuso di default. Si apre cliccando il
+  // KPI "In cantiere" nella riga sopra la mappa, si chiude con la X o
+  // ricliccando lo stesso KPI.
+  const [mostraCantiere, setMostraCantiere] = useState(false)
 
   const oggi = new Date().toLocaleDateString('it-IT', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
@@ -61,7 +70,22 @@ export function DashboardPage() {
 
       <div className="dashboard-page">
 
-        {/* ── FASCIA SUPERIORE: Mappa (65%) + Plancia (35%) ── */}
+        {/* ── FASCIA KPI (M-04, 27 Apr 2026) ──
+            4 indicatori live. Il KPI "In cantiere" è cliccabile e
+            apre/chiude il pannello sottostante. */}
+        <DashboardKpiPanel
+          cantiereOpen={mostraCantiere}
+          onToggleCantiere={() => setMostraCantiere(v => !v)}
+        />
+
+        {/* ── PANNELLO CANTIERE (espandibile) ──
+            Renderizzato solo quando l'utente ha cliccato il KPI.
+            La "X" permette anche di chiudere senza tornare al KPI. */}
+        {mostraCantiere && (
+          <CantierePanel onClose={() => setMostraCantiere(false)} />
+        )}
+
+        {/* ── FASCIA CENTRALE: Mappa (50%) + Plancia (50%) ── */}
         <section className="dashboard-top">
 
           <div className="dashboard-map-wrap">

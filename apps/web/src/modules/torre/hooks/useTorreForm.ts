@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useGlobalState } from '../../../store/GlobalState'
 import { Berth, Boat, Client, Movement, MovementScenario } from '@shared/types'
 import { BERTH_VISUAL_LABELS } from '@shared/constants'
@@ -132,7 +132,7 @@ export function useTorreForm() {
         sublabel: `${b.nome} · Posto: ${postoDellaBarca(b.id) || b.posto || '—'}`,
         boat: b,
       }))
-  }, [targa, barche])
+  }, [targa, barche, postoDellaBarca])
 
   const postoSuggestions = useMemo<SearchSuggestion[]>(() => {
     if (posto.trim().length < 1) return []
@@ -248,9 +248,11 @@ export function useTorreForm() {
     return out
   }, [destinazioneBerth, lunghezza, pescaggio])
 
-  // Suggerimenti posti per transito: filtrati per dimensioni della barca.
-  // v3: libero = nessuno Stay aperto + posto agibile + nessun titolo socio
-  //     (preferiamo posti senza socio per i transiti, evita di sprecare auth).
+  // Suggerimenti posti per transito: filtrati per dimensioni della barca,
+  // ordinati per lunMax CRESCENTE (Master File §4.2: "proporre sempre il
+  // posto più piccolo compatibile per ottimizzare lo spazio").
+  // v3: libero = visualState 'libero' (nessuno Stay aperto + posto agibile +
+  //     nessun titolo socio attivo). Evita di sprecare posti soci per transiti.
   const suggestedBerths = useMemo(() => {
     if (tipologia !== 'transito') return []
     let free = posti.filter(p => getStatoVisivoBerth(p.id) === 'libero')
@@ -258,8 +260,47 @@ export function useTorreForm() {
     if (!isNaN(lunVal) && lunVal > 0) free = free.filter(p => p.lunMax >= lunVal)
     const pesVal = parseFloat(pescaggio)
     if (!isNaN(pesVal) && pesVal > 0) free = free.filter(p => p.profondita >= pesVal)
-    return free
+    // Ordina per lunghezza max crescente: il primo è il più piccolo
+    // compatibile, candidato all'auto-selezione (vedi useEffect più sotto).
+    return free.sort((a, b) => a.lunMax - b.lunMax)
   }, [posti, tipologia, lunghezza, pescaggio, getStatoVisivoBerth])
+
+  // ════════════════════════════════════════════
+  // AUTO-SELEZIONE POSTO PIÙ PICCOLO COMPATIBILE (Master File §4.2)
+  // ════════════════════════════════════════════
+  // Quando l'operatore registra un transito e ha inserito una lunghezza
+  // valida, pre-popoliamo automaticamente il campo `posto` con il primo
+  // suggerimento (il più piccolo compatibile, vedi sort sopra).
+  //
+  // Regole anti-invadenza:
+  //  - Solo se `posto` è ATTUALMENTE vuoto (non sovrascrivere mai una
+  //    scelta esplicita dell'operatore).
+  //  - autoSelezionatoRef tiene traccia dell'ultima auto-selezione: se
+  //    l'utente cancella o modifica il posto suggerito, il ref viene
+  //    aggiornato dal prossimo render e non rifacciamo lo stesso
+  //    suggerimento → l'utente NON viene "perseguitato" dall'autofill.
+  //
+  // Vale solo per scenario 'transito' (per soci il posto deriva dal titolo,
+  // per affittuari dall'autorizzazione del socio — niente auto-selezione).
+  const autoSelezionatoRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (tipologia !== 'transito') return
+    if (suggestedBerths.length === 0) return
+    if (posto.trim() !== '') return  // utente ha già un posto (manuale o auto-precedente)
+    const candidato = suggestedBerths[0].id
+    if (autoSelezionatoRef.current === candidato) return  // già provato, non insistere
+    autoSelezionatoRef.current = candidato
+    setPosto(candidato)
+  }, [tipologia, suggestedBerths, posto])
+
+  // Se l'utente modifica manualmente il posto, "dimentica" l'ultimo
+  // candidato auto-selezionato così se torna a posto vuoto + cambia
+  // lunghezza, l'autofill può ripartire pulito.
+  useEffect(() => {
+    if (posto.trim() !== '' && posto !== autoSelezionatoRef.current) {
+      autoSelezionatoRef.current = null
+    }
+  }, [posto])
 
   // Cliente collegato alla barca corrente (per box "dati cliente" colonna 1).
   const clienteCollegato = useMemo<Client | undefined>(() => {

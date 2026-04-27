@@ -8,11 +8,12 @@ import { useGlobalState } from '../../store/GlobalState'
 import './ReportisticaPage.css'
 
 export function ReportisticaPage() {
-  const { posti, movimenti, ricevute } = useGlobalState()
+  const { posti, movimenti, ricevute, getStatoVisivoBerth } = useGlobalState()
 
   // 1. KPI Occupazione (LIVE — cambia se registri un ingresso/uscita)
+  // v3 (27 Apr 2026): "libero" = stato visivo derivato, non più p.stato.
   const totPosti = posti.length
-  const postiLiberi = posti.filter(p => p.stato === 'libero').length
+  const postiLiberi = posti.filter(p => getStatoVisivoBerth(p.id) === 'libero').length
   const postiOccupati = totPosti - postiLiberi
   const occPercent = totPosti > 0 ? Math.round((postiOccupati / totPosti) * 100) : 0
 
@@ -22,11 +23,22 @@ export function ReportisticaPage() {
 
   // 3. KPI Fatturato
   const incassoTotale = ricevute.reduce((sum, r) => sum + r.totale, 0)
-  
-  // Dati Donut Chart: Occupazione (LIVE)
-  const occupatiSocio = posti.filter(p => p.stato === 'occupato_socio' || p.stato === 'socio_assente' || p.stato === 'socio_assente_lungo').length
-  const occupatiTransito = posti.filter(p => p.stato === 'occupato_transito' || p.stato === 'occupato_affittuario').length
-  const inCantiere = posti.filter(p => p.stato === 'in_cantiere').length
+
+  // Dati Donut Chart: Occupazione (LIVE) — v3 derivato dai BerthVisualState.
+  //  Soci         = posti con titolo socio (presente/assente/in cantiere/fuori posto).
+  //  Transiti/Aff = posti con Stay attivo di tipologia transito/affittuario/ospite/amico.
+  //  Cantiere     = socio in cantiere (sub-set di "Soci" mostrato a parte per chiarezza).
+  let occupatiSocio = 0
+  let occupatiTransito = 0
+  let inCantiere = 0
+  for (const p of posti) {
+    const v = getStatoVisivoBerth(p.id)
+    if (v === 'socio_in_cantiere') { inCantiere += 1; continue }
+    if (v === 'socio_presente' || v === 'socio_assente') { occupatiSocio += 1; continue }
+    if (v === 'transito' || v === 'affittuario_su_socio' || v === 'socio_su_altro_posto' || v === 'bunker') {
+      occupatiTransito += 1
+    }
+  }
 
   const occData = [
     { label: 'Soci', value: occupatiSocio, color: 'var(--accent)' },
