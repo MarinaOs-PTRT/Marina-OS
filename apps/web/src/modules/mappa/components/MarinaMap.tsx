@@ -1,11 +1,15 @@
-import React, { useEffect, useRef } from 'react'
-import { Berth } from '@shared/types'
+import React, { useEffect, useRef, useState } from 'react'
+import { Berth, BerthVisualState } from '@shared/types'
 import { BERTH_VISUAL_HEX } from '@shared/constants'
 import { useGlobalState } from '../../../store/GlobalState'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 // Vite syntax to import raw SVG string
 // @ts-ignore
 import mapSvgRaw from '../../../assets/mappaPtrt.svg?raw'
+
+// Rimuove il tag <title> che Illustrator inserisce automaticamente
+// con il nome del file — apparirebbe come testo sovrapposto alla mappa.
+const mapSvgClean = (mapSvgRaw as string).replace(/<title>[^<]*<\/title>/gi, '')
 
 interface MarinaMapProps {
   berths: Berth[]
@@ -19,7 +23,7 @@ interface MarinaMapProps {
 const SvgContainer = React.memo(React.forwardRef<HTMLDivElement, {}>((props, ref) => (
   <div
     ref={ref}
-    dangerouslySetInnerHTML={{ __html: mapSvgRaw }}
+    dangerouslySetInnerHTML={{ __html: mapSvgClean }}
     style={{
       width: '100%',
       height: 'auto',
@@ -30,11 +34,32 @@ const SvgContainer = React.memo(React.forwardRef<HTMLDivElement, {}>((props, ref
   />
 )))
 
+// Label leggibili per ogni stato visivo
+const STATO_LABEL: Record<BerthVisualState, string> = {
+  'libero':             'Libero',
+  'fuori_servizio':     'Fuori servizio',
+  'socio_presente':     'Socio presente',
+  'socio_assente':      'Socio assente',
+  'socio_in_cantiere':  'In cantiere',
+  'socio_su_altro_posto': 'Socio altrove',
+  'transito':           'Transito',
+  'affittuario_su_socio': 'Affittuario',
+  'bunker':             'Bunker',
+}
+
+interface TooltipState {
+  x: number
+  y: number
+  berthId: string
+}
+
 export const MarinaMap = React.memo(function MarinaMap({ berths, onBerthSelect }: MarinaMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null)
+  const [tooltip, setTooltip] = useState<TooltipState | null>(null)
+
   // v3: stays/cantieri/titoli come dipendenze esplicite dell'effect, così
   // la mappa si ridipinge quando un movimento cambia lo stato visivo dei posti.
-  const { getStatoVisivoBerth, stays, cantieri, titoli } = useGlobalState()
+  const { getStatoVisivoBerth, barcaSulPosto, titoloAttivoDelBerth, barche, stays, cantieri, titoli } = useGlobalState()
 
   useEffect(() => {
     if (!mapContainerRef.current) return
@@ -100,8 +125,19 @@ export const MarinaMap = React.memo(function MarinaMap({ berths, onBerthSelect }
       const color = BERTH_VISUAL_HEX[getStatoVisivoBerth(berth.id)] || '#cbd5e1'
       el.setAttribute('style', `fill: ${color}; cursor: pointer; transition: opacity 0.2s; pointer-events: all;`)
 
-      el.addEventListener('mouseenter', () => el.setAttribute('opacity', '0.6'))
-      el.addEventListener('mouseleave', () => el.setAttribute('opacity', '1'))
+      el.addEventListener('mouseenter', (e: Event) => {
+        const me = e as MouseEvent
+        el.setAttribute('opacity', '0.7')
+        setTooltip({ x: me.clientX, y: me.clientY, berthId: berth.id })
+      })
+      el.addEventListener('mousemove', (e: Event) => {
+        const me = e as MouseEvent
+        setTooltip(prev => prev ? { ...prev, x: me.clientX, y: me.clientY } : null)
+      })
+      el.addEventListener('mouseleave', () => {
+        el.setAttribute('opacity', '1')
+        setTooltip(null)
+      })
 
       const handler = (e: Event) => {
         e.stopPropagation()
@@ -117,6 +153,19 @@ export const MarinaMap = React.memo(function MarinaMap({ berths, onBerthSelect }
     }
   }, [berths, onBerthSelect, stays, cantieri, titoli, getStatoVisivoBerth])
 
+  // Dati per il tooltip (calcolati a render-time, non nell'effect)
+  const tooltipStato   = tooltip ? getStatoVisivoBerth(tooltip.berthId) : null
+  const tooltipColor   = tooltipStato ? BERTH_VISUAL_HEX[tooltipStato] : '#cbd5e1'
+  const tooltipLabel   = tooltipStato ? STATO_LABEL[tooltipStato] : ''
+  // Barca fisicamente presente (Stay aperto)
+  const tooltipBarca   = tooltip ? barcaSulPosto(tooltip.berthId) : null
+  // Fallback: se nessuno è presente, mostra la barca del socio titolare
+  const tooltipTitolo  = tooltip ? titoloAttivoDelBerth(tooltip.berthId) : null
+  const tooltipBarcaOwner = !tooltipBarca && tooltipTitolo?.boatId
+    ? barche.find(b => b.id === tooltipTitolo.boatId)
+    : null
+  const barcaDaMostrare = tooltipBarca ?? tooltipBarcaOwner
+
   return (
     <div
       className="marina-map-container"
@@ -128,6 +177,38 @@ export const MarinaMap = React.memo(function MarinaMap({ berths, onBerthSelect }
         background: 'var(--bg5)'
       }}
     >
+      {/* Tooltip hover posto barca */}
+      {tooltip && (
+        <div style={{
+          position: 'fixed',
+          left: tooltip.x + 24,
+          top: tooltip.y + 10,
+          zIndex: 9999,
+          pointerEvents: 'none',
+          background: '#1e2433',
+          border: '1px solid #3e4a6a',
+          borderRadius: 8,
+          padding: '7px 11px',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+          minWidth: 140,
+        }}>
+          {/* ID posto — sempre visibile */}
+          <div style={{ fontSize: 14, fontWeight: 800, color: '#ffffff', marginBottom: 2 }}>
+            {tooltip.berthId}
+          </div>
+          {/* Stato */}
+          <div style={{ fontSize: 11, color: tooltipColor, marginBottom: tooltipBarca ? 4 : 0 }}>
+            {tooltipLabel}
+          </div>
+          {/* Nome barca (presente) o barca del socio titolare (assente) */}
+          {barcaDaMostrare && (
+            <div style={{ fontSize: 12, color: tooltipBarca ? '#cbd5e1' : '#7a8faf', fontStyle: tooltipBarca ? 'normal' : 'italic' }}>
+              {barcaDaMostrare.nome}
+            </div>
+          )}
+        </div>
+      )}
+
       <TransformWrapper
         initialScale={1.2}
         minScale={1}
