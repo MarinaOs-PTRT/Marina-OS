@@ -11,8 +11,9 @@
 
 ## 1. Sicurezza e Accessi
 
-- ⬜ **Schermata di Login:** Implementare un vero flusso di autenticazione (JWT, sessione persistente).
-- ⬜ **UI basata sui Ruoli (RBAC):** Nascondere o disabilitare menu, pulsanti e sezioni in base al ruolo dell'utente loggato (Torre, Direzione, Ormeggiatore, Responsabile). *(I ruoli sono già definiti in MODULE_NAV — manca solo il gating UI effettivo.)*
+- ✅ **Schermata di Login:** `LoginPage` con hero foto del porto, form email/password, credenziali di test, persistenza `localStorage["marina-os-auth"]`. `AuthProvider` wrappa tutta l'app. `ProtectedRoute` blocca le rotte non autenticate. *(28 Apr 2026)*
+- ✅ **UI basata sui Ruoli (RBAC — menu):** Sidebar filtra `MODULE_NAV` per `allowedRoles` del ruolo loggato. 5 ruoli: Torre, Direzione, Ufficio, Manutenzione, Ormeggiatore. Logout con redirect a `/login`. *(28 Apr 2026)*
+- ⬜ **RBAC avanzato:** Oltre al menu, bloccare singoli bottoni e sezioni di pagina per ruoli non autorizzati (es. bottone "Forza tariffa" solo per Direzione, sezione Cassa non visibile all'Ormeggiatore).
 
 ---
 

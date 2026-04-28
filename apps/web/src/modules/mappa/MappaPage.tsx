@@ -24,7 +24,7 @@ export function MappaPage() {
 
   return (
     <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-      
+
       {/* Intestazione Mappa */}
       <div style={{ padding: '20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg)' }}>
         <div>
@@ -54,9 +54,9 @@ export function MappaPage() {
 
       {/* Area Mappa */}
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-        <MarinaMap 
-          berths={posti} 
-          onBerthSelect={setSelectedBerth} 
+        <MarinaMap
+          berths={posti}
+          onBerthSelect={setSelectedBerth}
         />
       </div>
 
@@ -64,7 +64,7 @@ export function MappaPage() {
       {selectedBerth && (
         <BerthDetailDrawer berth={selectedBerth} onClose={() => setSelectedBerth(null)} />
       )}
-      
+
     </div>
   )
 }

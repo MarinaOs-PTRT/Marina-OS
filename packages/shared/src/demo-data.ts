@@ -1,528 +1,405 @@
-﻿import { Client, Boat, Berth, Movement, Tariff, MaintenanceJob, Report, Receipt, Arrival, OwnershipTitle, Authorization, SystemUser, UserRole, SystemAlert, Stay, CantiereSession } from './types'
+import { Client, Boat, Berth, Movement, Tariff, MaintenanceJob, Report, Receipt, Arrival, OwnershipTitle, Authorization, SystemUser, SystemAlert, Stay, CantiereSession } from './types'
 
-// ── CLIENTI E SOCI ──
-export const CLIENTI_DEMO: Client[] = [
-  {
-    id: 1, tipo: 'so', nome: 'Marco Ferretti', iniziali: 'MF', naz: 'Italiana', cf: 'FRRMRC75A01H501Z',
-    tel: '+39 333 4521789', email: 'm.ferretti@email.it', indirizzo: 'Via Aurelia 45, Roma',
-    docTipo: 'Carta d\'identità', docNum: 'AB1234567',
-    posto: 'A 5', pontile: 'Pontile Delta', catPosto: 'Cat. IV', dimMax: 'max 15,5m × 4,5m', azioni: '620'
-  },
-  {
-    id: 2, tipo: 'pf', nome: 'Luca Bianchi', iniziali: 'LB', naz: 'Italiana', cf: 'BNCLCU82B10F205X',
-    tel: '+39 320 5544321', email: 'luca.bianchi@mail.com', indirizzo: 'Via del Mare 12, Civitavecchia',
-    docTipo: 'Passaporto', docNum: 'YA4521390'
-  },
-  {
-    id: 3, tipo: 'az', nome: 'Nautical Charter SRL', iniziali: 'NC', naz: 'Italiana', piva: 'IT04521890123',
-    ragione: 'Nautical Charter SRL', sede: 'Via Portuense 200, Roma', tel: '+39 06 8821234', email: 'info@nauticalcharter.it',
-    referenti: [
-      { nome: 'Andrea Conti', ruolo: 'Rappresentante legale', tel: '+39 347 1234567' },
-      { nome: 'Stefano Mori', ruolo: 'Comandante ingaggiato', tel: '+39 320 9876543' }
-    ]
-  },
-  {
-    id: 4, tipo: 'so', nome: 'Giuseppe Ferri', iniziali: 'GF', naz: 'Italiana', cf: 'FRRGPP68C05H501K',
-    tel: '+39 347 8821234', email: 'g.ferri@libero.it', indirizzo: 'Viale della Vittoria 8, Civitavecchia',
-    docTipo: 'Carta d\'identità', docNum: 'CD9876543',
-    posto: 'C 8', pontile: 'Pontile Delta', catPosto: 'Cat. II', dimMax: 'max 9m × 3,25m', azioni: '310'
-  },
-  {
-    id: 5, tipo: 'so', nome: 'Anna Conti', iniziali: 'AC', naz: 'Italiana', cf: 'CNTANN70D55H501P',
-    tel: '+39 335 7712345', email: 'a.conti@studio.it', indirizzo: 'Corso Vittorio 22, Roma',
-    docTipo: 'Passaporto', docNum: 'YB8812300',
-    posto: 'D 12', pontile: 'Pontile Delta', catPosto: 'Cat. III', dimMax: 'max 12m × 4,0m', azioni: '480'
-  },
-  {
-    id: 6, tipo: 'so', nome: 'Paolo Greco', iniziali: 'PG', naz: 'Italiana', cf: 'GRCPLA72M10F839V',
-    tel: '+39 329 4412233', email: 'p.greco@mail.com', indirizzo: 'Via Roma 5, Ladispoli',
-    docTipo: 'Carta d\'identità', docNum: 'EF3344556',
-    posto: 'D 7', pontile: 'Pontile Delta', catPosto: 'Cat. III', dimMax: 'max 12m × 4,0m', azioni: '480'
-  },
-  {
-    id: 7, tipo: 'so', nome: 'Francesca Landi', iniziali: 'FL', naz: 'Italiana', cf: 'LNDFNC85P65H501Z',
-    tel: '+39 338 9900112', email: 'flandi@email.com', indirizzo: 'Via Cassia 118, Roma',
-    docTipo: 'Passaporto', docNum: 'ZC4490012',
-    posto: 'C 25', pontile: 'Pontile Charlie', catPosto: 'Cat. III', dimMax: 'max 12m × 4,0m', azioni: '340'
-  },
+// ════════════════════════════════════════════════════════════════
+// MARINA OS — Demo Data
+// Porto Turistico Riva di Traiano (PTRT S.p.A.)
+// Aggiornato: 28 Apr 2026
+//
+// POSTI REALI: 1.192 posti su 26 pontili + DS + FF + TW.
+// Riempimento ~30%: 20 soci reali (brogliaccio) + 301 soci sintetici
+// + 37 transiti sintetici = 358 berths occupati.
+// ════════════════════════════════════════════════════════════════
 
-  // ── SOCI FRANGIFLUTTI (id 8-24, 25 Apr 2026) ──
-  // 17 soci uno per ogni posto FF (FF100-FF113 + FF1-FF3).
-  // 15 hanno una barca ormeggiata (vedi BARCHE_DEMO id 9-23).
-  // 2 soci NON hanno barca (FF103 e FF110 → stato socio_assente_lungo) per
-  // testare spostamenti e arrivi affittuario su posti liberi-ma-titolati.
-  // Vedi memoria: ff_test_setup.md
+// ════════════════════════════════════════════════════════════════
+// POSTI BARCA — Dati reali PTRT S.p.A.
+// ════════════════════════════════════════════════════════════════
 
-  // Frangiflutti Nord (FF100-FF113) — yacht grandi
-  { id: 8,  tipo: 'so', nome: 'Roberto Marchetti', iniziali: 'RM', naz: 'Italiana', cf: 'MRCRRT60H10H501A',
-    tel: '+39 335 1100201', email: 'r.marchetti@email.it', indirizzo: 'Via Veneto 15, Roma',
-    docTipo: 'Carta d\'identità', docNum: 'GH1100201',
-    posto: 'FF100', pontile: 'Frangiflutti Nord', catPosto: 'Cat. VII', dimMax: 'max 30m × 8,0m', azioni: '950' },
-
-  { id: 9,  tipo: 'so', nome: 'Elena Vitali', iniziali: 'EV', naz: 'Italiana', cf: 'VTLLNE72L55H501B',
-    tel: '+39 333 1100202', email: 'e.vitali@studio.it', indirizzo: 'Via Salaria 88, Roma',
-    docTipo: 'Carta d\'identità', docNum: 'GH1100202',
-    posto: 'FF101', pontile: 'Frangiflutti Nord', catPosto: 'Cat. VI', dimMax: 'max 22m × 6,5m', azioni: '780' },
-
-  { id: 10, tipo: 'so', nome: 'Davide Russo', iniziali: 'DR', naz: 'Italiana', cf: 'RSSDVD68P15H501C',
-    tel: '+39 347 1100203', email: 'd.russo@yacht.it', indirizzo: 'Lungomare 12, Anzio',
-    docTipo: 'Passaporto', docNum: 'YD1100203',
-    posto: 'FF102', pontile: 'Frangiflutti Nord', catPosto: 'Cat. V', dimMax: 'max 18m × 5,0m', azioni: '650' },
-
-  { id: 11, tipo: 'so', nome: 'Carla Bruno', iniziali: 'CB', naz: 'Italiana', cf: 'BRNCRL75D55F839D',
-    tel: '+39 320 1100204', email: 'carla.bruno@email.com', indirizzo: 'Via dei Bagni 4, Civitavecchia',
-    docTipo: 'Carta d\'identità', docNum: 'GH1100204',
-    posto: 'FF103', pontile: 'Frangiflutti Nord', catPosto: 'Cat. V', dimMax: 'max 18m × 5,0m', azioni: '650' },
-
-  { id: 12, tipo: 'so', nome: 'Maurizio De Santis', iniziali: 'MD', naz: 'Italiana', cf: 'DSNMRZ58S20H501E',
-    tel: '+39 338 1100205', email: 'm.desantis@studio.it', indirizzo: 'Piazza Navona 7, Roma',
-    docTipo: 'Carta d\'identità', docNum: 'GH1100205',
-    posto: 'FF104', pontile: 'Frangiflutti Nord', catPosto: 'Cat. VII', dimMax: 'max 30m × 8,0m', azioni: '950' },
-
-  { id: 13, tipo: 'az', nome: 'Mediterranea Yachts SRL', iniziali: 'MY', naz: 'Italiana', piva: 'IT07712340567',
-    ragione: 'Mediterranea Yachts SRL', sede: 'Via del Porto 22, Civitavecchia', tel: '+39 0766 552201', email: 'info@medyachts.it',
-    posto: 'FF105', pontile: 'Frangiflutti Nord', catPosto: 'Cat. VI', dimMax: 'max 22m × 6,5m', azioni: '780',
-    referenti: [ { nome: 'Giorgio Pellegrini', ruolo: 'Amministratore', tel: '+39 347 1100206' } ] },
-
-  { id: 14, tipo: 'so', nome: 'Pietro Galli', iniziali: 'PG', naz: 'Italiana', cf: 'GLLPTR65T28F839F',
-    tel: '+39 329 1100207', email: 'p.galli@email.it', indirizzo: 'Via Roma 88, Civitavecchia',
-    docTipo: 'Carta d\'identità', docNum: 'GH1100207',
-    posto: 'FF106', pontile: 'Frangiflutti Nord', catPosto: 'Cat. V', dimMax: 'max 18m × 5,0m', azioni: '650' },
-
-  { id: 15, tipo: 'so', nome: 'Sofia Romano', iniziali: 'SR', naz: 'Italiana', cf: 'RMNSFO80M55H501G',
-    tel: '+39 348 1100208', email: 's.romano@studio.it', indirizzo: 'Via Cola di Rienzo 33, Roma',
-    docTipo: 'Passaporto', docNum: 'YD1100208',
-    posto: 'FF107', pontile: 'Frangiflutti Nord', catPosto: 'Cat. VII', dimMax: 'max 30m × 8,0m', azioni: '950' },
-
-  { id: 16, tipo: 'so', nome: 'Alessandro Costa', iniziali: 'AC', naz: 'Italiana', cf: 'CSTLSN70R10H501H',
-    tel: '+39 333 1100209', email: 'a.costa@email.com', indirizzo: 'Via Tuscolana 250, Roma',
-    docTipo: 'Carta d\'identità', docNum: 'GH1100209',
-    posto: 'FF108', pontile: 'Frangiflutti Nord', catPosto: 'Cat. VI', dimMax: 'max 22m × 6,5m', azioni: '780' },
-
-  { id: 17, tipo: 'so', nome: 'Margherita Esposito', iniziali: 'ME', naz: 'Italiana', cf: 'SPSMGH78A65F839I',
-    tel: '+39 339 1100210', email: 'm.esposito@email.it', indirizzo: 'Via Montegrappa 3, Civitavecchia',
-    docTipo: 'Carta d\'identità', docNum: 'GH1100210',
-    posto: 'FF109', pontile: 'Frangiflutti Nord', catPosto: 'Cat. V', dimMax: 'max 18m × 5,0m', azioni: '650' },
-
-  { id: 18, tipo: 'so', nome: 'Tommaso Ricci', iniziali: 'TR', naz: 'Italiana', cf: 'RCCTMS62E15H501J',
-    tel: '+39 335 1100211', email: 't.ricci@yacht.it', indirizzo: 'Lungomare 22, Ostia',
-    docTipo: 'Passaporto', docNum: 'YD1100211',
-    posto: 'FF110', pontile: 'Frangiflutti Nord', catPosto: 'Cat. VII', dimMax: 'max 30m × 8,0m', azioni: '950' },
-
-  { id: 19, tipo: 'so', nome: 'Valentina Lombardi', iniziali: 'VL', naz: 'Italiana', cf: 'LMBVNT85B55H501K',
-    tel: '+39 320 1100212', email: 'v.lombardi@email.com', indirizzo: 'Via Nomentana 145, Roma',
-    docTipo: 'Carta d\'identità', docNum: 'GH1100212',
-    posto: 'FF111', pontile: 'Frangiflutti Nord', catPosto: 'Cat. VI', dimMax: 'max 22m × 6,5m', azioni: '780' },
-
-  { id: 20, tipo: 'so', nome: 'Federico Greco', iniziali: 'FG', naz: 'Italiana', cf: 'GRCFRC72H10F839L',
-    tel: '+39 347 1100213', email: 'f.greco@studio.it', indirizzo: 'Via Aurelia 220, Civitavecchia',
-    docTipo: 'Carta d\'identità', docNum: 'GH1100213',
-    posto: 'FF112', pontile: 'Frangiflutti Nord', catPosto: 'Cat. V', dimMax: 'max 18m × 5,0m', azioni: '650' },
-
-  { id: 21, tipo: 'so', nome: 'Beatrice Marini', iniziali: 'BM', naz: 'Italiana', cf: 'MRNBRC80T65H501M',
-    tel: '+39 338 1100214', email: 'b.marini@email.it', indirizzo: 'Via Trastevere 18, Roma',
-    docTipo: 'Carta d\'identità', docNum: 'GH1100214',
-    posto: 'FF113', pontile: 'Frangiflutti Nord', catPosto: 'Cat. VII', dimMax: 'max 30m × 8,0m', azioni: '950' },
-
-  // Frangiflutti Sud (FF1-FF3) — tender e gommoni
-  { id: 22, tipo: 'so', nome: 'Andrea Pellegrini', iniziali: 'AP', naz: 'Italiana', cf: 'PLLNDR74F20F839N',
-    tel: '+39 329 1100215', email: 'a.pellegrini@email.com', indirizzo: 'Via dei Bastioni 8, Civitavecchia',
-    docTipo: 'Carta d\'identità', docNum: 'GH1100215',
-    posto: 'FF1', pontile: 'Frangiflutti Sud', catPosto: 'Cat. I', dimMax: 'max 7m × 2,8m', azioni: '180' },
-
-  { id: 23, tipo: 'so', nome: 'Chiara Moretti', iniziali: 'CM', naz: 'Italiana', cf: 'MRTCHR82C45H501O',
-    tel: '+39 348 1100216', email: 'c.moretti@email.it', indirizzo: 'Via Appia 60, Roma',
-    docTipo: 'Carta d\'identità', docNum: 'GH1100216',
-    posto: 'FF2', pontile: 'Frangiflutti Sud', catPosto: 'Cat. I', dimMax: 'max 7m × 2,8m', azioni: '180' },
-
-  { id: 24, tipo: 'so', nome: 'Stefano Caputo', iniziali: 'SC', naz: 'Italiana', cf: 'CPTSFN66A10H501P',
-    tel: '+39 333 1100217', email: 's.caputo@email.com', indirizzo: 'Via Flaminia 90, Roma',
-    docTipo: 'Carta d\'identità', docNum: 'GH1100217',
-    posto: 'FF3', pontile: 'Frangiflutti Sud', catPosto: 'Cat. I', dimMax: 'max 7m × 2,8m', azioni: '180' }
-]
-
-// ── BARCHE ──
-// MEDIO 5: Boat.stato è stato RIMOSSO. Lo stato si deriva da berths.stato
-// del posto in cui si trova la barca (boat.posto). Vedi memoria MEDIO 5.
-export const BARCHE_DEMO: Boat[] = [
-  { id: 1, clientId: 1, nome: 'Chaya', matricola: 'IT-RM-2847', tipo: 'Motore', lunghezza: 12.5, larghezza: 4.2, pescaggio: 1.8, posto: 'A 5', bandiera: 'Italia' },
-  { id: 2, clientId: 2, nome: 'S/V Tramontana', matricola: '247654321', tipo: 'Vela', lunghezza: 13.8, larghezza: 4.1, pescaggio: 1.9, posto: 'B 10', bandiera: 'Italia' },
-  { id: 3, clientId: 3, nome: 'M/Y Neptune Dream', matricola: '123456789', tipo: 'Motore', lunghezza: 28, larghezza: 7.2, pescaggio: 2.1, posto: 'TW3', bandiera: 'Regno Unito' },
-  { id: 4, clientId: 3, nome: 'Cat. Sole Mare', matricola: '247876543', tipo: 'Catamarano', lunghezza: 14.2, larghezza: 7.5, pescaggio: 1.1, bandiera: 'Francia' },
-  { id: 5, clientId: 4, nome: 'M/Y Albatros', matricola: '247123456', tipo: 'Motore', lunghezza: 10.5, larghezza: 3.4, pescaggio: 1.2, posto: 'C 8', bandiera: 'Italia' },
-  { id: 6, clientId: 5, nome: 'M/Y Perseo', matricola: '247667788', tipo: 'Motore', lunghezza: 11.5, larghezza: 3.8, pescaggio: 1.5, posto: 'D 12', bandiera: 'Italia' },
-  { id: 7, clientId: 6, nome: 'S/V Mistral', matricola: 'IT-NA-1122', tipo: 'Vela', lunghezza: 11.0, larghezza: 3.6, pescaggio: 1.7, posto: 'D 7', bandiera: 'Italia' },
-  { id: 8, clientId: 7, nome: 'M/Y Rex', matricola: '247881234', tipo: 'Motore', lunghezza: 9.5, larghezza: 3.2, pescaggio: 1.3, posto: 'C 25', bandiera: 'Italia' },
-
-  // ── BARCHE FRANGIFLUTTI (id 9-23, 25 Apr 2026) ──
-  // 15 barche su 17 posti FF. Mancano FF103 (id 11 Carla Bruno) e FF110
-  // (id 18 Tommaso Ricci) → quei 2 soci sono "assenti_lungo", posto vuoto
-  // disponibile per test di spostamento e accoglienza affittuario.
-  // Lunghezze sotto al lunMax del posto per coerenza.
-
-  // Frangiflutti Nord
-  { id: 9,  clientId: 8,  nome: 'M/Y Atlantica',     matricola: 'IT-RM-3001', tipo: 'Motore',     lunghezza: 28.0, larghezza: 7.5, pescaggio: 2.4, posto: 'FF100', bandiera: 'Italia' },
-  { id: 10, clientId: 9,  nome: 'M/Y Sirena',        matricola: 'IT-RM-3002', tipo: 'Motore',     lunghezza: 21.0, larghezza: 6.0, pescaggio: 2.0, posto: 'FF101', bandiera: 'Italia' },
-  { id: 11, clientId: 10, nome: 'S/V Borealis',      matricola: 'IT-RM-3003', tipo: 'Vela',       lunghezza: 17.5, larghezza: 4.8, pescaggio: 2.2, posto: 'FF102', bandiera: 'Italia' },
-  // FF103 vuoto — Carla Bruno assente lungo
-  { id: 12, clientId: 12, nome: 'M/Y Andromeda',     matricola: 'IT-RM-3005', tipo: 'Motore',     lunghezza: 29.0, larghezza: 7.8, pescaggio: 2.5, posto: 'FF104', bandiera: 'Italia' },
-  { id: 13, clientId: 13, nome: 'M/Y Mediterranea I',matricola: 'IT-RM-3006', tipo: 'Motore',     lunghezza: 21.5, larghezza: 6.2, pescaggio: 2.0, posto: 'FF105', bandiera: 'Italia' },
-  { id: 14, clientId: 14, nome: 'S/V Maestrale',     matricola: 'IT-RM-3007', tipo: 'Vela',       lunghezza: 17.8, larghezza: 4.9, pescaggio: 2.3, posto: 'FF106', bandiera: 'Italia' },
-  { id: 15, clientId: 15, nome: 'M/Y Stella di Mare',matricola: 'IT-RM-3008', tipo: 'Motore',     lunghezza: 28.5, larghezza: 7.6, pescaggio: 2.4, posto: 'FF107', bandiera: 'Italia' },
-  { id: 16, clientId: 16, nome: 'M/Y Costa Azzurra', matricola: 'IT-RM-3009', tipo: 'Motore',     lunghezza: 21.0, larghezza: 6.1, pescaggio: 2.0, posto: 'FF108', bandiera: 'Italia' },
-  { id: 17, clientId: 17, nome: 'Cat. Onda Blu',     matricola: 'IT-RM-3010', tipo: 'Catamarano', lunghezza: 17.0, larghezza: 8.5, pescaggio: 1.4, posto: 'FF109', bandiera: 'Italia' },
-  // FF110 vuoto — Tommaso Ricci assente lungo
-  { id: 18, clientId: 19, nome: 'M/Y Levante',       matricola: 'IT-RM-3012', tipo: 'Motore',     lunghezza: 21.5, larghezza: 6.3, pescaggio: 2.1, posto: 'FF111', bandiera: 'Italia' },
-  { id: 19, clientId: 20, nome: 'S/V Scirocco',      matricola: 'IT-RM-3013', tipo: 'Vela',       lunghezza: 17.5, larghezza: 4.8, pescaggio: 2.2, posto: 'FF112', bandiera: 'Italia' },
-  { id: 20, clientId: 21, nome: 'M/Y Cassiopea',     matricola: 'IT-RM-3014', tipo: 'Motore',     lunghezza: 29.0, larghezza: 7.8, pescaggio: 2.5, posto: 'FF113', bandiera: 'Italia' },
-
-  // Frangiflutti Sud
-  { id: 21, clientId: 22, nome: 'Tender Oasi',       matricola: 'IT-RM-3015', tipo: 'Gommone',    lunghezza: 6.5,  larghezza: 2.6, pescaggio: 0.6, posto: 'FF1',   bandiera: 'Italia' },
-  { id: 22, clientId: 23, nome: 'Tender Lampo',      matricola: 'IT-RM-3016', tipo: 'Gommone',    lunghezza: 6.0,  larghezza: 2.4, pescaggio: 0.5, posto: 'FF2',   bandiera: 'Italia' },
-  { id: 23, clientId: 24, nome: 'Tender Stella',     matricola: 'IT-RM-3017', tipo: 'Gommone',    lunghezza: 6.8,  larghezza: 2.7, pescaggio: 0.6, posto: 'FF3',   bandiera: 'Italia' }
-]
-
-// ── POSTI BARCA (Berths) ──
-// Fonte: ispezione SVG `apps/web/src/assets/mappaPtrt.svg` → 149 posti reali.
-// Pontili disegnati come interattivi: A (26), B (36), C (28), D (32),
-// Frangiflutti FF100-FF113 (14), FF1-FF3 (3), Torre TW1-TW10 (10).
-// Lunghezze assegnate in modo plausibile e COERENTE con TARIFFE_DEMO (Cat. I-IX).
-// I pontili NATO (eco, foxtrot, golf, hotel, ...) esistono come rettangoli
-// strutturali nel SVG ma non hanno posti interattivi → NON popolati qui.
-
-// Helper: genera un array di posti con pattern ricorrente.
-// Gli ID nell'SVG sono "B_1","D_12","TW3","FF100". Il componente MarinaMap
-// ha già fallback che riconosce anche "B 1" / "B_1" / "B1". Per coerenza
-// interna usiamo il formato "X N" con spazio (come Berth.id nelle autorizzazioni).
 function genBerths(
   prefix: string,
   pontileNome: string,
   count: number,
-  template: (i: number) => Omit<Berth, 'id' | 'pontile'>,
+  template: (n: number) => Omit<Berth, 'id' | 'pontile'>,
   options?: { idStyle?: 'space' | 'compact'; startIndex?: number }
 ): Berth[] {
   const idStyle = options?.idStyle ?? 'space'
-  const start = options?.startIndex ?? 1
+  const start   = options?.startIndex ?? 1
   const out: Berth[] = []
   for (let n = 0; n < count; n++) {
-    const i = start + n
+    const i  = start + n
     const id = idStyle === 'space' ? `${prefix} ${i}` : `${prefix}${i}`
     out.push({ id, pontile: pontileNome, ...template(n) })
   }
   return out
 }
 
-// Posti manualmente "occupati" per conservare i link con barche/clienti demo.
-// Gli altri saranno tutti 'libero' (stato di partenza realistico).
-const POSTI_OCCUPATI_OVERRIDE: Record<string, Partial<Berth>> = {
-  'A 5':  { stato: 'occupato_socio',        barcaOra: 'Chaya',             socioId: 1 },
-  'B 10': { stato: 'occupato_transito',     barcaOra: 'S/V Tramontana' },
-  'C 8':  { stato: 'occupato_socio',        barcaOra: 'M/Y Albatros',      socioId: 4 },
-  'D 7':  { stato: 'occupato_affittuario',  barcaOra: 'S/V Mistral',       socioId: 6 },
-  'D 12': { stato: 'in_cantiere',           barcaOra: 'In cantiere (alaggio)', socioId: 5 },
-  'TW3':  { stato: 'occupato_transito',     barcaOra: 'M/Y Neptune Dream' },
-  'C 25': { stato: 'socio_assente',         barcaOra: undefined,           socioId: 7 },
-
-  // ── FRANGIFLUTTI (25 Apr 2026, setup test) ──
-  // 17 posti FF tutti assegnati a soci. 15 con barca presente, 2 vuoti
-  // (FF103, FF110) → stato socio_assente_lungo: il posto è titolato a un
-  // socio ma è fisicamente disponibile, ottimo per testare:
-  //   1. Spostamento di una barca da altro posto verso FF103/FF110.
-  //   2. Accoglienza di un nuovo affittuario su posto socio (richiede
-  //      l'autorizzazione formale del proprietario).
-  'FF100': { stato: 'occupato_socio',        barcaOra: 'M/Y Atlantica',     socioId: 8  },
-  'FF101': { stato: 'occupato_socio',        barcaOra: 'M/Y Sirena',        socioId: 9  },
-  'FF102': { stato: 'occupato_socio',        barcaOra: 'S/V Borealis',      socioId: 10 },
-  'FF103': { stato: 'socio_assente_lungo',   barcaOra: undefined,           socioId: 11 },
-  'FF104': { stato: 'occupato_socio',        barcaOra: 'M/Y Andromeda',     socioId: 12 },
-  'FF105': { stato: 'occupato_socio',        barcaOra: 'M/Y Mediterranea I',socioId: 13 },
-  'FF106': { stato: 'occupato_socio',        barcaOra: 'S/V Maestrale',     socioId: 14 },
-  'FF107': { stato: 'occupato_socio',        barcaOra: 'M/Y Stella di Mare',socioId: 15 },
-  'FF108': { stato: 'occupato_socio',        barcaOra: 'M/Y Costa Azzurra', socioId: 16 },
-  'FF109': { stato: 'occupato_socio',        barcaOra: 'Cat. Onda Blu',     socioId: 17 },
-  'FF110': { stato: 'socio_assente_lungo',   barcaOra: undefined,           socioId: 18 },
-  'FF111': { stato: 'occupato_socio',        barcaOra: 'M/Y Levante',       socioId: 19 },
-  'FF112': { stato: 'occupato_socio',        barcaOra: 'S/V Scirocco',      socioId: 20 },
-  'FF113': { stato: 'occupato_socio',        barcaOra: 'M/Y Cassiopea',     socioId: 21 },
-  'FF1':   { stato: 'occupato_socio',        barcaOra: 'Tender Oasi',       socioId: 22 },
-  'FF2':   { stato: 'occupato_socio',        barcaOra: 'Tender Lampo',      socioId: 23 },
-  'FF3':   { stato: 'occupato_socio',        barcaOra: 'Tender Stella',     socioId: 24 },
+function genSocioPontile(letter: string, count: number, lunMax: number): Berth[] {
+  let cat: string, lar: number, pro: number
+  if (lunMax === 10.0)      { cat = 'Cat. II';  lar = 3.5; pro = 2.8 }
+  else if (lunMax === 12.0) { cat = 'Cat. III'; lar = 4.0; pro = 3.0 }
+  else                      { cat = 'Cat. IV';  lar = 4.5; pro = 3.5 }
+  return genBerths(letter, `Pontile ${letter}`, count, () => ({
+    lunMax, larMax: lar, profondita: pro, categoria: cat, stato: 'libero', agibile: true,
+  }))
 }
 
-function applyOverride(b: Berth): Berth {
-  const ov = POSTI_OCCUPATI_OVERRIDE[b.id]
-  return ov ? { ...b, ...ov } : b
-}
-
-// Pontile B (36 posti) — lunghezze 11-16m miste, Cat. III/IV
-const POSTI_B: Berth[] = genBerths('B', 'Pontile Bravo', 36, (n) => {
-  // Cicla Cat.III (12m) / Cat.IV (15.5m) per varietà
-  const cat4 = n % 3 === 0
-  return {
-    lunMax: cat4 ? 15.5 : 12.0,
-    larMax: cat4 ? 4.5 : 4.0,
-    profondita: cat4 ? 3.5 : 3.0,
-    categoria: cat4 ? 'Cat. IV' : 'Cat. III',
-    stato: 'libero',
-    agibile: true,
-  }
-})
-
-// Pontile A (26 posti) — lunghezze miste 10-15.5m, Cat. II/III/IV
-const POSTI_A: Berth[] = genBerths('A', 'Pontile Alfa', 26, (n) => {
-  const mod = n % 3
-  const cat = mod === 0 ? 'Cat. IV' : mod === 1 ? 'Cat. III' : 'Cat. II'
-  const lun = mod === 0 ? 15.5 : mod === 1 ? 12.0 : 10.0
-  const lar = mod === 0 ? 4.5  : mod === 1 ? 4.0  : 3.5
-  const pro = mod === 0 ? 3.5  : mod === 1 ? 3.0  : 2.8
-  return { lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero', agibile: true }
-})
-
-// Pontile C (28 posti) — pontile più piccolo, 8-12m, Cat. I/II/III
-const POSTI_C: Berth[] = genBerths('C', 'Pontile Charlie', 28, (n) => {
-  const mod = n % 3
-  const cat = mod === 0 ? 'Cat. III' : mod === 1 ? 'Cat. II' : 'Cat. I'
-  const lun = mod === 0 ? 12.0 : mod === 1 ? 10.0 : 9.0
-  const lar = mod === 0 ? 4.0  : mod === 1 ? 3.5  : 3.25
-  const pro = mod === 0 ? 3.0  : mod === 1 ? 2.8  : 2.5
-  return { lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero', agibile: true }
-})
-
-// Pontile D (32 posti) — pontile grande, 12-18m, Cat. III/IV/V
-const POSTI_D: Berth[] = genBerths('D', 'Pontile Delta', 32, (n) => {
-  const mod = n % 3
-  const cat = mod === 0 ? 'Cat. V' : mod === 1 ? 'Cat. IV' : 'Cat. III'
-  const lun = mod === 0 ? 18.0 : mod === 1 ? 15.5 : 12.0
-  const lar = mod === 0 ? 5.0  : mod === 1 ? 4.5  : 4.0
-  const pro = mod === 0 ? 4.0  : mod === 1 ? 3.5  : 3.0
-  return { lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero', agibile: true }
-})
-
-// Frangiflutti nord FF100-FF113 (14 posti) — transiti grandi 18-30m, Cat. V/VI/VII
-const POSTI_FF_NORD: Berth[] = genBerths('FF', 'Frangiflutti Nord', 14, (n) => {
-  const mod = n % 3
-  const cat = mod === 0 ? 'Cat. VII' : mod === 1 ? 'Cat. VI' : 'Cat. V'
-  const lun = mod === 0 ? 30.0 : mod === 1 ? 22.0 : 18.0
-  const lar = mod === 0 ? 8.0  : mod === 1 ? 6.5  : 5.0
-  const pro = mod === 0 ? 5.0  : mod === 1 ? 4.5  : 4.0
-  return { lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero', agibile: true }
-}, { idStyle: 'compact', startIndex: 100 })
-
-// Frangiflutti sud FF1-FF3 (3 posti) — piccoli, Cat. I (tender, gommoni)
-const POSTI_FF_SUD: Berth[] = genBerths('FF', 'Frangiflutti Sud', 3, (_) => ({
-  lunMax: 7.0,
-  larMax: 2.8,
-  profondita: 1.8,
-  categoria: 'Cat. I',
-  stato: 'libero',
-  agibile: true,
-}), { idStyle: 'compact', startIndex: 1 })
-
-// Torre (TW1-TW10) — posti frontali per transiti grandi/yacht 20-40m
-const POSTI_TW: Berth[] = genBerths('TW', 'Torre / Transito', 10, (n) => {
-  const mod = n % 3
-  const cat = mod === 0 ? 'Cat. VIII' : mod === 1 ? 'Cat. VII' : 'Cat. VI'
-  const lun = mod === 0 ? 40.0 : mod === 1 ? 30.0 : 22.0
-  const lar = mod === 0 ? 9.0  : mod === 1 ? 8.0  : 6.5
-  const pro = mod === 0 ? 6.0  : mod === 1 ? 5.0  : 4.5
-  return { lunMax: lun, larMax: lar, profondita: pro, categoria: cat, stato: 'libero', agibile: true }
+const POSTI_A  = genBerths('A', 'Pontile A', 27, () => ({ lunMax: 12.0, larMax: 4.0, profondita: 3.0, categoria: 'Cat. III', stato: 'libero', agibile: true }))
+const POSTI_B  = genBerths('B', 'Pontile B', 36, (n) => ({ lunMax: 9.0,  larMax: 3.25, profondita: 2.5, categoria: 'Cat. I',   stato: n < 10 ? 'riservato' : 'libero', agibile: true }))
+const POSTI_C  = genBerths('C', 'Pontile C', 28, () => ({ lunMax: 15.5, larMax: 4.5, profondita: 3.5, categoria: 'Cat. IV',  stato: 'libero', agibile: true }))
+const POSTI_D  = genBerths('D', 'Pontile D', 32, () => ({ lunMax: 12.0, larMax: 4.0, profondita: 3.0, categoria: 'Cat. III', stato: 'libero', agibile: true }))
+const POSTI_E  = genSocioPontile('E', 39, 10.0)
+const POSTI_F  = genSocioPontile('F', 42, 10.0)
+const POSTI_G  = genSocioPontile('G', 44, 10.0)
+const POSTI_H  = genSocioPontile('H', 44, 10.0)
+const POSTI_I  = genSocioPontile('I', 46, 10.0)
+const POSTI_J  = genSocioPontile('J', 47, 10.0)
+const POSTI_K  = genSocioPontile('K', 43, 10.0)
+const POSTI_L  = genSocioPontile('L', 47, 12.0)
+const POSTI_M  = genSocioPontile('M', 47, 12.0)
+const POSTI_N  = genSocioPontile('N', 51, 12.0)
+const POSTI_O  = genSocioPontile('O', 50, 12.0)
+const POSTI_P  = genSocioPontile('P', 54, 12.0)
+const POSTI_Q  = genSocioPontile('Q', 46, 12.0)
+const POSTI_R  = genSocioPontile('R', 50, 12.0)
+const POSTI_S  = genSocioPontile('S', 48, 12.0)
+const POSTI_T  = genSocioPontile('T', 50, 12.0)
+const POSTI_U  = genSocioPontile('U', 44, 12.0)
+const POSTI_V  = genSocioPontile('V', 44, 12.0)
+const POSTI_W  = genSocioPontile('W', 33, 15.5)
+const POSTI_DS = genBerths('DS', 'Darsena Soci', 77, () => ({ lunMax: 15.5, larMax: 4.5, profondita: 3.5, categoria: 'Cat. IV', stato: 'libero', agibile: true }))
+const POSTI_FF = genBerths('FF', 'Frangiflutti', 113, (n) => {
+  if (n === 107) return { lunMax: 40.0, larMax: 9.0, profondita: 6.0, categoria: 'Cat. VIII', stato: 'libero', agibile: true }
+  return { lunMax: 18.0, larMax: 5.0, profondita: 4.0, categoria: 'Cat. V', stato: 'libero', agibile: true }
 }, { idStyle: 'compact', startIndex: 1 })
+const POSTI_TW = genBerths('TW', 'Torre / Transito', 10, () => ({ lunMax: 30.0, larMax: 8.0, profondita: 5.0, categoria: 'Cat. VII', stato: 'libero', agibile: true }), { idStyle: 'compact', startIndex: 1 })
 
 export const POSTI_DEMO: Berth[] = [
-  ...POSTI_A,
-  ...POSTI_B,
-  ...POSTI_C,
-  ...POSTI_D,
-  ...POSTI_FF_NORD,
-  ...POSTI_FF_SUD,
-  ...POSTI_TW,
-].map(applyOverride)
-
-// ── MOVIMENTI ──
-export const MOVIMENTI_DEMO: Movement[] = [
-  { id: 1, ora: '07:30', nome: 'M/Y Neptune Dream', matricola: '123456789', tipo: 'entrata', posto: 'TW3', scenario: 'transito', auth: true, pagamento: 'Pagato', note: 'Arrivo da Napoli', operatore: { nome: 'Mario Rossi', ruolo: 'Operatore Torre', iniziali: 'MR' } },
-  { id: 2, ora: '08:15', nome: 'M/Y Rex', matricola: '247881234', tipo: 'uscita_temporanea', posto: 'C 25', scenario: 'socio', auth: true, pagamento: 'Titolo Attivo', note: 'Uscita temporanea per gita', operatore: { nome: 'Mario Rossi', ruolo: 'Operatore Torre', iniziali: 'MR' } },
-  { id: 3, ora: '09:30', nome: 'S/V Libeccio', matricola: '247999222', tipo: 'spostamento', posto: 'D 16', scenario: 'transito', auth: true, origine: 'D 4', destinazione: 'D 16', pagamento: 'Pagato', note: 'Spostamento richiesto', operatore: { nome: 'Lara Conti', ruolo: 'Operatore Torre', iniziali: 'LC' } },
-  { id: 4, ora: '09:51', nome: 'Chaya', matricola: 'IT-RM-2847', tipo: 'entrata', posto: 'A 5', scenario: 'socio', auth: true, pagamento: 'Titolo Attivo', note: 'Rientro al porto', operatore: { nome: 'Mario Rossi', ruolo: 'Operatore Torre', iniziali: 'MR' } },
-  { id: 11, ora: '16:00', nome: 'M/Y Perseo', matricola: '247667788', tipo: 'cantiere', posto: 'D 12', scenario: 'socio', auth: true, origine: 'D 12', destinazione: 'Cantiere', pagamento: 'Titolo Attivo', note: 'Alaggio per manutenzione scafo', operatore: { nome: 'Giulia Marin', ruolo: 'Operatore Torre', iniziali: 'GM' } }
+  ...POSTI_A, ...POSTI_B, ...POSTI_C, ...POSTI_D,
+  ...POSTI_E, ...POSTI_F, ...POSTI_G, ...POSTI_H,
+  ...POSTI_I, ...POSTI_J, ...POSTI_K,
+  ...POSTI_L, ...POSTI_M, ...POSTI_N, ...POSTI_O,
+  ...POSTI_P, ...POSTI_Q, ...POSTI_R, ...POSTI_S,
+  ...POSTI_T, ...POSTI_U, ...POSTI_V, ...POSTI_W,
+  ...POSTI_DS, ...POSTI_FF, ...POSTI_TW,
 ]
+
+// ════════════════════════════════════════════════════════════════
+// DATI REALI — brogliaccio di banchina (20 soci, pontili H / N / W)
+// ════════════════════════════════════════════════════════════════
+
+const _CLIENTI_REAL: Client[] = [
+  { id: 1,  tipo: 'so', nome: 'Mario Rinaldi',       iniziali: 'MR', naz: 'Italiana', cf: 'RNDMRA72H10H501A', tel: '+39 333 1001001', email: 'm.rinaldi@email.it',    indirizzo: 'Via Aurelia 14, Civitavecchia',           docTipo: "Carta d'identità", docNum: 'CA0001001', posto: 'H 28', pontile: 'Pontile H', catPosto: 'Cat. II',  dimMax: 'max 10m',   azioni: '340' },
+  { id: 2,  tipo: 'so', nome: 'Luigi Ferrara',        iniziali: 'LF', naz: 'Italiana', cf: 'FRRLGU65M08H501B', tel: '+39 347 1001002', email: 'l.ferrara@email.it',    indirizzo: 'Via del Mare 8, Civitavecchia',           docTipo: "Carta d'identità", docNum: 'CA0001002', posto: 'H 40', pontile: 'Pontile H', catPosto: 'Cat. II',  dimMax: 'max 10m',   azioni: '340' },
+  { id: 3,  tipo: 'so', nome: 'Carla Marchetti',      iniziali: 'CM', naz: 'Italiana', cf: 'MRCCRL78P55H501C', tel: '+39 320 1001003', email: 'c.marchetti@email.it', indirizzo: 'Viale della Repubblica 22, Civitavecchia', docTipo: 'Passaporto',        docNum: 'YA0001003', posto: 'H 41', pontile: 'Pontile H', catPosto: 'Cat. II',  dimMax: 'max 10m',   azioni: '340' },
+  { id: 4,  tipo: 'so', nome: 'Franco Amati',         iniziali: 'FA', naz: 'Italiana', cf: 'MTAFNC58E12H501D', tel: '+39 338 1001004', email: 'f.amati@email.it',     indirizzo: 'Via Tarquinia 3, Civitavecchia',          docTipo: "Carta d'identità", docNum: 'CA0001004', posto: 'H 42', pontile: 'Pontile H', catPosto: 'Cat. II',  dimMax: 'max 10m',   azioni: '340' },
+  { id: 5,  tipo: 'so', nome: 'Giovanni Rizzo',       iniziali: 'GR', naz: 'Italiana', cf: 'RZZGNN70A10H501E', tel: '+39 349 1001005', email: 'g.rizzo@email.it',     indirizzo: 'Corso Centocelle 45, Roma',               docTipo: "Carta d'identità", docNum: 'CA0001005', posto: 'H 43', pontile: 'Pontile H', catPosto: 'Cat. II',  dimMax: 'max 10m',   azioni: '340' },
+  { id: 6,  tipo: 'so', nome: 'Maria Costantini',     iniziali: 'MC', naz: 'Italiana', cf: 'CSTMRA81T55H501F', tel: '+39 333 1001006', email: 'm.costantini@email.it',indirizzo: 'Via Flaminia 77, Roma',                   docTipo: 'Passaporto',        docNum: 'YA0001006', posto: 'H 44', pontile: 'Pontile H', catPosto: 'Cat. II',  dimMax: 'max 10m',   azioni: '340' },
+  { id: 7,  tipo: 'so', nome: 'Roberto Palumbo',      iniziali: 'RP', naz: 'Italiana', cf: 'PLMRRT69C10H501G', tel: '+39 347 1001007', email: 'r.palumbo@email.it',   indirizzo: 'Via Cassia 200, Roma',                    docTipo: "Carta d'identità", docNum: 'CA0001007', posto: 'N 47', pontile: 'Pontile N', catPosto: 'Cat. III', dimMax: 'max 12m',   azioni: '480' },
+  { id: 8,  tipo: 'so', nome: 'Alessandra Gentile',   iniziali: 'AG', naz: 'Italiana', cf: 'GNTLSN85B55H501H', tel: '+39 320 1001008', email: 'a.gentile@email.it',   indirizzo: 'Via Aurelia 310, Roma',                   docTipo: "Carta d'identità", docNum: 'CA0001008', posto: 'N 48', pontile: 'Pontile N', catPosto: 'Cat. III', dimMax: 'max 12m',   azioni: '480' },
+  { id: 9,  tipo: 'so', nome: 'Francesco Ferretti',   iniziali: 'FE', naz: 'Italiana', cf: 'FRTFNC74L10H501I', tel: '+39 338 1001009', email: 'f.ferretti@email.it',  indirizzo: 'Via Braccianese 5, Bracciano',            docTipo: 'Passaporto',        docNum: 'YA0001009', posto: 'N 49', pontile: 'Pontile N', catPosto: 'Cat. III', dimMax: 'max 12m',   azioni: '480' },
+  { id: 10, tipo: 'so', nome: 'Simona Monti',          iniziali: 'SM', naz: 'Italiana', cf: 'MNTSMN80D55H501J', tel: '+39 349 1001010', email: 's.monti@email.it',     indirizzo: 'Piazza della Repubblica 12, Viterbo',     docTipo: "Carta d'identità", docNum: 'CA0001010', posto: 'N 50', pontile: 'Pontile N', catPosto: 'Cat. III', dimMax: 'max 12m',   azioni: '480' },
+  { id: 11, tipo: 'so', nome: 'Davide Nardi',          iniziali: 'DN', naz: 'Italiana', cf: 'NRDDVD77P20H501K', tel: '+39 333 1001011', email: 'd.nardi@email.it',     indirizzo: 'Via Clodia 88, Ronciglione',              docTipo: "Carta d'identità", docNum: 'CA0001011', posto: 'N 51', pontile: 'Pontile N', catPosto: 'Cat. III', dimMax: 'max 12m',   azioni: '480' },
+  { id: 12, tipo: 'so', nome: 'Stefano Carra',         iniziali: 'SC', naz: 'Italiana', cf: 'CRRSFN66A15H501L', tel: '+39 347 1001012', email: 's.carra@email.it',     indirizzo: 'Via Trionfale 40, Roma',                  docTipo: "Carta d'identità", docNum: 'CA0001012', posto: 'W 1',  pontile: 'Pontile W', catPosto: 'Cat. IV',  dimMax: 'max 15,5m', azioni: '480' },
+  { id: 13, tipo: 'so', nome: 'Elena Gatti',           iniziali: 'EG', naz: 'Italiana', cf: 'GTTLNE82R55H501M', tel: '+39 320 1001013', email: 'e.gatti@email.it',     indirizzo: 'Via Appia Nuova 155, Roma',               docTipo: 'Passaporto',        docNum: 'YA0001013', posto: 'W 2',  pontile: 'Pontile W', catPosto: 'Cat. IV',  dimMax: 'max 15,5m', azioni: '480' },
+  { id: 14, tipo: 'so', nome: 'Marco Vitelli',         iniziali: 'MV', naz: 'Italiana', cf: 'VTLMRC76M10H501N', tel: '+39 338 1001014', email: 'm.vitelli@email.it',   indirizzo: 'Via Nomentana 302, Roma',                 docTipo: "Carta d'identità", docNum: 'CA0001014', posto: 'W 3',  pontile: 'Pontile W', catPosto: 'Cat. IV',  dimMax: 'max 15,5m', azioni: '480' },
+  { id: 15, tipo: 'so', nome: 'Paola Benedetti',       iniziali: 'PB', naz: 'Italiana', cf: 'BNDPLA79C55H501O', tel: '+39 349 1001015', email: 'p.benedetti@email.it', indirizzo: 'Via Prenestina 88, Roma',                 docTipo: "Carta d'identità", docNum: 'CA0001015', posto: 'W 4',  pontile: 'Pontile W', catPosto: 'Cat. IV',  dimMax: 'max 15,5m', azioni: '480' },
+  { id: 16, tipo: 'so', nome: 'Giorgio Lancia',        iniziali: 'GL', naz: 'Italiana', cf: 'LNCGRG61H10H501P', tel: '+39 333 1001016', email: 'g.lancia@email.it',    indirizzo: 'Via Tiburtina 540, Roma',                 docTipo: "Carta d'identità", docNum: 'CA0001016', posto: 'W 5',  pontile: 'Pontile W', catPosto: 'Cat. IV',  dimMax: 'max 15,5m', azioni: '480' },
+  { id: 17, tipo: 'so', nome: 'Teresa Caruso',         iniziali: 'TC', naz: 'Italiana', cf: 'CRSTRS83P55H501Q', tel: '+39 347 1001017', email: 't.caruso@email.it',    indirizzo: 'Via Ostiense 200, Roma',                  docTipo: 'Passaporto',        docNum: 'YA0001017', posto: 'W 6',  pontile: 'Pontile W', catPosto: 'Cat. IV',  dimMax: 'max 15,5m', azioni: '480' },
+  { id: 18, tipo: 'so', nome: 'Riccardo Mancini',      iniziali: 'RM', naz: 'Italiana', cf: 'MNCRRD70E15H501R', tel: '+39 320 1001018', email: 'r.mancini@email.it',   indirizzo: 'Via Laurentina 88, Roma',                 docTipo: "Carta d'identità", docNum: 'CA0001018', posto: 'W 7',  pontile: 'Pontile W', catPosto: 'Cat. IV',  dimMax: 'max 15,5m', azioni: '480' },
+  { id: 19, tipo: 'so', nome: 'Giulia Sorrentino',     iniziali: 'GS', naz: 'Italiana', cf: 'SRRGLI88A55H501S', tel: '+39 338 1001019', email: 'g.sorrentino@email.it',indirizzo: 'Via Colombo 14, Anzio',                   docTipo: 'Passaporto',        docNum: 'YA0001019', posto: 'W 8',  pontile: 'Pontile W', catPosto: 'Cat. IV',  dimMax: 'max 15,5m', azioni: '480' },
+  { id: 20, tipo: 'so', nome: 'Antonio De Luca',       iniziali: 'AD', naz: 'Italiana', cf: 'DLCNTN73M10H501T', tel: '+39 349 1001020', email: 'a.deluca@email.it',    indirizzo: 'Via Pontina 55, Aprilia',                 docTipo: "Carta d'identità", docNum: 'CA0001020', posto: 'W 9',  pontile: 'Pontile W', catPosto: 'Cat. IV',  dimMax: 'max 15,5m', azioni: '480' },
+]
+
+const _BARCHE_REAL: Boat[] = [
+  { id: 1,  clientId: 1,  nome: 'Seconda a Nessuno', matricola: 'CV2324',      tipo: 'Motore', modello: 'Calafuria',           lunghezza: 8.5,  larghezza: 2.8, pescaggio: 1.0, bandiera: 'Italia', posto: 'H 28' },
+  { id: 2,  clientId: 2,  nome: 'Il mare in tasca',  matricola: 'STRA5555D',   tipo: 'Motore', modello: 'Sciallino 25',        lunghezza: 7.5,  larghezza: 2.5, pescaggio: 0.8, bandiera: 'Italia', posto: 'H 40' },
+  { id: 3,  clientId: 3,  nome: 'Cabriolet',         matricola: 'IT-RM-5001',  tipo: 'Vela',   modello: 'Sun Odyssey 32i',     lunghezza: 9.8,  larghezza: 3.2, pescaggio: 1.6, bandiera: 'Italia', posto: 'H 41' },
+  { id: 4,  clientId: 5,  nome: 'Violetta II',       matricola: 'IT-RM-5002',  tipo: 'Vela',   modello: 'Jeanneau Sun 29',     lunghezza: 9.2,  larghezza: 3.1, pescaggio: 1.5, bandiera: 'Italia', posto: 'H 43' },
+  { id: 5,  clientId: 6,  nome: 'Itaca',             matricola: 'IT-RM-5003',  tipo: 'Vela',   modello: 'Bavaria 32',          lunghezza: 9.0,  larghezza: 3.0, pescaggio: 1.4, bandiera: 'Italia', posto: 'H 44' },
+  { id: 6,  clientId: 7,  nome: 'Key West',          matricola: 'IT-RM-5004',  tipo: 'Vela',   modello: 'Sun Odyssey 34.2',    lunghezza: 10.4, larghezza: 3.6, pescaggio: 1.8, bandiera: 'Italia', posto: 'N 47' },
+  { id: 7,  clientId: 8,  nome: 'Sanremo',           matricola: 'IT-RM-5005',  tipo: 'Motore', modello: 'Sanremo 34 fly',      lunghezza: 10.5, larghezza: 3.8, pescaggio: 1.2, bandiera: 'Italia', posto: 'N 48' },
+  { id: 8,  clientId: 9,  nome: 'Effe III',          matricola: 'ROMA3920DX',  tipo: 'Vela',   modello: 'Grand Soleil 37',     lunghezza: 11.5, larghezza: 3.8, pescaggio: 1.9, bandiera: 'Italia', posto: 'N 49' },
+  { id: 9,  clientId: 10, nome: 'Eklettic',          matricola: 'CV954DX',     tipo: 'Vela',   modello: 'Comet 36',            lunghezza: 11.0, larghezza: 3.6, pescaggio: 1.8, bandiera: 'Italia', posto: 'N 50' },
+  { id: 10, clientId: 11, nome: 'Eos',               matricola: 'IT-RM-5006',  tipo: 'Vela',   modello: 'Elan 340',            lunghezza: 10.8, larghezza: 3.5, pescaggio: 1.7, bandiera: 'Italia', posto: 'N 51' },
+  { id: 11, clientId: 12, nome: 'Alien',             matricola: 'IT-RM-5007',  tipo: 'Motore', modello: 'Next 330 Lx',         lunghezza: 10.2, larghezza: 3.5, pescaggio: 1.1, bandiera: 'Italia', posto: 'W 1'  },
+  { id: 12, clientId: 13, nome: 'Paradiso',          matricola: 'IT-RM-5008',  tipo: 'Motore', modello: 'Heaven 34',           lunghezza: 10.4, larghezza: 3.6, pescaggio: 1.2, bandiera: 'Italia', posto: 'W 2'  },
+  { id: 13, clientId: 14, nome: 'Elan',              matricola: 'IT-RM-5009',  tipo: 'Vela',   modello: 'Impression 434',      lunghezza: 13.2, larghezza: 4.1, pescaggio: 1.9, bandiera: 'Italia', posto: 'W 3'  },
+  { id: 14, clientId: 15, nome: 'Scotch',            matricola: 'ROMA8360DX',  tipo: 'Vela',   modello: 'Beneteau Oceanis 35', lunghezza: 10.0, larghezza: 3.4, pescaggio: 1.6, bandiera: 'Italia', posto: 'W 4'  },
+  { id: 15, clientId: 17, nome: 'Ikaroa 2',          matricola: '1ROMA4511',   tipo: 'Vela',   modello: 'Dufour 430',          lunghezza: 13.1, larghezza: 4.2, pescaggio: 1.9, bandiera: 'Italia', posto: 'W 6'  },
+  { id: 16, clientId: 19, nome: 'Sirius Black',      matricola: 'LILL2773D',   tipo: 'Vela',   modello: 'Dufour 430',          lunghezza: 13.1, larghezza: 4.2, pescaggio: 1.9, bandiera: 'Italia', posto: 'W 8'  },
+  { id: 17, clientId: 20, nome: 'Gia che ci sei..', matricola: 'IT-RM-5010',  tipo: 'Vela',   modello: 'Sun Odyssey 45.2',    lunghezza: 13.8, larghezza: 4.3, pescaggio: 2.0, bandiera: 'Italia', posto: 'W 9'  },
+]
+
+const _STAYS_REAL: Stay[] = [
+  { id: 1,  boatId: 1,  berthId: 'H 28', inizio: '2026-04-01T09:00:00', tipologia: 'socio' },
+  { id: 2,  boatId: 2,  berthId: 'H 40', inizio: '2026-04-03T10:00:00', tipologia: 'socio' },
+  { id: 3,  boatId: 3,  berthId: 'H 41', inizio: '2026-04-05T11:00:00', tipologia: 'socio' },
+  { id: 4,  boatId: 4,  berthId: 'H 43', inizio: '2026-04-02T08:30:00', tipologia: 'socio' },
+  { id: 5,  boatId: 5,  berthId: 'H 44', inizio: '2026-04-06T14:00:00', tipologia: 'socio' },
+  { id: 6,  boatId: 6,  berthId: 'N 47', inizio: '2026-04-10T09:00:00', tipologia: 'socio' },
+  { id: 7,  boatId: 7,  berthId: 'N 48', inizio: '2026-04-08T10:30:00', tipologia: 'socio' },
+  { id: 8,  boatId: 8,  berthId: 'N 49', inizio: '2026-04-12T08:00:00', tipologia: 'socio' },
+  { id: 9,  boatId: 9,  berthId: 'N 50', inizio: '2026-04-07T15:00:00', tipologia: 'socio' },
+  { id: 10, boatId: 10, berthId: 'N 51', inizio: '2026-04-11T09:30:00', tipologia: 'socio' },
+  { id: 11, boatId: 11, berthId: 'W 1',  inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
+  { id: 12, boatId: 12, berthId: 'W 2',  inizio: '2026-04-14T11:00:00', tipologia: 'socio' },
+  { id: 13, boatId: 13, berthId: 'W 3',  inizio: '2026-04-13T09:00:00', tipologia: 'socio' },
+  { id: 14, boatId: 14, berthId: 'W 4',  inizio: '2026-04-16T08:00:00', tipologia: 'socio' },
+  { id: 15, boatId: 15, berthId: 'W 6',  inizio: '2026-04-17T10:30:00', tipologia: 'socio' },
+  { id: 16, boatId: 16, berthId: 'W 8',  inizio: '2026-04-18T09:00:00', tipologia: 'socio' },
+  { id: 17, boatId: 17, berthId: 'W 9',  inizio: '2026-04-19T11:00:00', tipologia: 'socio' },
+]
+
+const _TITOLI_REAL: OwnershipTitle[] = [
+  { id: 1,  clientId: 1,  berthId: 'H 28', boatId: 1,  attivo: true, numero: 'PTRT-2016-0101', dataAcquisizione: '2016-03-15', azioni: 340, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 2,  clientId: 2,  berthId: 'H 40', boatId: 2,  attivo: true, numero: 'PTRT-2014-0102', dataAcquisizione: '2014-07-22', azioni: 340, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 3,  clientId: 3,  berthId: 'H 41', boatId: 3,  attivo: true, numero: 'PTRT-2019-0103', dataAcquisizione: '2019-05-10', azioni: 340, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 4,  clientId: 4,  berthId: 'H 42',             attivo: true, numero: 'PTRT-2012-0104', dataAcquisizione: '2012-09-01', azioni: 340, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 5,  clientId: 5,  berthId: 'H 43', boatId: 4,  attivo: true, numero: 'PTRT-2018-0105', dataAcquisizione: '2018-02-14', azioni: 340, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 6,  clientId: 6,  berthId: 'H 44', boatId: 5,  attivo: true, numero: 'PTRT-2021-0106', dataAcquisizione: '2021-11-03', azioni: 340, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 7,  clientId: 7,  berthId: 'N 47', boatId: 6,  attivo: true, numero: 'PTRT-2015-0107', dataAcquisizione: '2015-06-18', azioni: 480, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 8,  clientId: 8,  berthId: 'N 48', boatId: 7,  attivo: true, numero: 'PTRT-2020-0108', dataAcquisizione: '2020-08-25', azioni: 480, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 9,  clientId: 9,  berthId: 'N 49', boatId: 8,  attivo: true, numero: 'PTRT-2013-0109', dataAcquisizione: '2013-04-30', azioni: 480, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 10, clientId: 10, berthId: 'N 50', boatId: 9,  attivo: true, numero: 'PTRT-2017-0110', dataAcquisizione: '2017-10-12', azioni: 480, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 11, clientId: 11, berthId: 'N 51', boatId: 10, attivo: true, numero: 'PTRT-2022-0111', dataAcquisizione: '2022-01-20', azioni: 480, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 12, clientId: 12, berthId: 'W 1',  boatId: 11, attivo: true, numero: 'PTRT-2016-0112', dataAcquisizione: '2016-09-05', azioni: 480, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 13, clientId: 13, berthId: 'W 2',  boatId: 12, attivo: true, numero: 'PTRT-2018-0113', dataAcquisizione: '2018-03-22', azioni: 480, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 14, clientId: 14, berthId: 'W 3',  boatId: 13, attivo: true, numero: 'PTRT-2014-0114', dataAcquisizione: '2014-11-17', azioni: 480, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 15, clientId: 15, berthId: 'W 4',  boatId: 14, attivo: true, numero: 'PTRT-2020-0115', dataAcquisizione: '2020-06-08', azioni: 480, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 16, clientId: 16, berthId: 'W 5',              attivo: true, numero: 'PTRT-2011-0116', dataAcquisizione: '2011-12-01', azioni: 480, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 17, clientId: 17, berthId: 'W 6',  boatId: 15, attivo: true, numero: 'PTRT-2019-0117', dataAcquisizione: '2019-07-14', azioni: 480, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 18, clientId: 18, berthId: 'W 7',              attivo: true, numero: 'PTRT-2015-0118', dataAcquisizione: '2015-02-28', azioni: 480, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 19, clientId: 19, berthId: 'W 8',  boatId: 16, attivo: true, numero: 'PTRT-2021-0119', dataAcquisizione: '2021-04-19', azioni: 480, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+  { id: 20, clientId: 20, berthId: 'W 9',  boatId: 17, attivo: true, numero: 'PTRT-2017-0120', dataAcquisizione: '2017-08-31', azioni: 480, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
+]
+
+// ════════════════════════════════════════════════════════════════
+// DATI SINTETICI — generati proceduralmente (~30% riempimento)
+// Nomi, CF, barche e modelli inventati ma plausibili.
+// 80% dei soci con barca presente (Stay aperto), 20% assenti.
+// I transiti hanno sempre la barca presente.
+// ════════════════════════════════════════════════════════════════
+function _generateSynthData() {
+  const COGNOMI = ['Rossi','Ferrari','Bianchi','Romano','Colombo','Ricci','Marino','Greco','Bruno','Gallo','Conti','Mancini','Costa','Giordano','Rizzo','Lombardi','Moretti','Barbieri','Fontana','Santoro','Marini','Rinaldi','Caruso','Ferrara','Gatti','Pellegrini','Palumbo','Sanna','Vitale','Serra']
+  const NOMI_M  = ['Marco','Luca','Giovanni','Paolo','Roberto','Stefano','Davide','Antonio','Francesco','Alessandro','Massimo','Claudio','Nicola','Giorgio','Bruno','Sergio','Enrico','Fabrizio','Alberto','Cristian']
+  const NOMI_F  = ['Maria','Anna','Laura','Elena','Giulia','Francesca','Cristina','Paola','Valentina','Claudia','Sara','Monica','Roberta','Daniela','Silvia','Barbara','Patrizia','Rossella','Carla','Marta']
+  const VIE     = ['Via Roma','Via Aurelia','Via Cassia','Via Flaminia','Via Tiburtina','Via Appia','Via Prenestina','Via Nomentana','Via Ostiense','Via Laurentina','Via Pontina','Lungomare','Corso Italia','Viale Europa','Via del Porto']
+  const CITTA   = ['Roma','Civitavecchia','Anzio','Fiumicino','Ladispoli','Bracciano','Tarquinia','Viterbo','Cerveteri','Montalto di Castro','Orbetello','Grosseto','Santa Marinella','Ardea','Nettuno']
+
+  const NOMI_BARCA = ['Libertà','Tramonto','Ponente','Levante','Scirocco','Maestrale','Grecale','Tramontana','Zephyr','Aurora','Aldebaran','Stella Polare','Sirio','Castore','Polluce','Rigel','Vega','Altair','Deneb','Spica','Antares','Canopus','Capella','Alkaid','Fomalhaut','Achernar','Adhara','Hamal','Mira','Alcor','Anima Libera','Brezza di Mare','Cuore Blu','Dolce Vita','Estate Azzurra','Fiocco di Neve','Gioia di Vivere','Horizonte','Isola Felice','Lago d\'Argento','Mare Nostrum','Notte Stellata','Onda Lunga','Primavera','Quinta Essenza','Raggio di Sole','Sole Nascente','Tra le Onde','Unico Amore','Vita Bella']
+
+  const MODELLI: Record<string, { vela: string[]; motore: string[] }> = {
+    '10':   { vela: ['Bavaria 30','Beneteau First 31.7','Jeanneau Sun 30','Dufour 305','Hanse 315','Elan 310','Dehler 31','Contessa 32','Westerly 33','Catalina 30'], motore: ['Cranchi 32','Fiart 30','Rio 29','Rizzardi 27','Apreamare 32','Gozzo 30','Mochi 28','Selfcraft 31','Aquamar 30','Riva 27'] },
+    '12':   { vela: ['Bavaria 33','Beneteau Oceanis 35','Jeanneau 35','Dufour 375','Hanse 345','Elan 340','X-Yachts X35','Hallberg-Rassy 34','Moody 33','Oyster 336'], motore: ['Cranchi 36','Fiart 35','Azimut 36','Ferretti 38','Sunseeker 34','Princess V36','Beneteau Antares 36','Riva 36','Drago 33','Absolute 36'] },
+    '15.5': { vela: ['Bavaria 40','Beneteau Oceanis 40.1','Jeanneau 44','Dufour 430','Hanse 418','Elan Impression 434','Dehler 42','X-Yachts X4.3','Nauticat 38','Moody 38'], motore: ['Azimut 40','Ferretti 44','Sunseeker 40','Princess V40','Cranchi 40','Riva 40','Absolute 40','Fiart 40','Bavaria 40 Sport','Galeon 405'] },
+    '18':   { vela: ['Bavaria 46','Beneteau Oceanis 48','Jeanneau 49','Dufour 470','Hanse 458','Hallberg-Rassy 44','Oyster 47','Swan 48','Malo 39','X-Yachts X4.9'], motore: ['Azimut 46','Ferretti 50','Sunseeker 48','Princess V48','Cranchi 48','Riva 48','Absolute 48','Fairline 46','Pershing 50','Sanlorenzo 46'] },
+    '30':   { vela: ['Swan 60','Hallberg-Rassy 55','Oyster 56','Malo 46','Moody 47','Wauquiez 45','Amel 55','Nauticat 52','Najad 511','X-Yachts X5.6'], motore: ['Azimut 60','Ferretti 670','Sunseeker 63','Princess Y72','Riva 63','Sanlorenzo 62','Absolute 62','Leopard 58','Galeon 640 FLY','Prestige 680'] },
+  }
+
+  const NOMI_TRANSITO = ['Wind Rider','Sea Dream','Blue Horizon','Ocean Spirit','Wave Dancer','Salty Dog','Nautilus','Pacific Star','Nordic Spirit','Mediterranean Queen','Adriatic Pearl','Aegean Dream','Caribbean Wind','Atlantic Breeze','Windfall','Seabird','Wayward Wind','Drifter','Wanderer','Explorer']
+  const BANDIERE = ['Italia','Francia','Spagna','Germania','Olanda','Inghilterra','Grecia','Svezia','Norvegia','Danimarca']
+  const PREFISSI_MAT = ['FR','DE','NL','ES','GB','SE','NO','GR','DK','PT']
+
+  const clients: Client[] = []
+  const boats:   Boat[]   = []
+  const titles:  OwnershipTitle[] = []
+  const stays:   Stay[]   = []
+
+  let cId    = 21
+  let bId    = 18
+  let tId    = 21
+  let sId    = 18
+  let gIdx   = 0
+
+  // ── Aggiunge un socio con barca su un posto ──
+  function addSocio(berthId: string, lunMax: number, pontileNome: string) {
+    const isM     = gIdx % 2 === 0
+    const nome    = isM ? NOMI_M[gIdx % NOMI_M.length] : NOMI_F[gIdx % NOMI_F.length]
+    const cognome = COGNOMI[(gIdx * 7) % COGNOMI.length]
+    const azioni  = lunMax <= 10 ? 340 : lunMax <= 12 ? 480 : lunMax <= 15.5 ? 580 : 650
+    const catPosto = lunMax <= 10 ? 'Cat. II' : lunMax <= 12 ? 'Cat. III' : lunMax <= 15.5 ? 'Cat. IV' : 'Cat. V'
+    const dimMax  = `max ${lunMax}m`
+    const anno    = 60 + (gIdx % 40)
+    const mese    = ['A','B','C','D','E','H','L','M','P','R','S','T'][gIdx % 12]
+    const giorno  = String(1 + (gIdx % 28)).padStart(2,'0')
+    const comune  = ['H501','F839','H264','G273','G480','H501','F839'][gIdx % 7]
+
+    clients.push({
+      id: cId, tipo: 'so',
+      nome: `${nome} ${cognome}`, iniziali: `${nome[0]}${cognome[0]}`,
+      naz: 'Italiana',
+      cf: `${cognome.slice(0,3).toUpperCase().padEnd(3,'X')}${nome.slice(0,3).toUpperCase().padEnd(3,'X')}${anno}${mese}${giorno}${comune}${String.fromCharCode(65 + gIdx % 26)}`,
+      tel: `+39 3${String(30 + gIdx % 70).padStart(2,'0')} ${String(1000000 + cId * 7).slice(0,7)}`,
+      email: `${nome.toLowerCase()}${cId}@email.it`,
+      indirizzo: `${VIE[gIdx % VIE.length]} ${10 + gIdx % 200}, ${CITTA[gIdx % CITTA.length]}`,
+      docTipo: gIdx % 3 === 0 ? 'Passaporto' : "Carta d'identità",
+      docNum: `${['CA','YA','CB','AB'][gIdx % 4]}${String(1000000 + cId * 13).slice(0,7)}`,
+      posto: berthId, pontile: pontileNome, catPosto, dimMax, azioni: String(azioni),
+    })
+
+    const isVela   = gIdx % 3 !== 0
+    const catKey   = String(lunMax)
+    const modelli  = MODELLI[catKey] ?? MODELLI['12']
+    const lista    = isVela ? modelli.vela : modelli.motore
+    const lun      = Math.round((lunMax - 0.5 - (gIdx % 3) * 0.3) * 10) / 10
+    const lar      = Math.round((lunMax <= 10 ? 3.2 + (gIdx % 4) * 0.1 : lunMax <= 12 ? 3.5 + (gIdx % 5) * 0.1 : 4.0 + (gIdx % 5) * 0.1) * 10) / 10
+    const pesc     = Math.round((lunMax <= 10 ? 1.3 + (gIdx % 5) * 0.1 : lunMax <= 12 ? 1.5 + (gIdx % 5) * 0.1 : 1.8 + (gIdx % 4) * 0.1) * 10) / 10
+
+    boats.push({
+      id: bId, clientId: cId,
+      nome: NOMI_BARCA[gIdx % NOMI_BARCA.length],
+      matricola: `IT-RM-${6000 + bId}`,
+      tipo: isVela ? 'Vela' : 'Motore',
+      modello: lista[gIdx % lista.length],
+      lunghezza: lun, larghezza: lar, pescaggio: pesc,
+      bandiera: 'Italia', posto: berthId,
+    })
+
+    const acqYear = 2010 + (gIdx % 13)
+    const acqMese = String(1 + (gIdx % 12)).padStart(2,'0')
+    const acqGg   = String(1 + (gIdx % 28)).padStart(2,'0')
+    titles.push({
+      id: tId++, clientId: cId, berthId, boatId: bId, attivo: true,
+      numero: `PTRT-${acqYear}-${String(200 + gIdx).padStart(4,'0')}`,
+      dataAcquisizione: `${acqYear}-${acqMese}-${acqGg}`,
+      azioni, catAzioni: azioni >= 580 ? 'A' : 'B',
+      canone: gIdx % 15 === 0 ? 'Scaduto' : 'Regolare',
+      scadenzaCanone: '2027-01-31',
+    })
+
+    // 80% presente (Stay aperto), 20% assente
+    if (gIdx % 5 !== 0) {
+      const sm = String(1 + (gIdx % 4)).padStart(2,'0')
+      const sd = String(1 + (gIdx % 27)).padStart(2,'0')
+      const sh = String(8 + (gIdx % 10)).padStart(2,'0')
+      stays.push({ id: sId++, boatId: bId, berthId, inizio: `2026-${sm}-${sd}T${sh}:00:00`, tipologia: 'socio' })
+    }
+
+    cId++; bId++; gIdx++
+  }
+
+  // ── Aggiunge un transito su un posto ──
+  function addTransito(berthId: string, lunMax: number) {
+    const isM   = gIdx % 2 === 0
+    const nome  = isM ? NOMI_M[gIdx % NOMI_M.length] : NOMI_F[gIdx % NOMI_F.length]
+    const cogn  = COGNOMI[(gIdx + 5) % COGNOMI.length]
+    const band  = BANDIERE[gIdx % BANDIERE.length]
+
+    clients.push({
+      id: cId, tipo: 'pf',
+      nome: `${nome} ${cogn}`, iniziali: `${nome[0]}${cogn[0]}`,
+      naz: band,
+      tel: `+39 3${String(40 + gIdx % 60).padStart(2,'0')} ${String(2000000 + cId * 11).slice(0,7)}`,
+      email: `${nome.toLowerCase()}${cId}@mail.com`,
+    })
+
+    const isVela  = gIdx % 2 === 0
+    const catKey  = String(lunMax)
+    const modelli = MODELLI[catKey] ?? MODELLI['12']
+    const lista   = isVela ? modelli.vela : modelli.motore
+    const lun     = Math.round((lunMax - 0.5 - (gIdx % 3) * 0.5) * 10) / 10
+    const lar     = Math.round((lunMax <= 10 ? 3.0 + (gIdx % 3) * 0.1 : lunMax <= 12 ? 3.4 + (gIdx % 4) * 0.1 : lunMax <= 18 ? 4.5 + (gIdx % 4) * 0.2 : 6.5 + (gIdx % 4) * 0.3) * 10) / 10
+    const pesc    = Math.round((lunMax <= 10 ? 0.9 + (gIdx % 4) * 0.2 : lunMax <= 12 ? 1.2 + (gIdx % 5) * 0.2 : lunMax <= 18 ? 1.8 + (gIdx % 4) * 0.2 : 2.5 + (gIdx % 4) * 0.3) * 10) / 10
+
+    boats.push({
+      id: bId, clientId: cId,
+      nome: NOMI_TRANSITO[gIdx % NOMI_TRANSITO.length],
+      matricola: `${PREFISSI_MAT[gIdx % PREFISSI_MAT.length]}-${String(1000 + gIdx * 7)}-T`,
+      tipo: isVela ? 'Vela' : 'Motore',
+      modello: lista[gIdx % lista.length],
+      lunghezza: lun, larghezza: lar, pescaggio: pesc,
+      bandiera: band, posto: berthId,
+    })
+
+    const sd = String(15 + (gIdx % 13)).padStart(2,'0')
+    const sh = String(8 + (gIdx % 12)).padStart(2,'0')
+    stays.push({ id: sId++, boatId: bId, berthId, inizio: `2026-04-${sd}T${sh}:00:00`, tipologia: 'transito' })
+
+    cId++; bId++; gIdx++
+  }
+
+  // ── SOCI: ~30% per pontile ──
+  // A cantiere (A1-A14): 4 posti
+  [1,2,3,4].forEach(n => addSocio(`A ${n}`, 12.0, 'Pontile A'))
+  // E → K (10m)
+  Array.from({length:12},(_,i)=>i+1).forEach(n => addSocio(`E ${n}`, 10.0, 'Pontile E'))
+  Array.from({length:13},(_,i)=>i+1).forEach(n => addSocio(`F ${n}`, 10.0, 'Pontile F'))
+  Array.from({length:13},(_,i)=>i+1).forEach(n => addSocio(`G ${n}`, 10.0, 'Pontile G'))
+  Array.from({length:7}, (_,i)=>i+1).forEach(n => addSocio(`H ${n}`, 10.0, 'Pontile H'))
+  Array.from({length:14},(_,i)=>i+1).forEach(n => addSocio(`I ${n}`, 10.0, 'Pontile I'))
+  Array.from({length:14},(_,i)=>i+1).forEach(n => addSocio(`J ${n}`, 10.0, 'Pontile J'))
+  Array.from({length:13},(_,i)=>i+1).forEach(n => addSocio(`K ${n}`, 10.0, 'Pontile K'))
+  // L → W (12m)
+  Array.from({length:14},(_,i)=>i+1).forEach(n => addSocio(`L ${n}`, 12.0, 'Pontile L'))
+  Array.from({length:14},(_,i)=>i+1).forEach(n => addSocio(`M ${n}`, 12.0, 'Pontile M'))
+  Array.from({length:10},(_,i)=>i+1).forEach(n => addSocio(`N ${n}`, 12.0, 'Pontile N'))
+  Array.from({length:15},(_,i)=>i+1).forEach(n => addSocio(`O ${n}`, 12.0, 'Pontile O'))
+  Array.from({length:16},(_,i)=>i+1).forEach(n => addSocio(`P ${n}`, 12.0, 'Pontile P'))
+  Array.from({length:14},(_,i)=>i+1).forEach(n => addSocio(`Q ${n}`, 12.0, 'Pontile Q'))
+  Array.from({length:15},(_,i)=>i+1).forEach(n => addSocio(`R ${n}`, 12.0, 'Pontile R'))
+  Array.from({length:14},(_,i)=>i+1).forEach(n => addSocio(`S ${n}`, 12.0, 'Pontile S'))
+  Array.from({length:15},(_,i)=>i+1).forEach(n => addSocio(`T ${n}`, 12.0, 'Pontile T'))
+  Array.from({length:13},(_,i)=>i+1).forEach(n => addSocio(`U ${n}`, 12.0, 'Pontile U'))
+  Array.from({length:13},(_,i)=>i+1).forEach(n => addSocio(`V ${n}`, 12.0, 'Pontile V'))
+  addSocio('W 10', 15.5, 'Pontile W')
+  // DS (15.5m)
+  Array.from({length:23},(_,i)=>i+1).forEach(n => addSocio(`DS ${n}`, 15.5, 'Darsena Soci'))
+  // FF soci (18m) — skip FF99 e FF108 che sono transito
+  Array.from({length:34},(_,i)=>i+1).forEach(n => addSocio(`FF${n}`, 18.0, 'Frangiflutti'))
+
+  // ── TRANSITI: ~30% per pontile ──
+  // A transito (A15-A19)
+  Array.from({length:5},(_,i)=>i+15).forEach(n => addTransito(`A ${n}`, 12.0))
+  // B transito (B11-B20)
+  Array.from({length:10},(_,i)=>i+11).forEach(n => addTransito(`B ${n}`, 9.0))
+  // C (C1-C8)
+  Array.from({length:8},(_,i)=>i+1).forEach(n => addTransito(`C ${n}`, 15.5))
+  // D (D1-D10)
+  Array.from({length:10},(_,i)=>i+1).forEach(n => addTransito(`D ${n}`, 12.0))
+  // FF transito
+  addTransito('FF99', 18.0)
+  // TW (TW1-TW3)
+  ;[1,2,3].forEach(n => addTransito(`TW${n}`, 30.0))
+
+  return { clients, boats, titles, stays }
+}
+
+const _SYNTH = _generateSynthData()
+
+// ════════════════════════════════════════════════════════════════
+// EXPORT — array unificati (reali + sintetici)
+// ════════════════════════════════════════════════════════════════
+export const CLIENTI_DEMO: Client[]         = [..._CLIENTI_REAL, ..._SYNTH.clients]
+export const BARCHE_DEMO:  Boat[]           = [..._BARCHE_REAL,  ..._SYNTH.boats]
+export const STAYS_DEMO:   Stay[]           = [..._STAYS_REAL,   ..._SYNTH.stays]
+export const TITOLI_POSSESSO_DEMO: OwnershipTitle[] = [..._TITOLI_REAL, ..._SYNTH.titles]
+
+export const MOVIMENTI_DEMO:        Movement[]       = []
+export const CANTIERE_SESSIONS_DEMO: CantiereSession[] = []
+export const AUTORIZZAZIONI_DEMO:   Authorization[]  = []
+export const RICEVUTE_DEMO:         Receipt[]        = []
+export const MANUTENZIONI_DEMO:     MaintenanceJob[] = []
+export const SEGNALAZIONI_DEMO:     Report[]         = []
+export const ARRIVI_DEMO:           Arrival[]        = []
+export const NOTIFICHE_DEMO:        SystemAlert[]    = []
 
 // ── TARIFFE ──
 export const TARIFFE_DEMO: Tariff[] = [
-  { categoria: 'Cat. I',    dimMax: 'fino a 9,0m',  lunMax: 9.0,   prezzoGiorno: 40,  ivaInclusa: true, acquaInclusa: true },
-  { categoria: 'Cat. II',   dimMax: 'fino a 10,0m', lunMax: 10.0,  prezzoGiorno: 50,  ivaInclusa: true, acquaInclusa: true },
-  { categoria: 'Cat. III',  dimMax: 'fino a 12,0m', lunMax: 12.0,  prezzoGiorno: 70,  ivaInclusa: true, acquaInclusa: true },
-  { categoria: 'Cat. IV',   dimMax: 'fino a 15,5m', lunMax: 15.5,  prezzoGiorno: 90,  ivaInclusa: true, acquaInclusa: true },
-  { categoria: 'Cat. V',    dimMax: 'fino a 18,0m', lunMax: 18.0,  prezzoGiorno: 160, ivaInclusa: true, acquaInclusa: true },
-  { categoria: 'Cat. VI',   dimMax: 'fino a 22,0m', lunMax: 22.0,  prezzoGiorno: 220, ivaInclusa: true, acquaInclusa: true },
-  { categoria: 'Cat. VII',  dimMax: 'fino a 30,0m', lunMax: 30.0,  prezzoGiorno: 320, ivaInclusa: true, acquaInclusa: true },
-  { categoria: 'Cat. VIII', dimMax: 'fino a 40,0m', lunMax: 40.0,  prezzoGiorno: 450, ivaInclusa: true, acquaInclusa: true },
-  { categoria: 'Cat. IX',   dimMax: 'oltre 40,0m',  lunMax: 9999,  prezzoGiorno: 600, ivaInclusa: true, acquaInclusa: true },
+  { categoria: 'Cat. I',    dimMax: 'fino a 9,0m',   lunMax: 9.0,  prezzoGiorno: 40,  ivaInclusa: true, acquaInclusa: true },
+  { categoria: 'Cat. II',   dimMax: 'fino a 10,0m',  lunMax: 10.0, prezzoGiorno: 50,  ivaInclusa: true, acquaInclusa: true },
+  { categoria: 'Cat. III',  dimMax: 'fino a 12,0m',  lunMax: 12.0, prezzoGiorno: 70,  ivaInclusa: true, acquaInclusa: true },
+  { categoria: 'Cat. IV',   dimMax: 'fino a 15,5m',  lunMax: 15.5, prezzoGiorno: 90,  ivaInclusa: true, acquaInclusa: true },
+  { categoria: 'Cat. V',    dimMax: 'fino a 18,0m',  lunMax: 18.0, prezzoGiorno: 160, ivaInclusa: true, acquaInclusa: true },
+  { categoria: 'Cat. VI',   dimMax: 'fino a 22,0m',  lunMax: 22.0, prezzoGiorno: 220, ivaInclusa: true, acquaInclusa: true },
+  { categoria: 'Cat. VII',  dimMax: 'fino a 30,0m',  lunMax: 30.0, prezzoGiorno: 320, ivaInclusa: true, acquaInclusa: true },
+  { categoria: 'Cat. VIII', dimMax: 'fino a 40,0m',  lunMax: 40.0, prezzoGiorno: 450, ivaInclusa: true, acquaInclusa: true },
+  { categoria: 'Cat. IX',   dimMax: 'oltre 40,0m',   lunMax: 9999, prezzoGiorno: 600, ivaInclusa: true, acquaInclusa: true },
 ]
 
-// ── RICEVUTE ──
-export const RICEVUTE_DEMO: Receipt[] = [
-  { numero: '2026/0041', data: '2026-04-20', nomeBarca: 'M/Y Neptune Dream', matricola: '123456789', posto: 'TW3', periodo: '17/04/2026 – 20/04/2026', giorni: 3, categoria: 'Cat. VII', tariffa: 320, extra: 0,  totale: 960,  metodo: 'pos',      operatore: 'Mario Rossi' },
-  { numero: '2026/0042', data: '2026-04-21', nomeBarca: 'S/V Tramontana',    matricola: '247654321', posto: 'B 10', periodo: '18/04/2026 – 21/04/2026', giorni: 3, categoria: 'Cat. IV', tariffa: 90,  extra: 15, totale: 285,  metodo: 'contante', operatore: 'Lara Conti' },
-  { numero: '2026/0043', data: '2026-04-22', nomeBarca: 'S/V Libeccio',      matricola: '247999222', posto: 'D 16',periodo: '20/04/2026 – 22/04/2026', giorni: 2, categoria: 'Cat. IV', tariffa: 90,  extra: 0,  totale: 180,  metodo: 'pos',      operatore: 'Mario Rossi' },
-  { numero: '2026/0044', data: '2026-04-22', nomeBarca: 'M/Y Rex',           matricola: '247881234', posto: 'C 25', periodo: '21/04/2026 – 22/04/2026', giorni: 1, categoria: 'Cat. II', tariffa: 50,  extra: 0,  totale: 50,   metodo: 'contante', operatore: 'Giulia Marin' },
-]
-
-// ── MANUTENZIONI SUBACQUEE ──
-export const MANUTENZIONI_DEMO: MaintenanceJob[] = [
-  { id: 1, berthCodice: 'D 1', tipoLavoro: 'Sostituzione catenaria principale', descrizione: 'Catenaria corrosa, sostituzione urgente prima della stagione', urgenza: 'urgente', stato: 'dafare', origine: 'socio', clientId: 1, assegnatoA: 'Reparto subacquei', dataPrevista: '2026-04-23' },
-  { id: 2, berthCodice: 'B 14', tipoLavoro: 'Controllo visivo corpo morto', descrizione: 'Ispezione periodica programmata corpo morto lato destro', urgenza: 'normale', stato: 'incorso', origine: 'torre', assegnatoA: 'Reparto subacquei', dataPrevista: '2026-04-22' },
-  { id: 3, berthCodice: 'D 8', tipoLavoro: 'Rimozione cima attorcigliata elica', descrizione: 'Cima intrappolata nell\'elica del posto E 8, barca impossibilitata a uscire', urgenza: 'urgente', stato: 'incorso', origine: 'socio', clientId: 5, assegnatoA: 'Reparto subacquei', dataPrevista: '2026-04-22' },
-  { id: 4, berthCodice: 'D 12', tipoLavoro: 'Ispezione fondale post-tempesta', descrizione: 'Dopo la mareggiata del 18/04, verificare integrità ancoraggi Pontile Delta', urgenza: 'programmato', stato: 'dafare', origine: 'direzione', assegnatoA: 'Reparto subacquei', dataPrevista: '2026-04-25' },
-  { id: 5, berthCodice: 'C 25', tipoLavoro: 'Sostituzione bitta di ormeggio', descrizione: 'Bitta lato sinistro danneggiata da urto, necessaria sostituzione completa', urgenza: 'normale', stato: 'completato', origine: 'torre', assegnatoA: 'Reparto subacquei', completatoDa: 'Marco Redi', completatoOre: '14:30', dataPrevista: '2026-04-20' },
-  { id: 6, berthCodice: 'TW3', tipoLavoro: 'Pulizia fondale da detriti', descrizione: 'Accumulo detriti sul fondale zona transito west', urgenza: 'programmato', stato: 'dafare', origine: 'torre', assegnatoA: 'Reparto subacquei', dataPrevista: '2026-04-28' }
-]
-
-// ── SEGNALAZIONI PORTO ──
-export const SEGNALAZIONI_DEMO: Report[] = [
-  { id: 1, zona: 'Pontile B — lato destro', tipoProblema: 'Illuminazione pontile', descrizione: 'Tre lampioni spenti nel tratto tra B10 e B18', urgenza: 'urgente', stato: 'dafare', canale: 'di_persona', assegnatoA: 'manutenzione', origine: 'torre', dataSegnalazione: '2026-04-22' },
-  { id: 2, zona: 'Pontile Echo — radice', tipoProblema: 'Impianto elettrico', descrizione: 'Colonnina elettrica posti E1-E4 non eroga corrente', urgenza: 'urgente', stato: 'incorso', canale: 'telefono', clientId: 5, assegnatoA: 'manutenzione', origine: 'torre', dataSegnalazione: '2026-04-21' },
-  { id: 3, zona: 'Pontile Delta — radice', tipoProblema: 'Banchina/pavimentazione', descrizione: 'Tavola di legno del camminamento rotta, rischio inciampo', urgenza: 'normale', stato: 'dafare', canale: 'ispezione', assegnatoA: 'esterno', origine: 'direzione', dataSegnalazione: '2026-04-20' },
-  { id: 4, zona: 'Darsena — briccola 12', tipoProblema: 'Ormeggio', descrizione: 'Briccola allentata, oscillazione eccessiva con moto ondoso', urgenza: 'urgente', stato: 'completato', canale: 'email', assegnatoA: 'subacquei', origine: 'direzione', dataSegnalazione: '2026-04-18' },
-  { id: 5, zona: 'Pontile Delta — testata', tipoProblema: 'Illuminazione pontile', descrizione: 'Faro di testata pontile intermittente', urgenza: 'normale', stato: 'dafare', canale: 'di_persona', assegnatoA: 'manutenzione', origine: 'torre', dataSegnalazione: '2026-04-22' }
-]
-
-
-// -- ARRIVI PREVISTI --
-export const ARRIVI_DEMO: Arrival[] = [
-  { id: 1, nomeBarca: 'S/V Vento', matricola: 'NL-4521-T', bandiera: 'Paesi Bassi', tipo: 'vela', lunghezza: 13.5, pescaggio: 2.0, postoIndicato: 'D 14', dataPrevista: '2026-04-22', oraPrevista: '14:30', stato: 'oggi', note: 'Arrivo da Barcellona, 2 persone a bordo', inseritoDa: 'Mario Rossi', createdAt: '2026-04-21' },
-  { id: 2, nomeBarca: 'M/Y Azzurra II', matricola: 'IT-GE-0892', bandiera: 'Italia', tipo: 'motore', lunghezza: 18.2, pescaggio: 1.8, postoIndicato: 'TW2', dataPrevista: '2026-04-22', oraPrevista: '17:00', stato: 'oggi', note: 'Cliente abituale, chiede posto frontale', inseritoDa: 'Lara Conti', createdAt: '2026-04-20' },
-  { id: 3, nomeBarca: 'Cat. Levante', matricola: 'FR-8812-C', bandiera: 'Francia', tipo: 'catamarano', lunghezza: 14.8, pescaggio: 1.2, postoIndicato: 'C 20', dataPrevista: '2026-04-23', oraPrevista: '10:00', stato: 'atteso', inseritoDa: 'Mario Rossi', createdAt: '2026-04-22' },
-  { id: 4, nomeBarca: 'M/Y Poseidon', matricola: 'GR-2201-M', bandiera: 'Grecia', tipo: 'motore', lunghezza: 22.0, pescaggio: 2.5, postoIndicato: 'TW4', dataPrevista: '2026-04-24', oraPrevista: '09:00', stato: 'atteso', note: 'Richiede allaccio corrente 380V', inseritoDa: 'Giulia Marin', createdAt: '2026-04-22' },
-  { id: 5, nomeBarca: 'S/V Nordic Star', matricola: 'SE-1100-V', bandiera: 'Svezia', tipo: 'vela', lunghezza: 11.5, pescaggio: 1.8, postoIndicato: 'B 22', dataPrevista: '2026-04-21', oraPrevista: '16:00', stato: 'in_ritardo', note: 'Non ancora arrivata, non risponde al VHF', inseritoDa: 'Mario Rossi', createdAt: '2026-04-20' },
-  { id: 6, nomeBarca: 'M/Y Dolce Vita', matricola: 'IT-NA-3344', bandiera: 'Italia', tipo: 'motore', lunghezza: 9.8, pescaggio: 1.1, postoIndicato: 'B 16', dataPrevista: '2026-04-20', stato: 'arrivato', inseritoDa: 'Lara Conti', createdAt: '2026-04-19' },
-]
-
-// -- TITOLI DI POSSESSO (M-07) --
-// Ogni socio (Client.tipo === 'so') deve avere QUI un OwnershipTitle che lo
-// lega al suo berthId. La SociPage ("Elenco Soci e Posti") usa TITOLI come
-// tabella di JOIN: senza titolo, anche se Client.posto è valorizzato, il
-// socio risulta "senza posto". Vedi memoria: ff_test_setup.md
-// Modello v3 (27 Apr 2026): boatId aggiunto. Undefined per i titoli senza
-// barca corrente (es. FF103 cliente 11, FF110 cliente 18 — soci che hanno
-// venduto/non hanno ancora la barca). attivo: true di default su tutti.
-export const TITOLI_POSSESSO_DEMO: OwnershipTitle[] = [
-  // Soci storici (id 1, 4, 5)
-  { id: 1, clientId: 1, berthId: 'A 5',  boatId: 1, attivo: true, numero: 'PTRT-2015-0102', dataAcquisizione: '2015-04-10', azioni: 620, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 2, clientId: 5, berthId: 'D 12', boatId: 6, attivo: true, numero: 'PTRT-2018-0554', dataAcquisizione: '2018-09-22', azioni: 480, catAzioni: 'B', canone: 'Scaduto',  scadenzaCanone: '2026-01-31' },
-  { id: 3, clientId: 4, berthId: 'C 8',  boatId: 5, attivo: true, numero: 'PTRT-2020-0891', dataAcquisizione: '2020-02-15', azioni: 310, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-
-  // Titoli mancanti per soci storici già esistenti (id 6, 7)
-  { id: 4, clientId: 6, berthId: 'D 7',  boatId: 7, attivo: true, numero: 'PTRT-2017-0345', dataAcquisizione: '2017-06-12', azioni: 480, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 5, clientId: 7, berthId: 'C 25', boatId: 8, attivo: true, numero: 'PTRT-2019-0612', dataAcquisizione: '2019-11-03', azioni: 340, catAzioni: 'B', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-
-  // ── TITOLI FRANGIFLUTTI (id 6-22, 25 Apr 2026) ──
-  // Uno per ogni socio FF (clientId 8-24).
-  { id: 6,  clientId: 8,  berthId: 'FF100', boatId: 9,  attivo: true, numero: 'PTRT-2014-0078', dataAcquisizione: '2014-03-22', azioni: 950, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 7,  clientId: 9,  berthId: 'FF101', boatId: 10, attivo: true, numero: 'PTRT-2016-0211', dataAcquisizione: '2016-05-14', azioni: 780, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 8,  clientId: 10, berthId: 'FF102', boatId: 11, attivo: true, numero: 'PTRT-2018-0432', dataAcquisizione: '2018-07-08', azioni: 650, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  // FF103: Carla Bruno senza barca (caso "socio senza barca / posto investimento")
-  { id: 9,  clientId: 11, berthId: 'FF103',             attivo: true, numero: 'PTRT-2019-0501', dataAcquisizione: '2019-04-19', azioni: 650, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 10, clientId: 12, berthId: 'FF104', boatId: 12, attivo: true, numero: 'PTRT-2013-0044', dataAcquisizione: '2013-09-05', azioni: 950, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 11, clientId: 13, berthId: 'FF105', boatId: 13, attivo: true, numero: 'PTRT-2017-0298', dataAcquisizione: '2017-02-28', azioni: 780, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 12, clientId: 14, berthId: 'FF106', boatId: 14, attivo: true, numero: 'PTRT-2020-0678', dataAcquisizione: '2020-10-11', azioni: 650, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 13, clientId: 15, berthId: 'FF107', boatId: 15, attivo: true, numero: 'PTRT-2015-0156', dataAcquisizione: '2015-12-01', azioni: 950, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 14, clientId: 16, berthId: 'FF108', boatId: 16, attivo: true, numero: 'PTRT-2018-0388', dataAcquisizione: '2018-08-17', azioni: 780, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 15, clientId: 17, berthId: 'FF109', boatId: 17, attivo: true, numero: 'PTRT-2021-0723', dataAcquisizione: '2021-05-04', azioni: 650, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  // FF110: Tommaso Ricci senza barca (caso "socio senza barca / posto investimento")
-  { id: 16, clientId: 18, berthId: 'FF110',             attivo: true, numero: 'PTRT-2012-0021', dataAcquisizione: '2012-06-10', azioni: 950, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 17, clientId: 19, berthId: 'FF111', boatId: 18, attivo: true, numero: 'PTRT-2019-0489', dataAcquisizione: '2019-03-15', azioni: 780, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 18, clientId: 20, berthId: 'FF112', boatId: 19, attivo: true, numero: 'PTRT-2017-0322', dataAcquisizione: '2017-11-22', azioni: 650, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 19, clientId: 21, berthId: 'FF113', boatId: 20, attivo: true, numero: 'PTRT-2016-0244', dataAcquisizione: '2016-07-30', azioni: 950, catAzioni: 'A', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 20, clientId: 22, berthId: 'FF1',   boatId: 21, attivo: true, numero: 'PTRT-2020-0612', dataAcquisizione: '2020-04-08', azioni: 180, catAzioni: 'C', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 21, clientId: 23, berthId: 'FF2',   boatId: 22, attivo: true, numero: 'PTRT-2019-0533', dataAcquisizione: '2019-09-25', azioni: 180, catAzioni: 'C', canone: 'Regolare', scadenzaCanone: '2027-01-31' },
-  { id: 22, clientId: 24, berthId: 'FF3',   boatId: 23, attivo: true, numero: 'PTRT-2021-0701', dataAcquisizione: '2021-02-14', azioni: 180, catAzioni: 'C', canone: 'Regolare', scadenzaCanone: '2027-01-31' }
-]
-
-// -- AUTORIZZAZIONI (M-07) --
-export const AUTORIZZAZIONI_DEMO: Authorization[] = [
-  { id: 1, socioId: 6, berthId: 'D 7', tipo: 'affitto', beneficiario: 'Luigi Verdi (PF)', barca: 'S/V Mistral', matricola: 'IT-NA-1122', tel: '+39 340 1234567', dal: '2026-04-01', al: '2026-09-30', giorniResidui: 161, stato: 'attiva', authDa: 'Direzione' },
-  { id: 2, socioId: 5, berthId: 'D 12', tipo: 'ospite', beneficiario: 'Giacomo Neri', barca: 'M/Y Relax', matricola: 'FR-9988-C', tel: '+39 333 9876543', dal: '2026-04-20', al: '2026-04-25', giorniResidui: 3, stato: 'attiva', note: 'Ospite gratuito confermato', authDa: 'Torre' },
-  { id: 3, socioId: 4, berthId: 'C 8', tipo: 'amico', beneficiario: 'Elena Bianchi', barca: 'S/V Vento', matricola: 'NL-4521-T', tel: '+39 320 1122334', dal: '2026-03-01', al: '2026-03-15', giorniResidui: 0, stato: 'scaduta', authDa: 'Direzione' }
-]
-
-// -- UTENTI DI SISTEMA (M-12) --
+// ── UTENTI DI SISTEMA ──
 export const UTENTI_SISTEMA_DEMO: SystemUser[] = [
-  { id: 1, nome: 'Giuseppe Direttore', email: 'direzione@marinatraiano.it', ruolo: 'direzione', stato: 'attivo', ultimoAccesso: '2026-04-22 08:15' },
-  { id: 2, nome: 'Marta Contabile', email: 'amministrazione@marinatraiano.it', ruolo: 'direzione', stato: 'attivo', ultimoAccesso: '2026-04-22 09:30' },
-  { id: 3, nome: 'Luigi Torre', email: 'torre1@marinatraiano.it', ruolo: 'torre', stato: 'attivo', ultimoAccesso: '2026-04-22 14:00' },
-  { id: 4, nome: 'Marco Nocchiero', email: 'ormeggiatori@marinatraiano.it', ruolo: 'ormeggiatore', stato: 'attivo', ultimoAccesso: '2026-04-22 07:45' },
-  { id: 5, nome: 'Anna Stagionale', email: 'anna.s@marinatraiano.it', ruolo: 'torre', stato: 'disattivo', ultimoAccesso: '2025-09-30 18:00' }
+  { id: 1, nome: 'Direzione',    email: 'direzione@marina.it',    ruolo: 'direzione',    stato: 'attivo' },
+  { id: 2, nome: 'Ufficio',      email: 'ufficio@marina.it',      ruolo: 'responsabile', stato: 'attivo' },
+  { id: 3, nome: 'Torre',        email: 'torre@marina.it',        ruolo: 'torre',        stato: 'attivo' },
+  { id: 4, nome: 'Manutenzione', email: 'manutenzione@marina.it', ruolo: 'responsabile', stato: 'attivo' },
+  { id: 5, nome: 'Ormeggiatore', email: 'ormeggiatore@marina.it', ruolo: 'ormeggiatore', stato: 'attivo' },
 ]
-
-// -- NOTIFICHE (M-05) --
-export const NOTIFICHE_DEMO: SystemAlert[] = [
-  { id: 1, titolo: 'Canone Socio Scaduto', descrizione: 'Il canone del socio Ferretti (Posto A 5) \u00e8 scaduto il mese scorso.', urgenza: 'alta', categoria: 'amministrazione', data: '2026-04-22 09:15', stato: 'nuova' },
-  { id: 2, titolo: 'Ritardo Arrivo Previsto', descrizione: 'S/V Nordic Star (Prenotato per le 16:00 del 21/04) non \u00e8 ancora arrivata.', urgenza: 'media', categoria: 'operativo', data: '2026-04-22 10:30', stato: 'nuova' },
-  { id: 3, titolo: 'Guasto Elettrico C 4', descrizione: 'Segnalato calo di tensione alla colonnina del posto C 4.', urgenza: 'alta', categoria: 'operativo', data: '2026-04-22 11:45', stato: 'nuova' },
-  { id: 4, titolo: 'Backup di Sistema', descrizione: 'Il backup settimanale \u00e8 stato completato con successo.', urgenza: 'bassa', categoria: 'sistema', data: '2026-04-21 23:00', stato: 'letta' },
-  { id: 5, titolo: 'Ospite in Arrivo', descrizione: 'Giacomo Neri \u00e8 autorizzato sul posto D 12 da oggi.', urgenza: 'bassa', categoria: 'operativo', data: '2026-04-20 08:00', stato: 'risolta' }
-]
-
-// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
-// STAYS DEMO \u2014 modello v3 (27 Apr 2026)
-// Per ogni POSTI_OCCUPATI_OVERRIDE con barcaOra definita generiamo uno
-// Stay aperto (fine=undefined). Eccezione: D 12 \u00e8 in cantiere (vedi
-// CANTIERE_SESSIONS_DEMO sotto). I posti con stato 'socio_assente' o
-// 'socio_assente_lungo' (C 25, FF103, FF110) non hanno Stay: la barca
-// non \u00e8 fisicamente sul posto.
-//
-// Inizio: timestamp di esempio coerente (24-25 Apr 2026, qualche giorno fa).
-// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
-export const STAYS_DEMO: Stay[] = [
-  // Soci storici presenti
-  { id: 1,  boatId: 1, berthId: 'A 5',  inizio: '2026-04-24T08:00:00', tipologia: 'socio' },
-  { id: 2,  boatId: 5, berthId: 'C 8',  inizio: '2026-04-23T10:30:00', tipologia: 'socio' },
-  // D 12 \u00e8 in cantiere \u2192 Stay NON presente, vedi CANTIERE_SESSIONS_DEMO
-  // C 25 (Rex, socio Francesca Landi) \u00e8 uscito in gita \u2192 Stay NON presente
-  // Affittuario su D 7 (auth attiva, Mistral)
-  { id: 3,  boatId: 7, berthId: 'D 7',  inizio: '2026-04-01T09:00:00', tipologia: 'affittuario', authId: 1 },
-  // Transito su B 10 (Tramontana)
-  { id: 4,  boatId: 2, berthId: 'B 10', inizio: '2026-04-21T14:00:00', tipologia: 'transito' },
-  // Transito su TW3 (Neptune Dream)
-  { id: 5,  boatId: 3, berthId: 'TW3',  inizio: '2026-04-20T07:30:00', tipologia: 'transito' },
-
-  // \u2500\u2500 Soci FRANGIFLUTTI presenti \u2500\u2500
-  { id: 10, boatId: 9,  berthId: 'FF100', inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
-  { id: 11, boatId: 10, berthId: 'FF101', inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
-  { id: 12, boatId: 11, berthId: 'FF102', inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
-  // FF103 vuoto (Carla Bruno senza barca)
-  { id: 13, boatId: 12, berthId: 'FF104', inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
-  { id: 14, boatId: 13, berthId: 'FF105', inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
-  { id: 15, boatId: 14, berthId: 'FF106', inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
-  { id: 16, boatId: 15, berthId: 'FF107', inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
-  { id: 17, boatId: 16, berthId: 'FF108', inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
-  { id: 18, boatId: 17, berthId: 'FF109', inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
-  // FF110 vuoto (Tommaso Ricci senza barca)
-  { id: 19, boatId: 18, berthId: 'FF111', inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
-  { id: 20, boatId: 19, berthId: 'FF112', inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
-  { id: 21, boatId: 20, berthId: 'FF113', inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
-  { id: 22, boatId: 21, berthId: 'FF1',   inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
-  { id: 23, boatId: 22, berthId: 'FF2',   inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
-  { id: 24, boatId: 23, berthId: 'FF3',   inizio: '2026-04-15T10:00:00', tipologia: 'socio' },
-]
-
-// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
-// CANTIERE SESSIONS DEMO \u2014 modello v3 (27 Apr 2026)
-// L'unica barca attualmente in cantiere \u00e8 M/Y Perseo (id 6) della socia
-// Anna Conti, posto originale D 12. La barca \u00e8 uscita 12 Apr 2026 e non
-// \u00e8 ancora rientrata.
-// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
-export const CANTIERE_SESSIONS_DEMO: CantiereSession[] = [
-  {
-    id: 1,
-    boatId: 6,
-    berthOriginale: 'D 12',
-    inizio: '2026-04-12T16:00:00',
-    note: 'Alaggio per manutenzione scafo',
-  },
-]
-
-
-
-

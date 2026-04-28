@@ -4,6 +4,7 @@ import { RouterProvider } from 'react-router-dom'
 import { router } from './router'
 import { GlobalProvider } from './store/GlobalState'
 import { AuthProvider } from './context/AuthContext'
+import { ToastProvider } from './context/ToastContext'
 
 // Import base styles
 import './styles/tokens.css'
@@ -17,9 +18,11 @@ import './styles/components.css'
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider>
-      <GlobalProvider>
-        <RouterProvider router={router} />
-      </GlobalProvider>
+      <ToastProvider>
+        <GlobalProvider>
+          <RouterProvider router={router} />
+        </GlobalProvider>
+      </ToastProvider>
     </AuthProvider>
   </StrictMode>,
 )

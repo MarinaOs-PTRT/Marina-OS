@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useGlobalState } from '../../../store/GlobalState'
+import { useToast } from '../../../context/ToastContext'
 import { Berth, Boat, Client, Movement, MovementScenario } from '@shared/types'
 import { BERTH_VISUAL_LABELS } from '@shared/constants'
 
@@ -52,6 +53,8 @@ function normalizeBerthId(s: string): string {
  *   - Render functions → mai in un hook.
  */
 export function useTorreForm() {
+  const { addToast } = useToast()
+
   const {
     posti, barche, clienti, movimenti, autorizzazioni,
     registraEntrata, registraUscitaTemporanea, registraUscitaDefinitiva,
@@ -64,11 +67,27 @@ export function useTorreForm() {
 
   // ── Helper interni v3 ──
   // Sublabel uniforme per i suggerimenti dei posti. Mostra stato visivo + barca.
+  // Fix (28 Apr 2026): se il posto è di un socio ma vuoto (socio_assente),
+  // mostra comunque il nome della barca del socio — è sempre nota dal titolo.
+  // Prima: "Pontile A · Socio assente" → ora: "Pontile A · Socio assente · Chaya"
   const formatBerthSublabel = (p: Berth): string => {
     const visual = getStatoVisivoBerth(p.id)
     const stato = BERTH_VISUAL_LABELS[visual] || visual
     const occupante = barcaSulPosto(p.id)
-    return `${p.pontile} · ${stato}${occupante ? ` · ${occupante.nome}` : ''}`
+
+    if (occupante) {
+      return `${p.pontile} · ${stato} · ${occupante.nome}`
+    }
+
+    // Posto socio assente: recupera la/le barche del socio dall'anagrafica
+    if (p.socioId) {
+      const barcheSocio = barche.filter(b => b.clientId === p.socioId)
+      if (barcheSocio.length > 0) {
+        return `${p.pontile} · ${stato} · ${barcheSocio.map(b => b.nome).join(', ')}`
+      }
+    }
+
+    return `${p.pontile} · ${stato}`
   }
 
   // ════════════════════════════════════════════
@@ -422,10 +441,26 @@ export function useTorreForm() {
     setPosto(p.id)
     // v3: occupato = c'è uno Stay aperto sul berth.
     const occupante = barcaSulPosto(p.id)
+
     if (occupante) {
+      // Caso normale: barca fisicamente presente sul posto.
       setPostoOrigine(p.id)
       fillFromBoat(occupante)
+    } else if (p.socioId) {
+      // Caso socio assente (uscita registrata, posto vuoto ma titolato).
+      // Il posto appartiene a un socio → la sua barca è nota dall'anagrafica
+      // anche se non è fisicamente ormeggiata. Pre-compila automaticamente
+      // se il socio ha una sola barca (caso tipico).
+      // Fix (28 Apr 2026): prima questa logica mancava, costringendo l'operatore
+      // a ridigitare il nome barca dopo ogni uscita cercando per posto.
+      const barcheSocio = barche.filter(b => b.clientId === p.socioId)
+      if (barcheSocio.length === 1) {
+        fillFromBoat(barcheSocio[0])
+      }
+      // Se il socio ha più barche registrate, non pre-compiliamo per evitare
+      // ambiguità — l'operatore sceglierà dal campo Nome o Matricola.
     }
+
     setErrorMessage('')
   }
 
@@ -520,6 +555,7 @@ export function useTorreForm() {
             const r = registraEntrata(m, { pendente: true })
             if (!r.ok) { setErrorMessage(r.errore || 'Errore durante la registrazione.'); return }
             setAuthMissingModal({ show: false, motivo: '', onProceed: () => { } })
+            addToast(`Entrata in attesa di autorizzazione — ${nome} · ${posto}`, 'warning')
             handleClear()
           }
         })
@@ -529,6 +565,7 @@ export function useTorreForm() {
 
     const result = registraEntrata(m)
     if (!result.ok) { setErrorMessage(result.errore || 'Errore durante la registrazione.'); return }
+    addToast(`Entrata registrata — ${nome} · Posto ${posto}`, 'success')
     handleClear()
   }
 
@@ -557,18 +594,25 @@ export function useTorreForm() {
     if (tipologia === 'transito' && !checkPagamentoSaldato(nome)) {
       setConfirmMessage('Non risulta emessa una ricevuta saldata per questa imbarcazione. Vuoi registrare comunque l\'uscita?')
       setConfirmAction(() => () => {
-        const r = registraUscitaDefinitiva(buildMovement('uscita', posto))
+        const r = registraUscitaTemporanea(buildMovement('uscita_temporanea', posto))
         if (!r.ok) { setErrorMessage(r.errore || 'Errore durante l\'uscita.') }
-        else { handleClear() }
+        else {
+          addToast(`Uscita registrata — ${nome}`, 'success')
+          handleClear()
+        }
         setShowConfirmPopup(false)
       })
       setShowConfirmPopup(true)
       return
     }
 
-    // Caso normale: chiudi lo Stay e basta.
-    const result = registraUscitaDefinitiva(buildMovement('uscita', posto))
+    // Caso normale: uscita temporanea (default Torre).
+    // La distinzione "definitiva" (fine stagione / partenza permanente)
+    // non è decidibile in tempo reale dalla Torre — si usa sempre
+    // uscita_temporanea. Il posto torna socio_assente, non libero.
+    const result = registraUscitaTemporanea(buildMovement('uscita_temporanea', posto))
     if (!result.ok) { setErrorMessage(result.errore || 'Errore durante l\'uscita.'); return }
+    addToast(`Uscita registrata — ${nome}`, 'success')
     handleClear()
   }
 
@@ -602,8 +646,7 @@ export function useTorreForm() {
             setErrorMessage(result.errore || 'Errore durante lo spostamento pendente.')
             return
           }
-          setWarningMessage('Spostamento registrato come pendente. La Direzione è stata notificata per compilare l\'autorizzazione.')
-          setShowWarning(true)
+          addToast(`Spostamento in attesa di autorizzazione — ${nome} · ${orig} → ${dest}`, 'warning')
           handleClear()
         }
       })
@@ -613,6 +656,7 @@ export function useTorreForm() {
     // Caso normale: auth presente o non richiesta.
     const result = registraSpostamento(buildMovement('spostamento', dest), orig, dest)
     if (!result.ok) { setErrorMessage(result.errore || 'Errore durante lo spostamento.'); return }
+    addToast(`Spostamento completato — ${nome} · ${orig} → ${dest}`, 'success')
     handleClear()
   }
 
@@ -622,6 +666,7 @@ export function useTorreForm() {
     ensureBoatExists()
     const result = registraCantiere(buildMovement('cantiere', 'Cantiere'), posto)
     if (!result.ok) { setErrorMessage(result.errore || 'Errore durante la registrazione cantiere.'); return }
+    addToast(`${nome} inviata in cantiere — Posto ${posto} liberato`, 'info')
     handleClear()
   }
 
@@ -636,6 +681,7 @@ export function useTorreForm() {
     ensureBoatExists()
     const result = registraRientro(buildMovement('entrata', posto))
     if (!result.ok) { setErrorMessage(result.errore || 'Errore durante la registrazione del rientro.'); return }
+    addToast(`Rientro cantiere registrato — ${nome} · Posto ${posto}`, 'success')
     handleClear()
   }
 
@@ -648,12 +694,18 @@ export function useTorreForm() {
     targa, setTarga,
     lunghezza, setLunghezza,
     pescaggio, setPescaggio,
-    posto, setPosto,
+    posto,
+    // I setter per i campi posto espongono wrapper che forzano il MAIUSCOLO.
+    // Così il valore nello stato è sempre nel formato canonico dei berth ID
+    // (es. "A 5", "FF103", "D 32") indipendentemente da come l'operatore digita.
+    setPosto: (v: string) => setPosto(v.toUpperCase()),
     tipologia, setTipologia,
     tipologiaLocked,
     panelMode, setPanelMode,
-    postoOrigine, setPostoOrigine,
-    postoDestinazione, setPostoDestinazione,
+    postoOrigine,
+    setPostoOrigine: (v: string) => setPostoOrigine(v.toUpperCase()),
+    postoDestinazione,
+    setPostoDestinazione: (v: string) => setPostoDestinazione(v.toUpperCase()),
 
     // Modali / messaggi
     showConfirmPopup, setShowConfirmPopup,

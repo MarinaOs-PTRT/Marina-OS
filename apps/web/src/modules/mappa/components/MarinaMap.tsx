@@ -22,7 +22,10 @@ const SvgContainer = React.memo(React.forwardRef<HTMLDivElement, {}>((props, ref
     dangerouslySetInnerHTML={{ __html: mapSvgRaw }}
     style={{
       width: '100%',
-      height: 'auto'
+      height: 'auto',
+      // Sposta visivamente la mappa rispetto al centro: translate(X, Y)
+      // Valori positivi: Destra / Basso. Valori negativi: Sinistra / Alto.
+      transform: 'translate(0px, 80px)' // <-- Modifica questi valori
     }}
   />
 )))
@@ -101,15 +104,21 @@ export const MarinaMap = React.memo(function MarinaMap({ berths, onBerthSelect }
       }}
     >
       <TransformWrapper
-        initialScale={1}
-        minScale={0.9}
+        initialScale={1.2}
+        minScale={1}
         maxScale={5}
         centerOnInit={true}
         wheel={{ step: 0.005 }}
       >
         <TransformComponent
           wrapperStyle={{ width: '100%', height: '100%' }}
-          contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          contentStyle={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
           <SvgContainer ref={mapContainerRef} />
         </TransformComponent>

@@ -181,6 +181,7 @@ export function TorrePage() {
             onChange={f.setPosto}
             suggestions={f.postoSuggestions}
             onSelect={s => { if (s.berth) f.fillFromBerth(s.berth) }}
+            uppercase
           />
 
           {/* Box dati cliente (se collegato) */}
@@ -424,6 +425,7 @@ export function TorrePage() {
                   onChange={f.setPostoOrigine}
                   suggestions={f.origineSuggestions}
                   onSelect={s => { if (s.berth) f.setPostoOrigine(s.berth.id) }}
+                  uppercase
                 />
                 <div className="torre-arrow">→</div>
                 <SearchDropdown
@@ -433,6 +435,7 @@ export function TorrePage() {
                   onChange={f.setPostoDestinazione}
                   suggestions={f.destinazioneSuggestions}
                   onSelect={s => { if (s.berth) f.setPostoDestinazione(s.berth.id) }}
+                  uppercase
                 />
               </div>
 

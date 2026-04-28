@@ -1,0 +1,135 @@
+/* ════════════════════════════════════════════════════════════════
+   ToastContainer — notifiche a comparsa bottom-right
+   Usa CSS variables da tokens.css per colori e radii.
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Stack container ── */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;   /* il container non blocca i click; i singoli toast sì */
+  max-width: 360px;
+  width: calc(100vw - 48px);
+}
+
+/* ── Singolo toast ── */
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 14px;
+  border-radius: var(--radius);
+  border-left: 3px solid transparent;
+  background: var(--bg);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18), 0 1px 4px rgba(0, 0, 0, 0.10);
+  pointer-events: all;
+  font-family: var(--font-ui);
+  font-size: 0.84rem;
+  line-height: 1.4;
+  color: var(--text);
+
+  /* Animazione entrata: slide da destra + fade-in */
+  animation: toast-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Animazione uscita (attivata via classe .toast--removing) */
+.toast--removing {
+  animation: toast-out 0.28s ease-in both;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+    max-height: 80px;
+    margin-bottom: 0;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(16px);
+    max-height: 0;
+    margin-bottom: -8px;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}
+
+/* ── Varianti per tipo ── */
+.toast--success {
+  border-left-color: var(--color-text-success);
+}
+.toast--success .toast-icon {
+  color: var(--color-text-success);
+}
+
+.toast--error {
+  border-left-color: var(--color-text-danger);
+}
+.toast--error .toast-icon {
+  color: var(--color-text-danger);
+}
+
+.toast--warning {
+  border-left-color: var(--color-text-warning);
+}
+.toast--warning .toast-icon {
+  color: var(--color-text-warning);
+}
+
+.toast--info {
+  border-left-color: var(--color-text-info);
+}
+.toast--info .toast-icon {
+  color: var(--color-text-info);
+}
+
+/* ── Icona ── */
+.toast-icon {
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+  width: 14px;
+  text-align: center;
+}
+
+/* ── Testo ── */
+.toast-message {
+  flex: 1;
+  color: var(--text);
+  word-break: break-word;
+}
+
+/* ── Bottone chiudi ── */
+.toast-close {
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0 0 4px;
+  flex-shrink: 0;
+  margin-top: -1px;
+  transition: color 0.12s;
+}
+
+.toast-close:hover {
+  color: var(--text);
+}

@@ -68,6 +68,8 @@ export interface SearchDropdownProps {
   className?: string
   /** Disabilita l'input. */
   disabled?: boolean
+  /** Forza la visualizzazione e il valore in MAIUSCOLO. Usato per i campi posto. */
+  uppercase?: boolean
 }
 
 export function SearchDropdown({
@@ -80,7 +82,8 @@ export function SearchDropdown({
   onSelect,
   inputType = 'text',
   className = '',
-  disabled = false
+  disabled = false,
+  uppercase = false,
 }: SearchDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [selectedIdx, setSelectedIdx] = useState(0)
@@ -156,10 +159,12 @@ export function SearchDropdown({
       <input
         type={inputType}
         className="search-dropdown-input"
+        style={uppercase ? { textTransform: 'uppercase' } : undefined}
         value={value}
         onChange={e => {
-          onChange(e.target.value)
-          if (e.target.value.length > 0) openCoordinated()
+          const raw = uppercase ? e.target.value.toUpperCase() : e.target.value
+          onChange(raw)
+          if (raw.length > 0) openCoordinated()
         }}
         onFocus={() => { if (value.length > 0) openCoordinated() }}
         onKeyDown={onKeyDown}
