@@ -39,56 +39,81 @@ export const MarinaMap = React.memo(function MarinaMap({ berths, onBerthSelect }
   useEffect(() => {
     if (!mapContainerRef.current) return
 
-    // Cerchiamo tutti gli elementi SVG con un ID per identificare i posti barca
-    const elementsWithId = mapContainerRef.current.querySelectorAll('[id]')
+    // ── Mapping group Illustrator → lettera pontile (28 Apr 2026) ──
+    // I pontili F-K sono stati esportati con IDs senza lettera (_1, _1-2, ecc.)
+    // perché i layer in Illustrator erano nominati solo con il numero.
+    // Risolviamo guardando il gruppo padre: ogni rect dentro #foxtrot è un
+    // posto del Pontile F, ogni rect dentro #golf è un posto del Pontile G, ecc.
+    const GROUP_TO_LETTER: Record<string, string> = {
+      'foxtrot': 'F',
+      'golf':    'G',
+      'hotel':   'H',
+      'india':   'I',
+      'juliet':  'J',
+      'kilo':    'K',
+    }
+
     const clickHandlers: { el: Element, handler: EventListener }[] = []
 
-    // Costruiamo una mappa veloce: svgId → Element SVG
-    const svgElementMap = new Map<string, Element>()
-    elementsWithId.forEach(el => {
-      const id = el.getAttribute('id')
-      if (id) svgElementMap.set(id, el)
+    // Mappa berthId → Element SVG (costruita con due strategie distinte)
+    const berthElementMap = new Map<string, Element>()
+
+    // ── Strategia 1: lookup diretto per tutti gli elementi con ID ──
+    // Copre: A_1→"A 1", L_47→"L 47", FF1→"FF1", TW3→"TW3"
+    // (underscore→spazio per i pontili normali; compatto per FF/TW)
+    mapContainerRef.current.querySelectorAll('[id]').forEach(el => {
+      const rawId = el.getAttribute('id') || ''
+      // Prova sia con underscore→spazio sia diretto (per FF/TW compatti)
+      const candidates = [rawId.replace('_', ' '), rawId]
+      for (const candidate of candidates) {
+        const berth = berths.find(b => b.id === candidate)
+        if (berth) { berthElementMap.set(berth.id, el); break }
+      }
     })
 
-    // Per ogni posto barca nel database, cerchiamo il corrispondente nell'SVG
-    berths.forEach(berth => {
-      // Generiamo tutti i possibili formati di ID per il match:
-      // "D 12" → "D_12"  |  "TW 3" → "TW3", "TW_3"  |  "FF 1" → "FF1", "FF_1"
-      const candidateIds = [
-        berth.id.replace(' ', '_'),                    // "D 12" → "D_12"
-        berth.id.replace(' ', ''),                     // "TW 3" → "TW3"  
-        berth.id,                                       // caso diretto
-      ]
-
-      let matchedEl: Element | undefined
-      for (const cid of candidateIds) {
-        matchedEl = svgElementMap.get(cid)
-        if (matchedEl) break
-      }
-
-      if (matchedEl) {
-        // È un posto barca con elemento SVG! Applichiamo colore e interattività.
-        // v3: getStatoVisivoBerth deriva lo stato visivo dal modello nuovo.
-        const color = BERTH_VISUAL_HEX[getStatoVisivoBerth(berth.id)] || '#cbd5e1'
-        matchedEl.setAttribute('style', `fill: ${color}; cursor: pointer; transition: opacity 0.2s; pointer-events: all;`)
-
-        matchedEl.addEventListener('mouseenter', () => matchedEl!.setAttribute('opacity', '0.6'))
-        matchedEl.addEventListener('mouseleave', () => matchedEl!.setAttribute('opacity', '1'))
-
-        const handler = (e: Event) => {
-          e.stopPropagation()
-          e.preventDefault()
-          onBerthSelect(berth)
+    // ── Strategia 2: lookup per gruppo per i pontili F-K ──
+    // Gli IDs sono _1/_1-2/_1-3 ecc. — il numero si estrae con regex,
+    // la lettera si ricava dal gruppo padre.
+    Object.entries(GROUP_TO_LETTER).forEach(([groupId, letter]) => {
+      const group = mapContainerRef.current!.querySelector(`#${groupId}`)
+      if (!group) return
+      group.querySelectorAll('[id]').forEach(el => {
+        const rawId = el.getAttribute('id') || ''
+        // Pattern: _ + numero + opzionale(-contatore-dedup)
+        // Esempi: "_1" → 1 | "_42-2" → 42 | "_43" → 43
+        const m = rawId.match(/^_(\d+)(?:-\d+)?$/)
+        if (!m) return
+        const berthId = `${letter} ${m[1]}`
+        if (!berthElementMap.has(berthId)) {
+          const berth = berths.find(b => b.id === berthId)
+          if (berth) berthElementMap.set(berth.id, el)
         }
-        matchedEl.addEventListener('click', handler)
-        clickHandlers.push({ el: matchedEl, handler })
+      })
+    })
+
+    // ── Applica colori e interattività a ogni posto trovato ──
+    berths.forEach(berth => {
+      const el = berthElementMap.get(berth.id)
+      if (!el) return
+
+      // v3: colore deriva da getStatoVisivoBerth (BerthVisualState)
+      const color = BERTH_VISUAL_HEX[getStatoVisivoBerth(berth.id)] || '#cbd5e1'
+      el.setAttribute('style', `fill: ${color}; cursor: pointer; transition: opacity 0.2s; pointer-events: all;`)
+
+      el.addEventListener('mouseenter', () => el.setAttribute('opacity', '0.6'))
+      el.addEventListener('mouseleave', () => el.setAttribute('opacity', '1'))
+
+      const handler = (e: Event) => {
+        e.stopPropagation()
+        e.preventDefault()
+        onBerthSelect(berth)
       }
+      el.addEventListener('click', handler)
+      clickHandlers.push({ el, handler })
     })
 
     return () => {
-      clickHandlers.forEach(({ el, handler }) => {
-        el.removeEventListener('click', handler)
-      })
+      clickHandlers.forEach(({ el, handler }) => el.removeEventListener('click', handler))
     }
   }, [berths, onBerthSelect, stays, cantieri, titoli, getStatoVisivoBerth])
 

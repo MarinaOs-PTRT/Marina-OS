@@ -452,11 +452,30 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
         errore: `Posto ${postoId} fuori servizio${posto.notaAgibilita ? ` (${posto.notaAgibilita})` : ''}. Operazione "${operazione}" non consentita.`
       }
     }
-    // v3 (27 Apr 2026): `posto.stato` ora è opzionale (deprecated, ma usato
-    // ancora per la validazione del modello v2 nel ramo doppia-scrittura).
-    // Estrazione esplicita per evitare problemi di narrowing di TypeScript
-    // con includes() in strict mode.
-    const statoCorrente = posto.stato
+    // ── Fix v3 #5 (28 Apr 2026, bridge v2→v3) ──
+    // posto.stato è il campo legacy v2 (deprecated). Al boot dell'app con
+    // demo-data che ha Stay aperti ma stato='libero', la validazione v2
+    // bloccherebbe le uscite su berths già occupati nel modello v3.
+    // Soluzione: se posto.stato è 'libero' o assente, deriva lo stato
+    // effettivo da getStatoVisivoBerth (v3) via una mappa di compatibilità.
+    // Quando tutti i consumer saranno migrati, validaStatoPosto diventerà
+    // semplicemente una query su getStatoVisivoBerth.
+    let statoCorrente = posto.stato
+    if (!statoCorrente || statoCorrente === 'libero') {
+      const visual = getStatoVisivoBerth(postoId)
+      const visualToStatus: Partial<Record<BerthVisualState, BerthStatus>> = {
+        'socio_presente':       'occupato_socio',
+        'socio_assente':        'socio_assente',
+        'socio_in_cantiere':    'in_cantiere',
+        'socio_su_altro_posto': 'socio_assente',
+        'transito':             'occupato_transito',
+        'affittuario_su_socio': 'occupato_affittuario',
+        'bunker':               'occupato_affittuario',
+        'fuori_servizio':       'libero',
+        'libero':               'libero',
+      }
+      statoCorrente = visualToStatus[visual] ?? statoCorrente
+    }
     if (!statoCorrente || !statiAmmessi.includes(statoCorrente)) {
       return {
         valido: false,
@@ -468,9 +487,14 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
 
   /** Determina lo stato corretto del posto d'origine dopo che la barca lo lascia */
   const calcolaStatoOrigineDopoUscita = (posto: Berth, scenario: MovementScenario): Partial<Berth> => {
-    // Se il posto ha un socioId proprietario, torna al socio (socio_assente)
-    // Questo vale per socio, affittuario e qualsiasi barca su posto di un socio
-    if (posto.socioId) {
+    // ── Fix v3 #6 (28 Apr 2026, titoloAttivoDelBerth come SSOT) ──
+    // posto.socioId è il campo legacy v2: potrebbe non essere sincronizzato
+    // (es. soci aggiunti via registraNuovoSocio oppure caricate via demo-data
+    // dove il titolo è in TITOLI_POSSESSO_DEMO ma socioId non è sul Berth).
+    // La fonte canonica è titoloAttivoDelBerth: se esiste un OwnershipTitle
+    // attivo per questo berth, il posto appartiene a un socio → torna socio_assente.
+    const hasTitolo = !!titoloAttivoDelBerth(posto.id) || !!posto.socioId
+    if (hasTitolo) {
       return { stato: 'socio_assente' as const, barcaOra: undefined }
     }
     // Posto senza proprietario (transito generico): torna libero
