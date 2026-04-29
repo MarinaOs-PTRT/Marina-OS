@@ -215,3 +215,46 @@
   padding-top: var(--space-md);
   border-top: 1px solid var(--border);
 }
+
+/* ── Bottoni cambio stato inline (colonna Azioni) ── */
+.maint-stato-btn {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  white-space: nowrap;
+  transition: all 0.15s;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.maint-stato-incorso {
+  background: rgba(52, 152, 219, 0.12);
+  color: var(--teal, #1D9E75);
+  border-color: rgba(52, 152, 219, 0.3);
+}
+.maint-stato-incorso:hover {
+  background: var(--teal, #1D9E75);
+  color: #fff;
+  border-color: var(--teal, #1D9E75);
+}
+
+.maint-stato-completato {
+  background: rgba(46, 204, 113, 0.12);
+  color: var(--green, #27ae60);
+  border-color: rgba(46, 204, 113, 0.3);
+}
+.maint-stato-completato:hover {
+  background: var(--green, #27ae60);
+  color: #fff;
+  border-color: var(--green, #27ae60);
+}
+
+.maint-done-label {
+  font-size: 0.76rem;
+  color: var(--text3);
+  font-style: italic;
+}

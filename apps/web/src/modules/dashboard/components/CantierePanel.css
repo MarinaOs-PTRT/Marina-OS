@@ -1,21 +1,18 @@
 /* ════════════════════════════════════════════
    CantierePanel — modale centrato (M-04, 27 Apr 2026)
-   Si apre cliccando il KPI "In cantiere" sulla Dashboard.
-   Pattern: overlay scuro + pannello centrato (NO drawer laterale).
-   Click su overlay o sulla "X" chiude il modale.
+   Aggiornato 29 Apr 2026: card con griglia etichettata
+   (Barca / Tornerà a / Fuori dal / Socio / Note).
    ════════════════════════════════════════════ */
 
-/* Overlay scuro fisso che copre tutto. Click → chiude (handler in JSX). */
 .cantiere-modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 900;  /* sotto i drawer della mappa (1000) per non sovrapporsi */
+  z-index: 900;
   background: rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
-  /* Animazione fade-in sobria */
   animation: cantiere-overlay-fade 140ms ease-out;
 }
 
@@ -24,20 +21,17 @@
   to   { background: rgba(0,0,0,0.45); }
 }
 
-/* Il pannello vero e proprio, centrato dentro l'overlay. */
 .cantiere-panel {
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg, 12px);
-  padding: var(--space-md, 16px) var(--space-lg, 20px);
+  border-radius: 12px;
+  padding: 16px 20px;
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm, 8px);
-  /* Dimensioni "modale": largo abbastanza per le card, mai oltre il viewport. */
-  width: min(720px, 100%);
+  gap: 8px;
+  width: min(640px, 100%);
   max-height: min(80vh, 720px);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
-  /* Animazione di entrata: leggero scale-up + fade. */
   animation: cantiere-panel-pop 160ms ease-out;
 }
 
@@ -46,16 +40,35 @@
   to   { opacity: 1; transform: scale(1)    translateY(0);   }
 }
 
+/* ── Header ── */
 .cantiere-panel-header {
   display: flex;
-  align-items: baseline;
-  justify-content: flex-start;
+  align-items: center;
   gap: 10px;
-  padding-bottom: 6px;
+  padding-bottom: 10px;
   border-bottom: 1px solid var(--border);
 }
 
-/* Bottone "X" per chiudere il pannello, posizionato a destra. */
+.cantiere-panel-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.cantiere-panel-count {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text-warning, #BA7517);
+  background: rgba(186, 117, 23, 0.12);
+  padding: 1px 10px;
+  border-radius: 999px;
+  min-width: 26px;
+  text-align: center;
+  line-height: 1.5;
+}
+
 .cantiere-panel-close {
   margin-left: auto;
   background: transparent;
@@ -69,7 +82,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
@@ -79,81 +91,51 @@
   border-color: var(--border);
 }
 
-.cantiere-panel-title {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text2);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.cantiere-panel-count {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--color-text-warning);
-  background: var(--color-bg-warning, rgba(186, 117, 23, 0.12));
-  padding: 1px 10px;
-  border-radius: 999px;
-  min-width: 26px;
-  text-align: center;
-  line-height: 1.4;
-}
-
+/* ── Empty ── */
 .cantiere-empty {
-  padding: 16px 4px;
-  font-size: 0.85rem;
+  padding: 20px 4px;
+  font-size: 0.88rem;
   color: var(--text3);
   text-align: center;
 }
 
+/* ── Lista ── */
 .cantiere-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  /* Modale centrato: il pannello ha max-height, quindi la lista scorre
-     internamente quando supera lo spazio disponibile. */
-  padding: 4px 4px 4px 0;
+  padding: 4px 2px 4px 0;
   overflow-y: auto;
-  /* min-height: 0 evita che flex children con scroll vengano schiacciati */
   min-height: 0;
   flex: 1;
 }
 
+/* ── Card ── */
 .cantiere-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 16px;
   background: var(--bg3);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md, 8px);
-  transition: background 0.15s, border-color 0.15s;
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.15s;
 }
 
 .cantiere-card:hover {
-  background: var(--bg4, var(--bg3));
   border-color: var(--color-text-warning, #BA7517);
 }
 
-.cantiere-card-main {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  flex: 1;
-}
-
-.cantiere-card-line1 {
+/* Riga titolo: nome barca + matricola */
+.cantiere-card-head {
   display: flex;
   align-items: baseline;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .cantiere-card-boat {
   font-weight: 700;
-  font-size: 0.92rem;
+  font-size: 1rem;
   color: var(--text);
 }
 
@@ -161,46 +143,71 @@
   font-family: var(--font-mono, monospace);
   font-size: 0.72rem;
   color: var(--text3);
+  letter-spacing: 0.04em;
 }
 
-.cantiere-card-line2 {
-  display: flex;
+/* Griglia etichette — 2 colonne: label | valore */
+.cantiere-card-grid {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 6px 12px;
   align-items: baseline;
-  gap: 10px;
-  flex-wrap: wrap;
-  font-size: 0.78rem;
+}
+
+.cantiere-card-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text3);
+  white-space: nowrap;
+}
+
+.cantiere-card-value {
+  font-size: 0.88rem;
   color: var(--text2);
 }
 
-.cantiere-card-place {
-  font-weight: 600;
+.cantiere-card-posto {
+  font-weight: 700;
   color: var(--accent);
 }
 
-.cantiere-card-socio {
-  font-style: italic;
+/* "Fuori dal: 15 apr 2026  ·  21 giorni" */
+.cantiere-card-date {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--text2);
 }
 
 .cantiere-card-days {
-  margin-left: auto;
-  font-size: 0.74rem;
-  color: var(--color-text-warning);
-  font-weight: 600;
-}
-
-.cantiere-card-line3 {
-  font-size: 0.74rem;
-  color: var(--color-text-warning);
-  margin-top: 2px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-text-warning, #BA7517);
+  background: rgba(186, 117, 23, 0.1);
+  padding: 1px 8px;
+  border-radius: 999px;
 }
 
 .cantiere-card-note {
-  font-size: 0.72rem;
-  color: var(--text3);
   font-style: italic;
-  margin-top: 2px;
+  color: var(--text3);
+  font-size: 0.82rem;
 }
 
+/* Warning occupante */
+.cantiere-card-warn {
+  font-size: 0.78rem;
+  color: var(--color-text-warning, #BA7517);
+  background: rgba(186, 117, 23, 0.08);
+  border: 1px solid rgba(186, 117, 23, 0.2);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+/* Bottone azione */
 .cantiere-card-actions {
-  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
 }

@@ -184,12 +184,45 @@ export function TorrePage() {
             uppercase
           />
 
-          {/* Box dati cliente (se collegato) */}
+          {/* Box dati cliente (barca attualmente presente / cercata) */}
           {f.clienteCollegato && (
             <div className="torre-info-box">
               <div className="torre-info-box-title">Cliente</div>
               <div className="torre-info-row"><span>Nome</span><strong>{f.clienteCollegato.nome}</strong></div>
               <div className="torre-info-row"><span>Tipo</span><strong>{f.clienteCollegato.tipo === 'pf' ? 'Persona Fisica' : f.clienteCollegato.tipo === 'az' ? 'Azienda' : 'Socio'}</strong></div>
+            </div>
+          )}
+
+          {/* Box proprietario posto (Fix Blocco 6 — 28 Apr 2026).
+              Visibile solo quando l'occupante attuale è diverso dal titolare
+              del posto: caso affittuario su posto socio. Così l'operatore
+              vede a colpo d'occhio che il posto non è "suo" — appartiene
+              a un socio che ha temporaneamente autorizzato un terzo. */}
+          {f.proprietarioPosto?.client &&
+           f.proprietarioPosto.client.id !== f.clienteCollegato?.id && (
+            <div
+              className="torre-info-box"
+              style={{
+                borderColor: 'var(--color-text-info, #2E6CBC)',
+                background: 'var(--color-bg-info, rgba(46, 108, 188, 0.06))',
+              }}
+            >
+              <div
+                className="torre-info-box-title"
+                style={{ color: 'var(--color-text-info, #2E6CBC)' }}
+              >
+                Proprietario posto (Socio)
+              </div>
+              <div className="torre-info-row">
+                <span>Nome</span>
+                <strong>{f.proprietarioPosto.client.nome}</strong>
+              </div>
+              {f.proprietarioPosto.boat && (
+                <div className="torre-info-row">
+                  <span>Barca</span>
+                  <strong>{f.proprietarioPosto.boat.nome}</strong>
+                </div>
+              )}
             </div>
           )}
 
@@ -382,7 +415,10 @@ export function TorrePage() {
               Ordinati per lunMax crescente (Master File §4.2). Il primo
               chip è il "più piccolo compatibile" → ha badge "Suggerito"
               e viene auto-selezionato dall'hook (vedi useTorreForm). */}
-          {f.panelMode === 'movimento' && f.tipologia === 'transito' && f.suggestedBerths.length > 0 && (
+          {/* Chip posti compatibili: solo se il transito non è già in porto.
+              Se la barca ha uno Stay aperto il posto è già assegnato — mostrare
+              i chip sarebbe fuorviante (sembra che possa "rientrare altrove"). */}
+          {f.panelMode === 'movimento' && f.tipologia === 'transito' && f.suggestedBerths.length > 0 && !f.barcaSelezionataInPorto && (
             <div className="torre-section">
               <label className="torre-section-label">Posti compatibili ({f.suggestedBerths.length})</label>
               <div className="torre-berths-grid">

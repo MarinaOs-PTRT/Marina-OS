@@ -1,4 +1,5 @@
-﻿import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { TopBar } from '../../components/TopBar'
 import { SociTable } from './components/SociTable'
 import { AuthTable } from './components/AuthTable'
@@ -11,18 +12,45 @@ import './SociPage.css'
 type ActiveTab = 'soci' | 'pendenti' | 'attive' | 'storico' | 'nuovo'
 
 export function SociPage() {
-  // SSOT: tutte le scritture passano per il Context (non c'Ã¨ piÃ¹ stato locale).
+  // SSOT: tutte le scritture passano per il Context (non c'è più stato locale).
   // Le autorizzazioni 'pendente' create da registraEntrata({pendente:true})
-  // appaiono qui automaticamente perchÃ© leggiamo dal Context.
+  // appaiono qui automaticamente perché leggiamo dal Context.
   const {
     clienti, posti, titoli, autorizzazioni,
     addAutorizzazione, completaAutorizzazionePendente, revocaAutorizzazione,
-    // v3: query derivate per derivare lo stato visivo dei posti dei soci.
     getStatoVisivoBerth,
   } = useGlobalState()
-  const [activeTab, setActiveTab] = useState<ActiveTab>('soci')
+
+  // Controlla se c'è sovrapposizione con un'auth già attiva sullo stesso posto.
+  // Usato sia per il create mode che come guard pre-submit.
+  const checkSovrapposizione = (berthId: string, dal: string, al: string, excludeId?: number): string | null => {
+    if (!dal || !al) return null
+    const dDal = new Date(dal)
+    const dAl = new Date(al)
+    const conflitto = autorizzazioni.find(a =>
+      a.id !== excludeId &&
+      a.berthId === berthId &&
+      a.stato === 'attiva' &&
+      a.dal && a.al &&
+      new Date(a.al) >= dDal &&
+      new Date(a.dal) <= dAl
+    )
+    if (conflitto) {
+      return `Il posto ${berthId} ha già un'autorizzazione attiva per "${conflitto.beneficiario}" nel periodo ${conflitto.dal} → ${conflitto.al}.`
+    }
+    return null
+  }
+
+  // Legge ?tab= dalla URL per deep-link diretto dalla NotifichePage.
+  // Es. /soci?tab=pendenti → apre direttamente la tab "Da Compilare".
+  const [searchParams] = useSearchParams()
+  const tabFromUrl = searchParams.get('tab') as ActiveTab | null
+  const tabValide: ActiveTab[] = ['soci', 'pendenti', 'attive', 'storico', 'nuovo']
+  const [activeTab, setActiveTab] = useState<ActiveTab>(
+    tabFromUrl && tabValide.includes(tabFromUrl) ? tabFromUrl : 'soci'
+  )
   const [showForm, setShowForm] = useState(false)
-  // editingAuth: l'autorizzazione pendente attualmente in modalitÃ  "Completa".
+  // editingAuth: l'autorizzazione pendente attualmente in modalità "Completa".
   // Quando valorizzato, AuthForm si apre in edit-mode con i campi pre-popolati.
   const [editingAuth, setEditingAuth] = useState<Authorization | null>(null)
 
@@ -63,7 +91,7 @@ export function SociPage() {
 
   const authPendenti = autorizzazioni.filter(a => a.stato === 'pendente')
   const authAttive = autorizzazioni.filter(a => a.stato === 'attiva')
-  // Storico = ciÃ² che Ã¨ "chiuso" (scaduta o revocata). Le pendenti sono
+  // Storico = ciò che è "chiuso" (scaduta o revocata). Le pendenti sono
   // lavoro da fare e hanno la loro tab dedicata.
   const authStorico = autorizzazioni.filter(a => a.stato === 'scaduta' || a.stato === 'revocata')
 
@@ -82,7 +110,7 @@ export function SociPage() {
   /** Submit del form: due rami in base al modo (create vs edit) */
   const handleAuthSubmit = (auth: Omit<Authorization, 'id'>) => {
     if (editingAuth) {
-      // ModalitÃ  EDIT: completiamo una pendente esistente.
+      // Modalità EDIT: completiamo una pendente esistente.
       const res = completaAutorizzazionePendente(editingAuth.id, {
         tipo: auth.tipo,
         beneficiario: auth.beneficiario,
@@ -102,7 +130,13 @@ export function SociPage() {
       setShowForm(false)
       setActiveTab('attive')
     } else {
-      // ModalitÃ  CREATE: nuova autorizzazione dalla Direzione.
+      // Modalità CREATE: nuova autorizzazione dalla Direzione.
+      // Controllo sovrapposizione prima di salvare (Fix 29 Apr 2026).
+      const errSovrap = checkSovrapposizione(auth.berthId, auth.dal ?? '', auth.al ?? '')
+      if (errSovrap) {
+        alert(`Sovrapposizione date: ${errSovrap}\nControlla le date o revoca la precedente autorizzazione.`)
+        return
+      }
       addAutorizzazione(auth)
       setShowForm(false)
       setActiveTab('attive')
@@ -129,26 +163,26 @@ export function SociPage() {
               className={`soci-tab ${activeTab === 'soci' ? 'active' : ''}`}
               onClick={() => setActiveTab('soci')}
             >
-              ðŸ‘¤ Elenco Soci e Posti ({sociAggregati.length})
+              Elenco Soci e Posti ({sociAggregati.length})
             </button>
             <button
               className={`soci-tab ${activeTab === 'pendenti' ? 'active' : ''}`}
               onClick={() => setActiveTab('pendenti')}
               style={authPendenti.length > 0 ? { color: 'var(--color-text-warning)', fontWeight: 600 } : undefined}
             >
-              â³ Da Compilare ({authPendenti.length})
+              Da Compilare ({authPendenti.length})
             </button>
             <button
               className={`soci-tab ${activeTab === 'attive' ? 'active' : ''}`}
               onClick={() => setActiveTab('attive')}
             >
-              âœ… Autorizzazioni Attive ({authAttive.length})
+              Autorizzazioni Attive ({authAttive.length})
             </button>
             <button
               className={`soci-tab ${activeTab === 'storico' ? 'active' : ''}`}
               onClick={() => setActiveTab('storico')}
             >
-              ðŸ“œ Storico ({authStorico.length})
+              Storico ({authStorico.length})
             </button>
             <button
               className={`soci-tab ${activeTab === 'nuovo' ? 'active' : ''}`}
@@ -159,7 +193,7 @@ export function SociPage() {
             </button>
           </div>
 
-          {(activeTab === 'attive' || activeTab === 'storico') && !editingAuth && (
+          {(activeTab === 'attive' || activeTab === 'storico' || activeTab === 'pendenti') && !editingAuth && (
             <button className="btn btn-mode-entrata" onClick={() => setShowForm(!showForm)}>
               {showForm ? 'Chiudi' : '+ Nuova Autorizzazione'}
             </button>
@@ -195,4 +229,3 @@ export function SociPage() {
     </>
   )
 }
-

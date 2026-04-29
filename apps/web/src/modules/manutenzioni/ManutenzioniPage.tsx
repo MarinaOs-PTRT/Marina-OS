@@ -12,96 +12,107 @@ type ActiveTab = 'subacquei' | 'segnalazioni'
 type StatoFilter = 'tutti' | 'dafare' | 'incorso' | 'completato' | 'urgente'
 
 export function ManutenzioniPage() {
-  const { manutenzioni, segnalazioni } = useGlobalState()
+  const {
+    manutenzioni, segnalazioni,
+    updateManutenzioneStato, updateSegnalazioneStato,
+  } = useGlobalState()
+
   const [activeTab, setActiveTab] = useState<ActiveTab>('subacquei')
   const [filtroStato, setFiltroStato] = useState<StatoFilter>('tutti')
   const [showForm, setShowForm] = useState(false)
 
-  // Combine all items for KPI
+  // KPI strip — unisce entrambe le liste
   const allItems = [...manutenzioni, ...segnalazioni]
-  const kpiUrgenti = allItems.filter(i => i.urgenza === 'urgente' && i.stato !== 'completato').length
-  const kpiDaFare = allItems.filter(i => i.stato === 'dafare').length
-  const kpiInCorso = allItems.filter(i => i.stato === 'incorso').length
-  const kpiCompletati = allItems.filter(i => i.stato === 'completato').length
+  const kpiUrgenti   = allItems.filter(i => i.urgenza === 'urgente' && i.stato !== 'completato').length
+  const kpiDaFare    = allItems.filter(i => i.stato === 'dafare').length
+  const kpiInCorso   = allItems.filter(i => i.stato === 'incorso').length
+  const kpiCompletati= allItems.filter(i => i.stato === 'completato').length
 
-  // Filtered data
   const filteredManutenzioni = useMemo(() => {
     return manutenzioni.filter(m => {
-      if (filtroStato === 'tutti') return true
-      if (filtroStato === 'urgente') return m.urgenza === 'urgente' && m.stato !== 'completato'
+      if (filtroStato === 'tutti')    return true
+      if (filtroStato === 'urgente')  return m.urgenza === 'urgente' && m.stato !== 'completato'
       return m.stato === filtroStato
     })
   }, [manutenzioni, filtroStato])
 
   const filteredSegnalazioni = useMemo(() => {
     return segnalazioni.filter(s => {
-      if (filtroStato === 'tutti') return true
-      if (filtroStato === 'urgente') return s.urgenza === 'urgente' && s.stato !== 'completato'
+      if (filtroStato === 'tutti')    return true
+      if (filtroStato === 'urgente')  return s.urgenza === 'urgente' && s.stato !== 'completato'
       return s.stato === filtroStato
     })
   }, [segnalazioni, filtroStato])
 
-  const handleNewItem = () => {
-    setShowForm(!showForm)
+  const filtroLabels: Record<StatoFilter, string> = {
+    tutti:      'Tutti',
+    urgente:    'Urgenti',
+    dafare:     'Da Fare',
+    incorso:    'In Corso',
+    completato: 'Completati',
   }
 
   return (
     <>
-      <TopBar 
-        title="Manutenzioni Porto" 
+      <TopBar
+        title="Manutenzioni Porto"
         subtitle="Lavori subacquei e segnalazioni infrastrutturali"
       />
-      
+
       <div className="page-container">
-        
+
         {/* KPI Strip */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-lg)' }}>
-          <KpiCard label="Urgenti" value={kpiUrgenti} color="red" />
-          <KpiCard label="Da Fare" value={kpiDaFare} color="amber" />
-          <KpiCard label="In Corso" value={kpiInCorso} color="teal" />
+          <KpiCard label="Urgenti"    value={kpiUrgenti}    color="red"   />
+          <KpiCard label="Da Fare"    value={kpiDaFare}     color="amber" />
+          <KpiCard label="In Corso"   value={kpiInCorso}    color="teal"  />
           <KpiCard label="Completati" value={kpiCompletati} color="green" />
         </div>
 
-        {/* Filters + Tabs Bar */}
+        {/* Tab bar + filtri */}
         <div className="maint-controls">
           <div className="maint-tabs">
-            <button 
+            <button
               className={`maint-tab ${activeTab === 'subacquei' ? 'active' : ''}`}
               onClick={() => { setActiveTab('subacquei'); setShowForm(false) }}
             >
-              Lavori Subacquei
+              Lavori Subacquei ({manutenzioni.length})
             </button>
-            <button 
+            <button
               className={`maint-tab ${activeTab === 'segnalazioni' ? 'active' : ''}`}
               onClick={() => { setActiveTab('segnalazioni'); setShowForm(false) }}
             >
-              Segnalazioni
+              Segnalazioni ({segnalazioni.length})
             </button>
           </div>
-          
+
           <div className="maint-filters">
-            {(['tutti', 'urgente', 'dafare', 'incorso', 'completato'] as StatoFilter[]).map(f => (
+            {(Object.keys(filtroLabels) as StatoFilter[]).map(f => (
               <button
                 key={f}
                 className={`filter-chip ${filtroStato === f ? 'active' : ''}`}
                 onClick={() => setFiltroStato(f)}
               >
-                {f === 'tutti' ? 'Tutti' : f === 'urgente' ? 'Urgenti' : f === 'dafare' ? 'Da Fare' : f === 'incorso' ? 'In Corso' : 'Completati'}
+                {filtroLabels[f]}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Content */}
+        {/* Contenuto */}
         <div className="maint-content">
           <div className="maint-content-header">
-            <h2>{activeTab === 'subacquei' ? `Lavori Subacquei (${filteredManutenzioni.length})` : `Segnalazioni (${filteredSegnalazioni.length})`}</h2>
-            <button className="btn btn-mode-entrata" onClick={handleNewItem}>
+            <h2>
+              {activeTab === 'subacquei'
+                ? `Lavori Subacquei (${filteredManutenzioni.length})`
+                : `Segnalazioni (${filteredSegnalazioni.length})`}
+            </h2>
+            <button className="btn btn-mode-entrata" onClick={() => setShowForm(v => !v)}>
               {showForm ? 'Chiudi' : activeTab === 'subacquei' ? '+ Nuovo Lavoro' : '+ Nuova Segnalazione'}
             </button>
           </div>
 
-          {/* Inline Form (toggled) */}
+          {/* Form inline */}
           {showForm && (
             <div className="maint-form-wrapper">
               {activeTab === 'subacquei' ? (
@@ -112,11 +123,17 @@ export function ManutenzioniPage() {
             </div>
           )}
 
-          {/* Table */}
+          {/* Tabella */}
           {activeTab === 'subacquei' ? (
-            <MaintenanceTable data={filteredManutenzioni} />
+            <MaintenanceTable
+              data={filteredManutenzioni}
+              onUpdateStato={updateManutenzioneStato}
+            />
           ) : (
-            <ReportTable data={filteredSegnalazioni} />
+            <ReportTable
+              data={filteredSegnalazioni}
+              onUpdateStato={updateSegnalazioneStato}
+            />
           )}
         </div>
 

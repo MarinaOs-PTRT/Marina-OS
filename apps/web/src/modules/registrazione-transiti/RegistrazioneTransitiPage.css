@@ -1,57 +1,66 @@
+/* ════════════════════════════════════════════
+   RegistrazioneTransitiPage
+   Layout: barra ricerca / due pannelli affiancati indipendenti
+   Segue lo stile TorrePage: ogni card è autonoma.
+   Nessun colore hardcoded — solo CSS variables.
+   ════════════════════════════════════════════ */
+
 .reg-transiti-page {
-  max-width: 1300px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 1320px;
   margin: 0 auto;
 }
 
 /* ══════════════════════════════════════════
-   RIQUADRO PRINCIPALE
+   BARRA DI RICERCA (omnibar + riepilogo)
 ══════════════════════════════════════════ */
-.reg-main-card {
+.reg-search-bar {
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
-  overflow: hidden;
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 
-.reg-main-card-header {
-  padding: var(--space-lg) var(--space-xl);
-  background: var(--bg3);
-  border-bottom: none;
+.reg-search-omnibar {
+  flex: 0 0 520px;
+  max-width: 520px;
 }
 
-.reg-main-card-divider {
-  height: 1px;
-  background: var(--border);
-  margin: 0;
-}
-
-/* ══════════════════════════════════════════
-   OMNIBAR
-══════════════════════════════════════════ */
-.reg-omnibar-wrap {
-  max-width: 620px;
+.reg-search-info {
+  flex: 1;
+  min-width: 200px;
 }
 
 .reg-omnibar-hint {
-  margin: var(--space-sm) 0 0 0;
+  margin: 0;
   color: var(--text3);
   font-size: 0.85rem;
 }
 
-/* Riga riepilogo barca selezionata */
+.reg-error-inline {
+  color: var(--red, #ef4444);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+/* Riepilogo barca selezionata */
 .reg-selected-summary {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
-  margin-top: var(--space-sm);
+  gap: 10px;
   flex-wrap: wrap;
 }
 
 .reg-selected-label {
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   color: var(--text3);
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
@@ -59,6 +68,92 @@
 .reg-selected-posto {
   color: var(--text2);
   font-size: 0.9rem;
+}
+
+/* ══════════════════════════════════════════
+   SPLIT — due pannelli affiancati
+══════════════════════════════════════════ */
+.reg-split {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .reg-split {
+    grid-template-columns: 1fr;
+  }
+  .reg-panel-right {
+    position: static !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .reg-search-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .reg-search-omnibar {
+    flex: unset;
+    max-width: 100%;
+  }
+}
+
+/* ══════════════════════════════════════════
+   PANNELLO — card autonoma
+══════════════════════════════════════════ */
+.reg-panel {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.reg-panel-right {
+  position: sticky;
+  top: 20px;
+}
+
+/* ── Intestazione pannello ── */
+.reg-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.reg-head-anagrafica {
+  border-top: 3px solid var(--color-text-info, #2E6CBC);
+}
+
+.reg-head-cassa {
+  border-top: 3px solid var(--color-text-success, #1D9E75);
+}
+
+.reg-head-auth {
+  border-top: 3px solid var(--color-text-warning, #BA7517);
+}
+
+.reg-panel-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+}
+
+/* ── Corpo pannello ── */
+.reg-panel-body {
+  padding: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ══════════════════════════════════════════
@@ -88,62 +183,13 @@
 }
 
 .reg-badge-saved {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--color-text-success, #1D9E75);
   font-weight: 600;
 }
 
 /* ══════════════════════════════════════════
-   DASHBOARD A DUE COLONNE
-══════════════════════════════════════════ */
-.reg-dashboard {
-  display: grid;
-  grid-template-columns: 1fr 400px;
-  align-items: start;
-}
-
-@media (max-width: 1024px) {
-  .reg-dashboard {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ══════════════════════════════════════════
-   PANEL — dentro il riquadro principale
-══════════════════════════════════════════ */
-.reg-panel {
-  padding: var(--space-xl);
-}
-
-.reg-panel-header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  margin-bottom: var(--space-lg);
-  flex-wrap: wrap;
-}
-
-.reg-panel-header h2 {
-  font-family: var(--font-display);
-  color: var(--text);
-  margin: 0;
-  font-size: 1.2rem;
-}
-
-/* Divisore verticale tra i due panel */
-.reg-panel-anagrafica {
-  border-right: 1px solid var(--border);
-  border-top: 3px solid var(--color-text-info, #2E6CBC);
-}
-
-.reg-panel-cassa {
-  border-top: 3px solid var(--color-text-success, #1D9E75);
-  position: sticky;
-  top: var(--space-lg);
-}
-
-/* ══════════════════════════════════════════
-   SUBSECTION LABEL
+   SUBSECTION LABEL (separatori di sezione)
 ══════════════════════════════════════════ */
 .reg-subsection-label {
   font-size: 0.72rem;
@@ -157,17 +203,6 @@
 }
 
 /* ══════════════════════════════════════════
-   CARD (usata per success)
-══════════════════════════════════════════ */
-.reg-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-xl);
-  box-shadow: var(--shadow);
-}
-
-/* ══════════════════════════════════════════
    BANNERS
 ══════════════════════════════════════════ */
 .reg-info-banner {
@@ -175,7 +210,7 @@
   border: 1px solid rgba(56, 189, 248, 0.25);
   color: var(--teal);
   padding: 10px 16px;
-  border-radius: var(--radius-md, 8px);
+  border-radius: 8px;
   font-size: 0.85rem;
   margin-bottom: var(--space-lg);
 }
@@ -186,12 +221,15 @@
   color: var(--color-text-warning, #BA7517);
 }
 
+/* ══════════════════════════════════════════
+   ERRORI
+══════════════════════════════════════════ */
 .reg-error {
   background: rgba(239, 68, 68, 0.12);
   border: 1px solid rgba(239, 68, 68, 0.3);
   color: var(--red, #ef4444);
   padding: 10px 16px;
-  border-radius: var(--radius-md, 8px);
+  border-radius: 8px;
   font-size: 0.88rem;
   font-weight: 500;
   margin-bottom: var(--space-md);
@@ -200,8 +238,8 @@
 
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  75% { transform: translateX(4px); }
+  25%       { transform: translateX(-4px); }
+  75%       { transform: translateX(4px); }
 }
 
 /* ══════════════════════════════════════════
@@ -223,7 +261,6 @@
   margin-bottom: var(--space-md);
 }
 
-/* Grid a colonna singola per la sezione Cassa */
 .reg-form-grid-single {
   grid-template-columns: 1fr;
 }
@@ -250,7 +287,7 @@
 .reg-field select {
   padding: 10px 14px;
   border: 1px solid var(--border);
-  border-radius: var(--radius, 8px);
+  border-radius: 8px;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-ui);
@@ -279,7 +316,7 @@
   border: 1px solid rgba(16, 185, 129, 0.25);
   color: var(--green, #10b981);
   padding: 10px 16px;
-  border-radius: var(--radius-md, 8px);
+  border-radius: 8px;
   font-size: 0.88rem;
   text-align: center;
   margin: var(--space-md) 0;
@@ -294,11 +331,11 @@
   color: var(--text3);
   font-size: 0.88rem;
   border: 1px dashed var(--border);
-  border-radius: var(--radius-md, 8px);
+  border-radius: 8px;
 }
 
 /* ══════════════════════════════════════════
-   ACTIONS
+   ACTIONS (fondo pannello)
 ══════════════════════════════════════════ */
 .reg-actions {
   display: flex;
@@ -306,7 +343,7 @@
   gap: var(--space-md);
   padding-top: var(--space-lg);
   border-top: 1px solid var(--border);
-  margin-top: var(--space-lg);
+  margin-top: auto;
 }
 
 .reg-actions-centered {
@@ -314,37 +351,16 @@
 }
 
 /* ══════════════════════════════════════════
-   EMPTY STATE
-══════════════════════════════════════════ */
-.reg-empty-state {
-  text-align: center;
-  padding: var(--space-xl) 0 calc(var(--space-xl) * 2);
-  color: var(--text2);
-}
-
-.reg-search-icon {
-  font-size: 3.5rem;
-  margin-bottom: var(--space-md);
-}
-
-.reg-empty-state h2 {
-  font-family: var(--font-display);
-  color: var(--text);
-  margin: 0 0 8px 0;
-}
-
-.reg-empty-state p {
-  margin: 0 0 var(--space-sm) 0;
-}
-
-.reg-empty-hint {
-  font-size: 0.85rem;
-  color: var(--text3);
-}
-
-/* ══════════════════════════════════════════
    SUCCESS
 ══════════════════════════════════════════ */
+.reg-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: var(--space-xl);
+  box-shadow: var(--shadow);
+}
+
 .reg-success {
   text-align: center;
   max-width: 540px;

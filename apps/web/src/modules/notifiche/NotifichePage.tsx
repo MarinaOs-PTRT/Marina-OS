@@ -141,6 +141,19 @@ export function NotifichePage() {
                       Completa registrazione
                     </Link>
                   )}
+                  {/* Azione contestuale: per notifiche con relatedAuthId
+                      (autorizzazione pendente da compilare in Direzione).
+                      Link diretto alla tab "Da Compilare" della pagina Soci.
+                      Fix (29 Apr 2026): prima mancava del tutto — la notifica
+                      appariva senza nessun pulsante d'azione. */}
+                  {n.relatedAuthId && n.stato !== 'risolta' && (
+                    <Link
+                      to="/soci?tab=pendenti"
+                      className="btn btn-primary btn-sm"
+                    >
+                      Vai a Da Compilare
+                    </Link>
+                  )}
                   {n.stato === 'nuova' && (
                     <button className="btn btn-outline btn-sm" onClick={() => handleMarkAs(n.id, 'letta')}>Segna come letta</button>
                   )}

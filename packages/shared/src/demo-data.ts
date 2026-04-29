@@ -244,9 +244,20 @@ function _generateSynthData() {
     const lar      = Math.round((lunMax <= 10 ? 3.2 + (gIdx % 4) * 0.1 : lunMax <= 12 ? 3.5 + (gIdx % 5) * 0.1 : 4.0 + (gIdx % 5) * 0.1) * 10) / 10
     const pesc     = Math.round((lunMax <= 10 ? 1.3 + (gIdx % 5) * 0.1 : lunMax <= 12 ? 1.5 + (gIdx % 5) * 0.1 : 1.8 + (gIdx % 4) * 0.1) * 10) / 10
 
+    // Fix (29 Apr 2026): NOMI_BARCA ha 51 elementi ma i soci sintetici
+    // sono ~301. Il modulo % faceva riciclare i nomi (es. "Gioia di Vivere"
+    // appariva 5 volte su berth diversi). Le ricerche per nome trovavano
+    // match multipli → comportamento imprevedibile in Torre.
+    // Soluzione: al secondo ciclo aggiungo suffisso romano (II, III, ecc.).
+    // In marina è normale avere "Libertà II", "Tramonto III" ecc.
+    const _baseNome = NOMI_BARCA[gIdx % NOMI_BARCA.length]
+    const _ciclo    = Math.floor(gIdx / NOMI_BARCA.length)
+    const _suffissi = ['','II','III','IV','V','VI','VII']
+    const _nomeBoat = _ciclo === 0 ? _baseNome : `${_baseNome} ${_suffissi[_ciclo] ?? _ciclo + 1}`
+
     boats.push({
       id: bId, clientId: cId,
-      nome: NOMI_BARCA[gIdx % NOMI_BARCA.length],
+      nome: _nomeBoat,
       matricola: `IT-RM-${6000 + bId}`,
       tipo: isVela ? 'Vela' : 'Motore',
       modello: lista[gIdx % lista.length],

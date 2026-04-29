@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import {
   Client, Boat, Berth, BerthStatus, BerthVisualState, Movement, Tariff, MaintenanceJob, Report,
   Receipt, Arrival, OwnershipTitle, Authorization, AuthType, SystemUser, SystemAlert,
@@ -85,6 +85,12 @@ interface GlobalState {
   updateBarca: (id: number, updates: Partial<Boat>) => void
   addRicevuta: (r: Receipt) => void
 
+  // ── Manutenzioni (M-04) ──
+  addManutenzione: (m: Omit<MaintenanceJob, 'id'>) => void
+  updateManutenzioneStato: (id: number, stato: MaintenanceJob['stato']) => void
+  addSegnalazione: (s: Omit<Report, 'id'>) => void
+  updateSegnalazioneStato: (id: number, stato: Report['stato']) => void
+
   // ── Registrazione Nuovo Socio (M-13) ──
   // Operazione atomica: crea cliente (tipo='so') + barca + titolo di possesso
   // + aggiorna il berth assegnato (socioId + stato='socio_assente').
@@ -152,6 +158,24 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
   // ── Modello v3 (27 Apr 2026) ──
   const [stays, setStays] = useState<Stay[]>(STAYS_DEMO)
   const [cantieri, setCantieri] = useState<CantiereSession[]>(CANTIERE_SESSIONS_DEMO)
+
+  // ════════════════════════════════════════════
+  // SCADENZA AUTOMATICA AUTORIZZAZIONI (29 Apr 2026)
+  // Al mount del provider, porta in 'scaduta' tutte le auth attive
+  // con data fine (al) già passata. Sul backend diventerà un job
+  // notturno o un trigger su DB; qui è sufficiente farlo una volta
+  // all'avvio (nessuna sessione dura giorni nel frontend).
+  // ════════════════════════════════════════════
+  useEffect(() => {
+    const oggi = new Date()
+    oggi.setHours(0, 0, 0, 0)
+    setAutorizzazioni(prev => prev.map(a => {
+      if (a.stato !== 'attiva' || !a.al) return a
+      const fine = new Date(a.al)
+      if (isNaN(fine.getTime())) return a
+      return fine < oggi ? { ...a, stato: 'scaduta' as const } : a
+    }))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ════════════════════════════════════════════
   // HELPER INTERNI
@@ -372,33 +396,41 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
 
   /** Verifica se esiste un'autorizzazione valida per un posto */
   const checkAutorizzazione = (postoId: string, nomeBarca: string): { autorizzato: boolean; motivo?: string } => {
-    // Il posto appartiene a un socio?
     const posto = posti.find(p => p.id === postoId)
-    if (!posto || !posto.socioId) {
-      // Posto non assegnato a nessun socio — nessuna autorizzazione richiesta
+    if (!posto) return { autorizzato: true }
+
+    // v3 SSOT (fix 29 Apr 2026): il titolare del posto si legge da
+    // titoloAttivoDelBerth, NON da posto.socioId (campo legacy vuoto per
+    // tutti i posti FF/v3). Prima questo causava autorizzato=true su
+    // qualsiasi posto senza socioId, bypassando il controllo.
+    const titoloAttivo = titoloAttivoDelBerth(postoId)
+    const clientIdTitolare = titoloAttivo?.clientId ?? posto.socioId
+
+    if (!clientIdTitolare) {
+      // Posto senza proprietario — nessuna autorizzazione richiesta
       return { autorizzato: true }
     }
 
-    // Il socio proprietario è lo stesso che porta la barca?
-    const socio = clienti.find(c => c.id === posto.socioId)
-    const barcheSocio = barche.filter(b => b.clientId === posto.socioId)
-    if (barcheSocio.some(b => b.nome === nomeBarca)) {
+    // Il titolare porta la sua stessa barca? → sempre autorizzato
+    const barcheTitolare = barche.filter(b => b.clientId === clientIdTitolare)
+    if (barcheTitolare.some(b => b.nome === nomeBarca)) {
       return { autorizzato: true }
     }
 
-    // Controlla le autorizzazioni registrate
-    const auth = autorizzazioni.find(a => 
-      a.berthId === postoId && 
-      a.barca === nomeBarca && 
+    // Controlla le autorizzazioni attive registrate per questo posto + barca
+    const auth = autorizzazioni.find(a =>
+      a.berthId === postoId &&
+      a.barca === nomeBarca &&
       a.stato === 'attiva'
     )
     if (auth) {
       return { autorizzato: true }
     }
 
-    return { 
-      autorizzato: false, 
-      motivo: `Il posto ${postoId} è assegnato al socio ${socio?.nome || 'N/D'}. Autorizzazione mancante o scaduta per "${nomeBarca}".`
+    const socioPropr = clienti.find(c => c.id === clientIdTitolare)
+    return {
+      autorizzato: false,
+      motivo: `Il posto ${postoId} è assegnato al socio ${socioPropr?.nome || 'N/D'}. Autorizzazione mancante o scaduta per "${nomeBarca}".`
     }
   }
 
@@ -940,6 +972,12 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     // Fix v3 #4 (27 Apr 2026): preserva authId del vecchio Stay nel nuovo
     // così l'audit trail dell'autorizzazione rimane coerente quando
     // l'affittuario cambia posto a fine contratto/inizio nuovo contratto.
+    //
+    // Fix (29 Apr 2026): aggiorna anche boat.posto al nuovo berth.
+    // Doppia-scrittura necessaria: boat.posto è deprecated ma usato come
+    // fallback in fillFromBoat quando la barca è fuori porto (nessuno Stay
+    // aperto). Senza questo update, dopo spostamento+uscita il form Torre
+    // pre-compilava il berth originale invece dell'ultimo berth noto.
     const boat = barche.find(b =>
       b.nome.toLowerCase() === mov.nome.toLowerCase() ||
       (mov.matricola && b.matricola.toLowerCase() === mov.matricola.toLowerCase())
@@ -955,6 +993,8 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
         authId: authIdEreditato,
         movementApriId: mov.id,
       })
+      // Aggiorna boat.posto al nuovo berth (fallback per fillFromBoat)
+      setBarche(prev => prev.map(b => b.id === boat.id ? { ...b, posto: postoDestinazione } : b))
     } else {
       // Fallback: chiudi qualsiasi stay sul berth d'origine. Il nuovo Stay
       // non viene aperto perché non sappiamo quale boatId usare. Edge case
@@ -1269,7 +1309,7 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
       return { ok: false, errore: `Autorizzazione #${id} non è in stato 'pendente' (stato attuale: ${auth.stato}).` }
     }
 
-    // Validazione date: al >= dal, al >= oggi
+    // Validazione date: al >= dal
     const dDal = new Date(dati.dal)
     const dAl = new Date(dati.al)
     if (isNaN(dDal.getTime()) || isNaN(dAl.getTime())) {
@@ -1277,6 +1317,24 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
     }
     if (dAl < dDal) {
       return { ok: false, errore: 'La data fine non può essere precedente alla data inizio.' }
+    }
+
+    // Controllo sovrapposizione: non attivare se c'è già un'altra auth
+    // attiva sullo stesso posto con date che si sovrappongono.
+    // Escludiamo la stessa auth (id) che stiamo completando.
+    const sovrapposizione = autorizzazioni.find(existing =>
+      existing.id !== id &&
+      existing.berthId === auth.berthId &&
+      existing.stato === 'attiva' &&
+      existing.dal && existing.al &&
+      new Date(existing.al) >= dDal &&
+      new Date(existing.dal) <= dAl
+    )
+    if (sovrapposizione) {
+      return {
+        ok: false,
+        errore: `Il posto ${auth.berthId} ha già un'autorizzazione attiva per "${sovrapposizione.beneficiario}" nel periodo ${sovrapposizione.dal} → ${sovrapposizione.al}. Controlla le date o revoca la precedente.`
+      }
     }
 
     const oggi = new Date()
@@ -1323,6 +1381,29 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
       stato: 'revocata' as const,
       note: motivo ? (a.note ? `${a.note} — Revoca: ${motivo}` : `Revoca: ${motivo}`) : a.note
     } : a))
+  }
+
+  // ════════════════════════════════════════════
+  // MANUTENZIONI & SEGNALAZIONI (M-04, 29 Apr 2026)
+  // Prima queste funzioni non esistevano — i form chiamavano alert().
+  // ════════════════════════════════════════════
+
+  const addManutenzione = (m: Omit<MaintenanceJob, 'id'>) => {
+    const id = Date.now()
+    setManutenzioni(prev => [{ ...m, id }, ...prev])
+  }
+
+  const updateManutenzioneStato = (id: number, stato: MaintenanceJob['stato']) => {
+    setManutenzioni(prev => prev.map(m => m.id === id ? { ...m, stato } : m))
+  }
+
+  const addSegnalazione = (s: Omit<Report, 'id'>) => {
+    const id = Date.now()
+    setSegnalazioni(prev => [{ ...s, id }, ...prev])
+  }
+
+  const updateSegnalazioneStato = (id: number, stato: Report['stato']) => {
+    setSegnalazioni(prev => prev.map(s => s.id === id ? { ...s, stato } : s))
   }
 
   // ════════════════════════════════════════════
@@ -1400,6 +1481,7 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
       stays, cantieri,
       updatePosto, addArrivo, resolveArrivo, updateArrivoStato, markNotifica, purgeNotificheRisolte,
       addCliente, addBarca, updateBarca, addRicevuta,
+      addManutenzione, updateManutenzioneStato, addSegnalazione, updateSegnalazioneStato,
       registraNuovoSocio,
       addAutorizzazione, updateAutorizzazione,
       completaAutorizzazionePendente, revocaAutorizzazione,

@@ -108,9 +108,15 @@ export function AuthForm({ onSubmit, onClose, soci, initial }: Props) {
             disabled={isEditMode}
           >
             <option value="">Seleziona socio...</option>
-            {soci.map(s => (
-              <option key={s.id} value={s.id}>{s.nome} ({s.posto || 'Senza posto'})</option>
-            ))}
+            {soci.map(s => {
+              // Fix (29 Apr 2026): s.posto è deprecated. Il posto viene
+              // derivato dal OwnershipTitle attivo del socio (v3 SSOT).
+              const titolo = titoli.find(t => t.clientId === s.id && t.attivo !== false)
+              const postoLabel = titolo?.berthId || 'Senza posto assegnato'
+              return (
+                <option key={s.id} value={s.id}>{s.nome} ({postoLabel})</option>
+              )
+            })}
           </select>
         </div>
         <div className="form-group">

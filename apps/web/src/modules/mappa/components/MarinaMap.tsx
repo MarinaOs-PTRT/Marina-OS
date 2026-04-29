@@ -123,10 +123,21 @@ export const MarinaMap = React.memo(function MarinaMap({ berths, onBerthSelect }
 
       // v3: colore deriva da getStatoVisivoBerth (BerthVisualState)
       const color = BERTH_VISUAL_HEX[getStatoVisivoBerth(berth.id)] || '#cbd5e1'
+      // Applica fill sul wrapper (stile + attributo) e direttamente sui child
+      // shapes (rect/polygon/path). Necessario perché l'SVG esportato da
+      // Illustrator può avere elementi <g> come wrapper con fill sui rettangoli
+      // interni — il fill sul gruppo non sovrascrive i fill presentation-attr
+      // dei figli in SVG. Impostando il fill su ogni figlio visivo garantiamo
+      // che il colore sia sempre corretto dopo ogni movimento.
+      el.setAttribute('fill', color)
       el.setAttribute('style', `fill: ${color}; cursor: pointer; transition: opacity 0.2s; pointer-events: all;`)
+      el.querySelectorAll('rect, polygon, path, circle, ellipse').forEach(shape => {
+        shape.setAttribute('fill', color)
+      })
 
       el.addEventListener('mouseenter', (e: Event) => {
         const me = e as MouseEvent
+        // opacity sul wrapper — copre sia <g> che <rect> diretti
         el.setAttribute('opacity', '0.7')
         setTooltip({ x: me.clientX, y: me.clientY, berthId: berth.id })
       })
@@ -142,7 +153,11 @@ export const MarinaMap = React.memo(function MarinaMap({ berths, onBerthSelect }
       const handler = (e: Event) => {
         e.stopPropagation()
         e.preventDefault()
-        onBerthSelect(berth)
+        // Cerca il berth aggiornato in `berths` al momento del click
+        // (la closure potrebbe avere uno snapshot stale se il posto è cambiato
+        // senza che l'effect si sia rieseguito per qualche altro motivo).
+        const freshBerth = berths.find(b => b.id === berth.id) ?? berth
+        onBerthSelect(freshBerth)
       }
       el.addEventListener('click', handler)
       clickHandlers.push({ el, handler })

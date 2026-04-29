@@ -63,6 +63,7 @@ export function useTorreForm() {
     addCliente, addBarca,
     // Modello v3 — query derivate
     getStatoVisivoBerth, barcaSulPosto, postoDellaBarca, stayApertoDellaBarca,
+    titoloAttivoDelBerth,
   } = useGlobalState()
 
   // ── Helper interni v3 ──
@@ -79,8 +80,15 @@ export function useTorreForm() {
       return `${p.pontile} · ${stato} · ${occupante.nome}`
     }
 
-    // Posto socio assente: recupera la/le barche del socio dall'anagrafica
-    if (p.socioId) {
+    // Posto socio assente: recupera la barca dal titolo v3 (SSOT),
+    // fallback a p.socioId legacy se il titolo manca.
+    const titolo = titoloAttivoDelBerth(p.id)
+    if (titolo?.boatId) {
+      const barcaTitolare = barche.find(b => b.id === titolo.boatId)
+      if (barcaTitolare) {
+        return `${p.pontile} · ${stato} · ${barcaTitolare.nome}`
+      }
+    } else if (p.socioId) {
       const barcheSocio = barche.filter(b => b.clientId === p.socioId)
       if (barcheSocio.length > 0) {
         return `${p.pontile} · ${stato} · ${barcheSocio.map(b => b.nome).join(', ')}`
@@ -216,11 +224,16 @@ export function useTorreForm() {
     const posto = posti.find(p => p.id === destId)
     if (!posto) return { controllato: false, autorizzato: false }
 
-    // Il posto non ha socioId → non serve autorizzazione
-    if (!posto.socioId) return { controllato: true, autorizzato: true }
+    // v3 SSOT: il posto è titolato se ha un OwnershipTitle attivo.
+    // Fallback a posto.socioId legacy per retrocompatibilità.
+    const titoloDestinazione = titoloAttivoDelBerth(destId)
+    const clientIdTitolare = titoloDestinazione?.clientId || posto.socioId
 
-    // Il socio proprietario porta la sua stessa barca → ok
-    const barcheSocio = barche.filter(b => b.clientId === posto.socioId)
+    // Il posto non ha titolare → non serve autorizzazione
+    if (!clientIdTitolare) return { controllato: true, autorizzato: true }
+
+    // Il titolare porta la sua stessa barca → ok
+    const barcheSocio = barche.filter(b => b.clientId === clientIdTitolare)
     if (barcheSocio.some(b => b.nome.toLowerCase() === nomeBarca.toLowerCase())) {
       return { controllato: true, autorizzato: true }
     }
@@ -244,7 +257,7 @@ export function useTorreForm() {
       }
     }
 
-    const socioPropr = clienti.find(c => c.id === posto.socioId)
+    const socioPropr = clienti.find(c => c.id === clientIdTitolare)
     return {
       controllato: true,
       autorizzato: false,
@@ -320,6 +333,22 @@ export function useTorreForm() {
       autoSelezionatoRef.current = null
     }
   }, [posto])
+
+  // Proprietario del posto selezionato (socio titolare, v3 SSOT).
+  // Mostrato in TorrePage quando chi è fisicamente presente (barcaSulPosto)
+  // è diverso dal titolare (affittuario su posto socio). Così l'operatore
+  // vede sia l'occupante attuale sia a chi appartiene il posto.
+  // Bug Blocco 6: mancava del tutto — il box "Cliente" mostrava solo l'affittuario.
+  const proprietarioPosto = useMemo<{ client?: Client; boat?: Boat } | undefined>(() => {
+    const postoId = posto.trim()
+    if (!postoId) return undefined
+    const titolo = titoloAttivoDelBerth(postoId)
+    if (!titolo) return undefined
+    const clientePropr = clienti.find(c => c.id === titolo.clientId)
+    const barcaPropr = titolo.boatId ? barche.find(b => b.id === titolo.boatId) : undefined
+    if (!clientePropr) return undefined
+    return { client: clientePropr, boat: barcaPropr }
+  }, [posto, titoloAttivoDelBerth, clienti, barche])
 
   // Cliente collegato alla barca corrente (per box "dati cliente" colonna 1).
   const clienteCollegato = useMemo<Client | undefined>(() => {
@@ -426,10 +455,21 @@ export function useTorreForm() {
     if (b.pescaggio) setPescaggio(String(b.pescaggio))
     // M-03: pre-popola anche l'origine dello spostamento.
     if (postoCorrente) setPostoOrigine(postoCorrente)
-    // Auto-detect socio.
+    // Lock tipologia: tre casi distinti.
+    // 1. Barca socio: scenario derivato dall'anagrafica → sempre 'socio', locked.
+    // 2. Barca in porto (Stay aperto) ma non socio: blocca allo scenario dello Stay
+    //    per impedire che l'operatore cambi erroneamente 'transito' → 'socio'.
+    //    (Bug Blocco 4: transito in porto → i bottoni socio/affittuario erano liberi)
+    // 3. Barca non in porto, non socio: operatore libero di scegliere.
     const scenario = getScenarioBarca(b.nome, b.matricola)
+    const stayAperto = stayApertoDellaBarca(b.id)
     if (scenario === 'socio') {
       setTipologia('socio')
+      setTipologiaLocked(true)
+    } else if (stayAperto) {
+      // Barca già in porto: scenario dell'entrata originale è quello giusto.
+      // 'transito' è il default sicuro se getScenarioBarca non restituisce altro.
+      setTipologia((scenario as MovementScenario) || 'transito')
       setTipologiaLocked(true)
     } else {
       setTipologiaLocked(false)
@@ -443,23 +483,19 @@ export function useTorreForm() {
     const occupante = barcaSulPosto(p.id)
 
     if (occupante) {
-      // Caso normale: barca fisicamente presente sul posto.
+      // Barca fisicamente presente → autofill completo (nome, matricola, tipologia, ecc.)
       setPostoOrigine(p.id)
       fillFromBoat(occupante)
-    } else if (p.socioId) {
-      // Caso socio assente (uscita registrata, posto vuoto ma titolato).
-      // Il posto appartiene a un socio → la sua barca è nota dall'anagrafica
-      // anche se non è fisicamente ormeggiata. Pre-compila automaticamente
-      // se il socio ha una sola barca (caso tipico).
-      // Fix (28 Apr 2026): prima questa logica mancava, costringendo l'operatore
-      // a ridigitare il nome barca dopo ogni uscita cercando per posto.
-      const barcheSocio = barche.filter(b => b.clientId === p.socioId)
-      if (barcheSocio.length === 1) {
-        fillFromBoat(barcheSocio[0])
-      }
-      // Se il socio ha più barche registrate, non pre-compiliamo per evitare
-      // ambiguità — l'operatore sceglierà dal campo Nome o Matricola.
     }
+    // Posto vuoto (in_cantiere, socio_assente, libero): imposta SOLO il campo posto.
+    // L'operatore digita la barca manualmente.
+    //
+    // Motivo (29 Apr 2026): non possiamo distinguere l'intenzione dell'operatore:
+    //   a) Rientro cantiere → cerca per NOME barca (flusso naturale, fillFromBoat)
+    //   b) Nuovo arrivo su posto cantiere/socio assente → digita barca manualmente
+    // Autofillare la barca del titolare in caso (b) bloccherebbe tipologia='socio'
+    // e impedirebbe di registrare affittuari/ospiti su posto temporaneamente libero.
+    // Per il rientro cantiere: cerca per nome barca → fillFromBoat gestisce tutto.
 
     setErrorMessage('')
   }
@@ -544,8 +580,12 @@ export function useTorreForm() {
     ensureBoatExists()
     const m = buildMovement('entrata', posto)
 
-    // Affittuario senza auth: modale BLOCCANTE → "Pendente" (vedi MEDIO 4).
-    if (tipologia === 'affittuario') {
+    // Verifica autorizzazione per posti di soci — modale BLOCCANTE per qualsiasi tipologia.
+    // Fix (29 Apr 2026): prima il check era limitato a tipologia === 'affittuario'.
+    // Un transito su posto socio senza auth passava silenziosamente con auth=false.
+    // checkAutorizzazione restituisce true se: posto non titolato, oppure barca del titolare.
+    // Quindi il check è no-op per posti liberi e soci che rientrano al proprio posto.
+    if (tipologia !== 'socio') {
       const authCheck = checkAutorizzazione(posto, nome)
       if (!authCheck.autorizzato) {
         setAuthMissingModal({
@@ -725,6 +765,7 @@ export function useTorreForm() {
     dimensionWarnings,
     suggestedBerths,
     clienteCollegato,
+    proprietarioPosto,
     boatExistsInRegistry,
     barcaSelezionataInPorto,
     ultimoMovimento,

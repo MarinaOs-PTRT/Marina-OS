@@ -227,11 +227,14 @@ export function RegistrazioneTransitiPage() {
 
   // ════════════════════════════════════════════
   // Salva Anagrafica (senza emettere ricevuta)
+  // Restituisce true se il salvataggio ha avuto successo, false se
+  // la validazione ha fallito — usato dal ramo affittuario per
+  // decidere se mostrare la schermata di completamento.
   // ════════════════════════════════════════════
-  const handleSalvaAnagrafica = () => {
+  const handleSalvaAnagrafica = (): boolean => {
     setErroreAnagrafica('')
     const err = validateAnagrafica()
-    if (err) { setErroreAnagrafica(err); return }
+    if (err) { setErroreAnagrafica(err); return false }
 
     const clienteId = existingClient?.id || Date.now()
     const nomeCompleto = `${pNome.trim()} ${pCognome.trim()}`
@@ -255,7 +258,11 @@ export function RegistrazioneTransitiPage() {
         pescaggio: parseFloat(bPescaggio),
         bandiera: bBandiera, portoIscrizione: bPortoIscr,
         stazzaGT: parseFloat(bStazza) || undefined,
-        clientId: clienteId, tipologia: 'transito',
+        clientId: clienteId,
+        // v3 SSOT: preserva la tipologia reale della barca (transito | affittuario).
+        // Fix 29 Apr 2026 — prima era hardcoded 'transito', sovrascriveva
+        // gli affittuari trasformandoli in transiti nel registro.
+        tipologia: selectedBoat.tipologia ?? 'transito',
         registrazioneCompleta: true
       })
       // Aggiorna la barca locale per riflettere il nuovo stato
@@ -263,6 +270,7 @@ export function RegistrazioneTransitiPage() {
     }
 
     setSalvatoOk(true)
+    return true
   }
 
   // ════════════════════════════════════════════
@@ -295,7 +303,10 @@ export function RegistrazioneTransitiPage() {
         lunghezza: parseFloat(bLunghezza), larghezza: parseFloat(bLarghezza),
         pescaggio: parseFloat(bPescaggio), bandiera: bBandiera,
         portoIscrizione: bPortoIscr, stazzaGT: parseFloat(bStazza) || undefined,
-        clientId: clienteId, tipologia: 'transito', registrazioneCompleta: true
+        clientId: clienteId,
+        // v3 SSOT: stessa correzione di handleSalvaAnagrafica (Fix 29 Apr 2026).
+        tipologia: selectedBoat.tipologia ?? 'transito',
+        registrazioneCompleta: true
       })
     }
 
@@ -358,10 +369,11 @@ export function RegistrazioneTransitiPage() {
             <div className="reg-success-icon">✅</div>
             <h2>Registrazione Completata</h2>
             <p>
-              Il transito di <strong>{bNome}</strong> è stato registrato con successo
+              {isAffittuario ? 'L\'affittuario' : 'Il transito'}{' '}
+              <strong>{bNome}</strong> è stato registrato con successo
               {selectedPostoId && <> al posto <strong>{selectedPostoId}</strong></>}.
             </p>
-            {calcResult && (
+            {calcResult && !isAffittuario && (
               <p className="reg-success-total">
                 Totale incassato: <strong>€ {calcResult.totale.toFixed(2)}</strong>
                 {' '}—{' '}
@@ -375,44 +387,41 @@ export function RegistrazioneTransitiPage() {
           </div>
         )}
 
-        {/* ── Riquadro unico: Omnibar + due colonne ── */}
         {!completato && (
-          <div className="reg-main-card">
-
-            {/* Omnibar header del riquadro */}
-            <div className="reg-main-card-header">
-              <div className="reg-omnibar-wrap">
+          <>
+            {/* ── Barra di ricerca ── */}
+            <div className="reg-search-bar">
+              <div className="reg-search-omnibar">
                 <Omnibar onAction={handleOmnibarSelect} />
               </div>
-              {erroreOmnibar && <div className="reg-error" style={{ marginTop: 'var(--space-sm)' }}>{erroreOmnibar}</div>}
-              {selectedBoat && (
-                <div className="reg-selected-summary">
-                  <span className="reg-selected-label">Selezionata:</span>
-                  <strong>{bNome}</strong>
-                  {selectedPostoId && <span className="reg-selected-posto">· Posto {selectedPostoId}</span>}
-                  <BadgeAnagrafica />
-                  {salvatoOk && <span className="reg-badge-saved">✅ Anagrafica salvata</span>}
-                </div>
-              )}
-              {!selectedBoat && (
-                <p className="reg-omnibar-hint">Cerca per nome barca, matricola, comandante o posto per pre-popolare i campi.</p>
-              )}
+              <div className="reg-search-info">
+                {erroreOmnibar && <span className="reg-error-inline">{erroreOmnibar}</span>}
+                {selectedBoat ? (
+                  <div className="reg-selected-summary">
+                    <span className="reg-selected-label">Selezionata:</span>
+                    <strong>{bNome}</strong>
+                    {selectedPostoId && <span className="reg-selected-posto">· Posto {selectedPostoId}</span>}
+                    <BadgeAnagrafica />
+                    {salvatoOk && <span className="reg-badge-saved">Anagrafica salvata</span>}
+                  </div>
+                ) : (
+                  <p className="reg-omnibar-hint">Cerca per nome barca, matricola, comandante o posto per pre-popolare i campi.</p>
+                )}
+              </div>
             </div>
 
-            {/* Divisore */}
-            <div className="reg-main-card-divider" />
-
-            {/* Due colonne */}
-            <div className="reg-dashboard">
+            {/* ── Due pannelli affiancati ── */}
+            <div className="reg-split">
 
             {/* ═══════════════════════════════════════
-                COLONNA SINISTRA — Anagrafica
+                PANNELLO SINISTRO — Anagrafica
             ═══════════════════════════════════════ */}
-            <div className="reg-panel reg-panel-anagrafica">
-              <div className="reg-panel-header">
-                <h2>👤 Anagrafica</h2>
+            <div className="reg-panel reg-panel-left">
+              <div className="reg-panel-head reg-head-anagrafica">
+                <span className="reg-panel-title">Anagrafica</span>
                 <BadgeAnagrafica />
               </div>
+              <div className="reg-panel-body">
 
               {selectedBoat?.registrazioneCompleta === false && (
                 <div className="reg-info-banner reg-banner-warning">
@@ -551,25 +560,25 @@ export function RegistrazioneTransitiPage() {
               )}
 
               <div className="reg-actions">
-                <button className="btn btn-outline" onClick={handleReset}>✕ Annulla</button>
+                <button className="btn btn-outline" onClick={handleReset}>Annulla</button>
                 <button className="btn btn-mode-entrata" onClick={handleSalvaAnagrafica}>
-                  💾 Salva Anagrafica
+                  Salva Anagrafica
                 </button>
               </div>
-            </div>
+
+              </div>{/* /reg-panel-body */}
+            </div>{/* /reg-panel-left */}
 
             {/* ═══════════════════════════════════════
-                COLONNA DESTRA — Cassa / Pagamento (TRANSITI)
-                Nascosta per affittuari: l'affittuario paga il canone
-                fra beneficiario e socio proprietario, fuori dal nostro
-                sistema. A noi basta l'autorizzazione.
-                Vedi memoria: registrazione_pendente_pattern.md
+                PANNELLO DESTRO — Cassa (transiti) / Autorizzazione (affittuari)
             ═══════════════════════════════════════ */}
+            <div className="reg-panel reg-panel-right">
             {!isAffittuario && (
-            <div className="reg-panel reg-panel-cassa">
-              <div className="reg-panel-header">
-                <h2>💶 Cassa</h2>
+            <>
+              <div className="reg-panel-head reg-head-cassa">
+                <span className="reg-panel-title">Cassa</span>
               </div>
+              <div className="reg-panel-body">
 
               {erroreCassa && <div className="reg-error">{erroreCassa}</div>}
 
@@ -696,25 +705,19 @@ export function RegistrazioneTransitiPage() {
                   onClick={handleConfirm}
                   disabled={!calcResult}
                 >
-                  ✅ Conferma e Incassa
+                  Conferma e Incassa
                 </button>
               </div>
-            </div>
+              </div>{/* /reg-panel-body */}
+            </>
             )}
 
-            {/* ═══════════════════════════════════════
-                COLONNA DESTRA — Autorizzazione (AFFITTUARI)
-                Per gli affittuari non c'è cassa interna: il canone è
-                regolato fuori sistema fra beneficiario e proprietario
-                del posto. Questa colonna mostra solo lo stato dell'
-                autorizzazione e ricorda all'operatore che il completamento
-                anagrafico è sufficiente per chiudere la pendenza.
-            ═══════════════════════════════════════ */}
             {isAffittuario && (
-            <div className="reg-panel reg-panel-cassa">
-              <div className="reg-panel-header">
-                <h2>📜 Autorizzazione</h2>
+            <>
+              <div className="reg-panel-head reg-head-auth">
+                <span className="reg-panel-title">Autorizzazione</span>
               </div>
+              <div className="reg-panel-body">
 
               <div className="reg-info-banner">
                 ℹ️ Per gli <strong>affittuari</strong> il canone è regolato
@@ -771,15 +774,20 @@ export function RegistrazioneTransitiPage() {
                 <div />
                 <button
                   className="btn btn-mode-entrata"
-                  onClick={handleSalvaAnagrafica}
+                  onClick={() => {
+                    if (handleSalvaAnagrafica()) setCompletato(true)
+                  }}
                 >
-                  ✅ Conferma Registrazione
+                  Conferma Registrazione
                 </button>
               </div>
-            </div>
+              </div>{/* /reg-panel-body */}
+            </>
             )}
-          </div>
-        </div>
+            </div>{/* /reg-panel-right */}
+
+            </div>{/* /reg-split */}
+          </>
         )}
       </div>
     </>
